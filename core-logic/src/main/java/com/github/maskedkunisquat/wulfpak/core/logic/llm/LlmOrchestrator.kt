@@ -76,36 +76,36 @@ class LlmOrchestrator(
 
             appendLine()
             if (interactions.isNotEmpty()) {
-                appendLine("Recent interactions (latest first):")
+                appendLine("Recent interactions the user had with $name (latest first):")
                 interactions.take(20).forEach { i ->
                     append("- [${dateFmt.format(Date(i.timestamp))}] ${i.type.replace('_', ' ')}")
-                    i.note?.let { append(": $it") }
+                    i.note?.let { append(" — user wrote: \"$it\"") }
                     appendLine()
                 }
             } else {
-                appendLine("Recent interactions: (none)")
+                appendLine("Recent interactions with $name: (none)")
             }
 
             appendLine()
             if (activities.isNotEmpty()) {
-                appendLine("Shared activities:")
+                appendLine("Activities the user did together with $name:")
                 activities.take(10).forEach { a ->
                     append("- [${dateFmt.format(Date(a.timestamp))}] ${a.title}")
-                    a.body?.let { append(": $it") }
+                    a.body?.let { append(" — user wrote: \"$it\"") }
                     appendLine()
                 }
             } else {
-                appendLine("Shared activities: (none)")
+                appendLine("Activities with $name: (none)")
             }
 
             appendLine()
             if (notes.isNotEmpty()) {
-                appendLine("Notes:")
+                appendLine("User's notes about $name:")
                 notes.take(15).forEach { n ->
-                    appendLine("- [${dateFmt.format(Date(n.timestamp))}] ${n.body}")
+                    appendLine("- [${dateFmt.format(Date(n.timestamp))}] \"${n.body}\"")
                 }
             } else {
-                appendLine("Notes: (none)")
+                appendLine("User's notes about $name: (none)")
             }
 
             appendLine()
