@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,13 +46,23 @@ import java.util.UUID
 fun PeopleListScreen(
     onAddPerson: () -> Unit,
     onOpenPerson: (UUID) -> Unit,
+    onOpenSettings: () -> Unit,
     viewModel: PeopleListViewModel = viewModel(),
 ) {
     val people by viewModel.people.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("WulfPak") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("WulfPak") },
+                actions = {
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    }
+                },
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddPerson) {
                 Icon(Icons.Default.Add, contentDescription = "Add person")
