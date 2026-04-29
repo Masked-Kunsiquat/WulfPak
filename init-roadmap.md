@@ -63,6 +63,6 @@
 - [x] `CalendarBridge` (writes `LifeEvent` records as `CalendarContract` events)
 
 ## Phase 8 — LLM features
-- [ ] Person detail "Summarize" card (`LlmOrchestrator.summarize(personId)`)
-- [ ] Global natural language search chip
-- [ ] WorkManager daily job for "you haven't contacted X in N days" notifications
+- [x] Person detail "Summarize" card (`LlmOrchestrator.summarize(personId)`)
+- [x] Global natural language search chip
+- [x] WorkManager daily job for "you haven't contacted X in N days" notifications

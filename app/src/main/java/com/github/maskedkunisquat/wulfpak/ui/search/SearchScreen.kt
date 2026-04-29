@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +41,10 @@ import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
+    val isAskAi   = viewModel.isAskAiMode
+    val isQuerying = if (isAskAi) viewModel.isNlQuerying else viewModel.isSearching
+    val onSubmit: () -> Unit = if (isAskAi) viewModel::askAi else viewModel::search
+
     Scaffold(
         topBar = { TopAppBar(title = { Text("Search") }) },
     ) { padding ->
@@ -54,12 +59,15 @@ fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
                 OutlinedTextField(
                     value = viewModel.query,
                     onValueChange = { viewModel.query = it },
-                    placeholder = { Text("Search notes, interactions…") },
+                    placeholder = {
+                        Text(if (isAskAi) "Ask anything about your contacts…"
+                             else "Search notes, interactions…")
+                    },
                     singleLine = true,
                     modifier = Modifier
                         .weight(1f)
                         .onKeyEvent { event ->
-                            if (event.key == Key.Enter) { viewModel.search(); true } else false
+                            if (event.key == Key.Enter) { onSubmit(); true } else false
                         },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
@@ -70,8 +78,8 @@ fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
                         }
                     },
                 )
-                IconButton(onClick = viewModel::search, enabled = !viewModel.isSearching) {
-                    if (viewModel.isSearching) {
+                IconButton(onClick = onSubmit, enabled = !isQuerying) {
+                    if (isQuerying) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp))
                     } else {
                         Icon(Icons.Default.Search, contentDescription = "Search")
@@ -79,27 +87,71 @@ fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
                 }
             }
 
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip(
+                    selected = !isAskAi,
+                    onClick = { viewModel.isAskAiMode = false; viewModel.clearResults() },
+                    label = { Text("Semantic") },
+                )
+                FilterChip(
+                    selected = isAskAi,
+                    onClick = { viewModel.isAskAiMode = true; viewModel.clearResults() },
+                    label = { Text("Ask AI") },
+                )
+            }
+
             HorizontalDivider()
 
-            when {
-                viewModel.results.isEmpty() && !viewModel.isSearching && viewModel.query.isNotBlank() -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No results", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (isAskAi) {
+                when {
+                    viewModel.nlResponse.isEmpty() && !viewModel.isNlQuerying -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                "Ask anything about your contacts and notes",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(32.dp),
+                            )
+                        }
+                    }
+                    viewModel.nlResponse.isEmpty() -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp),
+                        ) {
+                            item {
+                                Text(viewModel.nlResponse, style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
                     }
                 }
-                viewModel.results.isEmpty() -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            "Search your notes and interactions using natural language",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(32.dp),
-                        )
+            } else {
+                when {
+                    viewModel.results.isEmpty() && !viewModel.isSearching && viewModel.query.isNotBlank() -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("No results", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
-                }
-                else -> {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(viewModel.results, key = { it.hashCode() }) { hit ->
-                            SearchResultItem(hit)
+                    viewModel.results.isEmpty() -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                "Search your notes and interactions using natural language",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(32.dp),
+                            )
+                        }
+                    }
+                    else -> {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(viewModel.results, key = { it.hashCode() }) { hit ->
+                                SearchResultItem(hit)
+                            }
                         }
                     }
                 }

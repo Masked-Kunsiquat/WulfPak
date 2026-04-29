@@ -1,6 +1,9 @@
 package com.github.maskedkunisquat.wulfpak.ui.person
 
 import android.app.Application
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.maskedkunisquat.wulfpak.AppApplication
@@ -10,6 +13,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEvent
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Task
+import com.github.maskedkunisquat.wulfpak.core.logic.llm.LlmResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,6 +27,12 @@ import java.util.UUID
 class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
 
     private val db = getApplication<AppApplication>().db
+    private val llmOrchestrator = getApplication<AppApplication>().llmOrchestrator
+
+    var summarizeText by mutableStateOf("")
+        private set
+    var isSummarizing by mutableStateOf(false)
+        private set
 
     private val _personId = MutableStateFlow<UUID?>(null)
 
@@ -77,6 +87,21 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteTask(task: Task) {
         viewModelScope.launch { db.taskDao().delete(task) }
+    }
+
+    fun summarize() {
+        val id = _personId.value ?: return
+        if (isSummarizing) return
+        isSummarizing = true
+        summarizeText = ""
+        viewModelScope.launch {
+            llmOrchestrator.summarize(id).collect { result ->
+                when (result) {
+                    is LlmResult.Token -> summarizeText += result.text
+                    is LlmResult.Complete, is LlmResult.Error -> isSummarizing = false
+                }
+            }
+        }
     }
 
     fun deletePerson(onDone: () -> Unit) {

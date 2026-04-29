@@ -19,10 +19,13 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -56,7 +59,7 @@ import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayDate
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
 import java.util.UUID
 
-private val TABS = listOf("Interactions", "Notes", "Life Events", "Gifts", "Tasks")
+private val TABS = listOf("Interactions", "Notes", "Life Events", "Gifts", "Tasks", "Summarize")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,12 +89,13 @@ fun PersonDetailScreen(
     var showOverflow    by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    val fabAction: () -> Unit = when (selectedTab) {
+    val fabAction: (() -> Unit)? = when (selectedTab) {
         0 -> onAddInteraction
         1 -> onAddNote
         2 -> onAddLifeEvent
         3 -> onAddGift
-        else -> onAddTask
+        4 -> onAddTask
+        else -> null  // Summarize tab — no FAB
     }
 
     if (showDeleteConfirm) {
@@ -137,8 +141,10 @@ fun PersonDetailScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = fabAction) {
-                Icon(Icons.Default.Add, contentDescription = "Add")
+            fabAction?.let { action ->
+                FloatingActionButton(onClick = action) {
+                    Icon(Icons.Default.Add, contentDescription = "Add")
+                }
             }
         },
     ) { padding ->
@@ -186,6 +192,11 @@ fun PersonDetailScreen(
                         onToggleDone = viewModel::toggleTaskDone,
                         onEdit = onEditTask,
                         onDelete = viewModel::deleteTask)
+                    5 -> SummarizeTab(
+                        text = viewModel.summarizeText,
+                        isLoading = viewModel.isSummarizing,
+                        onSummarize = viewModel::summarize,
+                    )
                 }
             }
         }
@@ -333,6 +344,43 @@ private fun TasksTab(
                     }
                 },
             )
+        }
+    }
+}
+
+@Composable
+private fun SummarizeTab(text: String, isLoading: Boolean, onSummarize: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        when {
+            text.isEmpty() && !isLoading -> {
+                Button(
+                    onClick = onSummarize,
+                    modifier = Modifier.align(Alignment.Center),
+                ) { Text("Generate Summary") }
+            }
+            text.isEmpty() -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+            else -> {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                    ) {
+                        item { Text(text, style = MaterialTheme.typography.bodyMedium) }
+                    }
+                    if (!isLoading) {
+                        HorizontalDivider()
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(8.dp),
+                            horizontalArrangement = Arrangement.End,
+                        ) {
+                            TextButton(onClick = onSummarize) { Text("Regenerate") }
+                        }
+                    }
+                }
+            }
         }
     }
 }

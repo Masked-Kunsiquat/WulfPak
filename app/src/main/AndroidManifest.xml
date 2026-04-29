@@ -12,6 +12,9 @@
     <!-- Model download (Phase 6 Settings) -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Contact reminders (Phase 8) — required on Android 13+ to post notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".AppApplication"
         android:allowBackup="true"
