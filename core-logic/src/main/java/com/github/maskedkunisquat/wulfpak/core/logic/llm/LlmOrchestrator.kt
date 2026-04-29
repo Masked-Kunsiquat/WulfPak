@@ -47,21 +47,22 @@ class LlmOrchestrator(
             person.lastName?.let { append(" $it") }
         }
 
+        val openTasks    = tasks.filter { !it.isDone }
+        val pendingGifts = gifts.filter { it.status != GiftStatus.GIVEN }
+
         val context = buildString {
-            // Header
-            append("Person: $name")
-            append(", relation: ${person.relationLabel.replace('_', ' ')}")
-            person.nickname?.let { append(", known as \"$it\"") }
-            person.closenessRating?.let { append(", closeness ${it}/5") }
+            appendLine("DATA:")
+            appendLine("Name: $name")
+            appendLine("Relation: ${person.relationLabel.replace('_', ' ')}")
+            person.nickname?.let { appendLine("Nickname: $it") }
+            person.closenessRating?.let { appendLine("Closeness: ${it}/5") }
             person.lastContactedAt?.let {
                 val days = ((System.currentTimeMillis() - it) / 86_400_000L).toInt()
-                append(", last contact $days day${if (days == 1) "" else "s"} ago")
+                appendLine("Last contact: $days day${if (days == 1) "" else "s"} ago")
             }
-            appendLine()
 
-            // Life events (all — usually a short list)
+            appendLine()
             if (lifeEvents.isNotEmpty()) {
-                appendLine()
                 appendLine("Life events:")
                 lifeEvents.forEach { e ->
                     val recurring = if (e.isRecurring) " (recurring)" else ""
@@ -69,61 +70,66 @@ class LlmOrchestrator(
                     e.note?.let { append(" — $it") }
                     appendLine()
                 }
+            } else {
+                appendLine("Life events: (none)")
             }
 
-            // Recent interactions
+            appendLine()
             if (interactions.isNotEmpty()) {
-                appendLine()
                 appendLine("Recent interactions (latest first):")
                 interactions.take(20).forEach { i ->
                     append("- [${dateFmt.format(Date(i.timestamp))}] ${i.type.replace('_', ' ')}")
                     i.note?.let { append(": $it") }
                     appendLine()
                 }
+            } else {
+                appendLine("Recent interactions: (none)")
             }
 
-            // Shared activities
+            appendLine()
             if (activities.isNotEmpty()) {
-                appendLine()
                 appendLine("Shared activities:")
                 activities.take(10).forEach { a ->
                     append("- [${dateFmt.format(Date(a.timestamp))}] ${a.title}")
                     a.body?.let { append(": $it") }
                     appendLine()
                 }
+            } else {
+                appendLine("Shared activities: (none)")
             }
 
-            // Notes
+            appendLine()
             if (notes.isNotEmpty()) {
-                appendLine()
                 appendLine("Notes:")
                 notes.take(15).forEach { n ->
                     appendLine("- [${dateFmt.format(Date(n.timestamp))}] ${n.body}")
                 }
+            } else {
+                appendLine("Notes: (none)")
             }
 
-            // Open tasks for this person
-            val openTasks = tasks.filter { !it.isDone }
+            appendLine()
             if (openTasks.isNotEmpty()) {
-                appendLine()
                 appendLine("Open tasks:")
                 openTasks.forEach { t ->
                     append("- ${t.title}")
                     t.dueAt?.let { append(" (due ${dateFmt.format(Date(it))})") }
                     appendLine()
                 }
+            } else {
+                appendLine("Open tasks: (none)")
             }
 
-            // Pending gifts
-            val pendingGifts = gifts.filter { it.status != GiftStatus.GIVEN }
+            appendLine()
             if (pendingGifts.isNotEmpty()) {
-                appendLine()
                 appendLine("Gift tracking:")
                 pendingGifts.forEach { g ->
                     append("- ${g.name} [${g.status.lowercase()}]")
                     g.occasion?.let { append(" for $it") }
                     appendLine()
                 }
+            } else {
+                appendLine("Gift tracking: (none)")
             }
         }
 
