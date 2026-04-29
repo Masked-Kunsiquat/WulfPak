@@ -54,6 +54,9 @@ class LocalFallbackProvider(
     private val _loadedModelName = MutableStateFlow<String?>(null)
     override val loadedModelName: StateFlow<String?> = _loadedModelName.asStateFlow()
 
+    private val modelDir: java.io.File
+        get() = context.getExternalFilesDir(null) ?: context.filesDir
+
     override fun downloadModel() {
         val (modelFile, _) = selectModelAndBackends()
         modelDownloader.enqueue(modelFile, "$HF_BASE_URL/$modelFile", MODEL_SHA256[modelFile])
@@ -61,7 +64,7 @@ class LocalFallbackProvider(
 
     fun isModelAvailable(): Boolean {
         val (modelFile, _) = selectModelAndBackends()
-        return File(context.filesDir, modelFile).exists()
+        return File(modelDir, modelFile).exists()
     }
 
     override fun initialize() {
@@ -82,7 +85,7 @@ class LocalFallbackProvider(
 
             initAttempted = true
             val (modelFileName, backendsToTry) = selectModelAndBackends()
-            val modelFile = File(context.filesDir, modelFileName)
+            val modelFile = File(modelDir, modelFileName)
             Log.i(TAG, "Initialising engine — file=$modelFileName board=${Build.BOARD}")
 
             if (!modelFile.exists()) {

@@ -5,9 +5,13 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
@@ -16,6 +20,8 @@ import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -27,11 +33,15 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -39,6 +49,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.ModelLoadState
+import com.github.maskedkunisquat.wulfpak.sync.ContactSyncManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,7 +66,7 @@ fun SettingsScreen(
 
     val contactPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted -> if (granted) viewModel.syncContacts() }
+    ) { granted -> if (granted) viewModel.loadContactCandidates() }
 
     val calendarPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -115,6 +126,24 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(viewModel.pickerState) {
+        if (viewModel.pickerState is SettingsViewModel.PickerState.Error) {
+            snackbarHostState.showSnackbar(
+                "Failed to load contacts: ${(viewModel.pickerState as SettingsViewModel.PickerState.Error).message}"
+            )
+            viewModel.dismissContactPicker()
+        }
+    }
+
+    val pickerState = viewModel.pickerState
+    if (pickerState is SettingsViewModel.PickerState.Ready) {
+        ContactPickerDialog(
+            candidates = pickerState.candidates,
+            onConfirm  = { viewModel.importSelectedContacts(it) },
+            onDismiss  = { viewModel.dismissContactPicker() },
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -172,8 +201,7 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.clickable(enabled = !modelReady && !modelLoading) {
                         if (modelAvailable) {
-                            // file exists but not loaded — nothing to do from UI; LlmOrchestrator
-                            // calls initialize() on first use
+                            // file exists but not loaded — LlmOrchestrator calls initialize() on first use
                         } else {
                             viewModel.downloadModel()
                         }
@@ -193,19 +221,20 @@ fun SettingsScreen(
 
             item { SectionHeader("Data import") }
             item {
-                val isSyncing = viewModel.syncState is SettingsViewModel.SyncState.Loading
+                val isLoadingPicker = viewModel.pickerState is SettingsViewModel.PickerState.Loading
+                val isSyncing       = viewModel.syncState is SettingsViewModel.SyncState.Loading
                 ListItem(
                     headlineContent   = { Text("Import from Contacts") },
-                    supportingContent = { Text("Sync device contacts into WulfPak") },
+                    supportingContent = { Text("Choose contacts from your device to add to WulfPak") },
                     leadingContent    = { Icon(Icons.Default.Sync, contentDescription = null) },
                     trailingContent   = {
-                        if (isSyncing) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        if (isLoadingPicker || isSyncing) CircularProgressIndicator(modifier = Modifier.size(24.dp))
                     },
-                    modifier = Modifier.clickable(enabled = !isSyncing) {
+                    modifier = Modifier.clickable(enabled = !isLoadingPicker && !isSyncing) {
                         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS)
                             == PackageManager.PERMISSION_GRANTED
                         ) {
-                            viewModel.syncContacts()
+                            viewModel.loadContactCandidates()
                         } else {
                             contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
                         }
@@ -250,6 +279,71 @@ fun SettingsScreen(
             }
         }
     }
+}
+
+@Composable
+private fun ContactPickerDialog(
+    candidates: List<ContactSyncManager.ContactCandidate>,
+    onConfirm: (List<ContactSyncManager.ContactCandidate>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val importable = remember(candidates) { candidates.filter { !it.alreadyImported } }
+    var selected by remember { mutableStateOf(emptySet<String>()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Contacts to Import") },
+        text = {
+            if (importable.isEmpty()) {
+                Text("All contacts from this device are already in WulfPak.")
+            } else {
+                LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                    items(importable, key = { it.contactId }) { candidate ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selected = if (candidate.contactId in selected)
+                                        selected - candidate.contactId
+                                    else
+                                        selected + candidate.contactId
+                                }
+                                .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Checkbox(
+                                checked = candidate.contactId in selected,
+                                onCheckedChange = { checked ->
+                                    selected = if (checked)
+                                        selected + candidate.contactId
+                                    else
+                                        selected - candidate.contactId
+                                },
+                            )
+                            Text(
+                                text     = candidate.displayName,
+                                modifier = Modifier.padding(start = 4.dp),
+                                style    = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirm(importable.filter { it.contactId in selected })
+                },
+                enabled = selected.isNotEmpty(),
+            ) {
+                Text(if (selected.isEmpty()) "Import" else "Import (${selected.size})")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }
 
 @Composable
