@@ -38,14 +38,14 @@
 - [x] Update `AndroidManifest.xml` (permissions, native library declarations, backup rules)
 
 ## Phase 4 — People list + Person detail
-- [ ] `PeopleListScreen` (list, search bar, FAB, favorites)
-- [ ] `AddEditPersonScreen` (name, relation label, photo, closeness rating)
-- [ ] `PersonDetailScreen` (tab layout: Interactions, Notes, Life Events, Gifts, Tasks)
-- [ ] `AddEditInteractionScreen`
-- [ ] `AddEditNoteScreen`
-- [ ] `AddEditLifeEventScreen`
-- [ ] `AddEditGiftScreen`
-- [ ] `AddEditTaskScreen`
+- [x] `PeopleListScreen` (list, search bar, FAB, favorites)
+- [x] `AddEditPersonScreen` (name, relation label, photo, closeness rating)
+- [x] `PersonDetailScreen` (tab layout: Interactions, Notes, Life Events, Gifts, Tasks)
+- [x] `AddEditInteractionScreen`
+- [x] `AddEditNoteScreen`
+- [x] `AddEditLifeEventScreen`
+- [x] `AddEditGiftScreen`
+- [x] `AddEditTaskScreen`
 
 ## Phase 5 — Contact import
 - [ ] `ContactSyncManager` (reads `ContactsContract`, deduplicates, creates `Person` rows)

@@ -19,6 +19,9 @@ interface LifeEventDao {
     @Query("SELECT * FROM life_events WHERE isRecurring = 1 ORDER BY date")
     fun getAllRecurring(): Flow<List<LifeEvent>>
 
+    @Query("SELECT * FROM life_events WHERE id = :id")
+    suspend fun getById(id: UUID): LifeEvent?
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(lifeEvent: LifeEvent)
 
