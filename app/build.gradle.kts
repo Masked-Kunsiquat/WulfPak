@@ -49,6 +49,10 @@ dependencies {
     implementation(project(":core-data"))
     implementation(project(":core-logic"))
 
+    // Room (needed to access RoomDatabase APIs from AppDatabase in core-data)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

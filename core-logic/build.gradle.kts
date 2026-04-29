@@ -27,6 +27,10 @@ dependencies {
     // On-device LLM (Gemma 3 1B LiteRT-LM)
     implementation(libs.litertlm.android)
 
+    // Room (needed to access RoomDatabase APIs transitively through core-data)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+
     // Background embedding worker
     implementation(libs.androidx.work.runtime.ktx)
 }
