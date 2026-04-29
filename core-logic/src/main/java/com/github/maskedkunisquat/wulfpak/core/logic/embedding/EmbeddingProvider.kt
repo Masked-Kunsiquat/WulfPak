@@ -11,14 +11,14 @@ import java.nio.ByteOrder
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Generates 384-dim sentence embeddings using Snowflake Arctic Embed XS TFLite.
+ * Generates 384-dim sentence embeddings using Snowflake Arctic Embed XS TFLite (float16, 33 MB).
  *
  * Call [initialize] once (e.g. in AppApplication) before [generateEmbedding].
  * Falls back to zero-vectors when the model asset is absent so the app remains
  * functional during development.
  *
- * Assets required in core-logic/src/main/assets/:
- *   - snowflake-arctic-embed-xs_float32.tflite  (87 MB — copy from Lattice)
+ * Assets bundled in core-logic/src/main/assets/:
+ *   - snowflake-arctic-embed-xs_float16.tflite  (33 MB)
  *   - vocab.txt
  */
 open class EmbeddingProvider(
@@ -103,7 +103,7 @@ open class EmbeddingProvider(
     companion object {
         const val EMBEDDING_DIM = 384
         const val MODEL_SEQ_LEN = 128
-        private const val MODEL_ASSET = "snowflake-arctic-embed-xs_float32.tflite"
+        private const val MODEL_ASSET = "snowflake-arctic-embed-xs_float16.tflite"
         private const val VOCAB_ASSET = "vocab.txt"
         private const val TAG = "EmbeddingProvider"
     }

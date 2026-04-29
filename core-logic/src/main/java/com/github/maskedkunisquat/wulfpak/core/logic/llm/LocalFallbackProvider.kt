@@ -32,7 +32,6 @@ import kotlin.concurrent.withLock
  *   - [MODEL_FILE_ULTRA] SM8650 (S24 Ultra) — NPU/QNN only
  *   - [MODEL_FILE_INT4]  All devices — GPU (OpenCL) with CPU fallback
  *
- * TODO: update [HF_BASE_URL] and [MODEL_SHA256] from your HuggingFace repo before shipping.
  */
 class LocalFallbackProvider(
     private val context: Context,
@@ -216,19 +215,17 @@ class LocalFallbackProvider(
     companion object {
         private const val TAG = "LocalFallbackProvider"
 
-        // TODO: update to your HuggingFace repo before shipping
         private const val HF_BASE_URL =
-            "https://huggingface.co/YOUR_HF_USERNAME/gemma-3-1b-it-litert/resolve/main"
+            "https://huggingface.co/masked-kunsiquat/gemma-3-1b-it-litert/resolve/main"
 
         const val MODEL_FILE_ELITE = "gemma3-1b-it-elite.litertlm"
         const val MODEL_FILE_ULTRA = "gemma3-1b-it-ultra.litertlm"
         const val MODEL_FILE_INT4  = "gemma3-1b-it-int4.litertlm"
 
-        // TODO: populate from HuggingFace model card checksums before shipping
         internal val MODEL_SHA256: Map<String, String?> = mapOf(
-            MODEL_FILE_ELITE to null,
-            MODEL_FILE_ULTRA to null,
-            MODEL_FILE_INT4  to null,
+            MODEL_FILE_ELITE to "1904ceff9591e7a140df3a672c800e8e7bee8337526484b00f69ccef4fa2d60a",
+            MODEL_FILE_ULTRA to "85d2ea5199802f913818d53897b3a304bcf983abb993393e6b1749fbdb005552",
+            MODEL_FILE_INT4  to "1325ae366d31950f137c9c357b9fa89448b176d76998180c08ceaca78bba98be",
         )
     }
 }
