@@ -17,10 +17,6 @@ android {
     }
 }
 
-kotlin {
-    jvmToolchain(11)
-}
-
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
     arg("room.incremental", "true")
