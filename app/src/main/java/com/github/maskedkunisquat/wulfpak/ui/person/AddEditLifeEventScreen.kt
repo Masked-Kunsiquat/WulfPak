@@ -40,6 +40,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEventType
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayDate
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
+import java.util.TimeZone
 import java.util.UUID
 
 private val ALL_LIFE_EVENT_TYPES = listOf(
@@ -66,7 +67,8 @@ fun AddEditLifeEventScreen(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.dateMs = datePickerState.selectedDateMillis ?: viewModel.dateMs
+                    val utc = datePickerState.selectedDateMillis ?: viewModel.dateMs
+                    viewModel.dateMs = utc - TimeZone.getDefault().getOffset(utc)
                     showDatePicker = false
                 }) { Text("OK") }
             },
