@@ -24,4 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "WulfPak"
 include(":app")
- 
+include(":core-data")
+include(":core-logic")
