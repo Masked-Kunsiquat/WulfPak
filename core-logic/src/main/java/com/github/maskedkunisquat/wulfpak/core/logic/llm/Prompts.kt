@@ -21,8 +21,8 @@ internal object Prompts {
         If a section says "(none)", do not mention that topic at all.
         Plain sentences only — no markdown, bullets, or headers.
         IMPORTANT: The DATA is written from the app USER's point of view, not the person being summarized.
-        Activities and interactions describe things the USER did, possibly together with this person.
-        Do not invert the perspective — do not attribute the user's actions or relationships to this person.
+        Sections labeled "user wrote:" contain the USER's first-person notes — do not treat them as the contact's words or actions.
+        Do not invert the perspective — do not attribute the user's actions, family members, or relationships to the contact.
     """.trimIndent()
 
     /**
