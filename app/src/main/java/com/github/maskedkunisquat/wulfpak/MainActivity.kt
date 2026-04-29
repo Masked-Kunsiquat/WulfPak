@@ -12,10 +12,12 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.maskedkunisquat.wulfpak.biometric.BiometricGate
 import com.github.maskedkunisquat.wulfpak.navigation.AppNavHost
 import com.github.maskedkunisquat.wulfpak.ui.LockScreen
 import com.github.maskedkunisquat.wulfpak.ui.theme.WulfPakTheme
+import kotlinx.coroutines.flow.map
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,15 +34,18 @@ class MainActivity : ComponentActivity() {
 private fun AppRoot(activity: ComponentActivity) {
     var isUnlocked by remember { mutableStateOf(false) }
 
+    val biometricEnabled by activity.application.appDataStore.data
+        .map { it[AppPrefsKeys.BIOMETRIC_ENABLED] ?: true }
+        .collectAsStateWithLifecycle(initialValue = true)
+
     val gate = remember {
         BiometricGate(
             activity = activity,
-            title = "Unlock WulfPak",
+            title    = "Unlock WulfPak",
             subtitle = "Use biometrics or PIN to access your contacts",
         )
     }
 
-    // Re-lock whenever the app goes to background (ON_STOP)
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -51,14 +56,13 @@ private fun AppRoot(activity: ComponentActivity) {
     }
 
     fun tryUnlock() {
-        if (gate.canAuthenticate()) {
+        if (biometricEnabled && gate.canAuthenticate()) {
             gate.authenticate(onSuccess = { isUnlocked = true })
         } else {
-            isUnlocked = true // no lock screen configured — run ungated
+            isUnlocked = true
         }
     }
 
-    // Auto-prompt on every transition to locked state
     DisposableEffect(isUnlocked) {
         if (!isUnlocked) tryUnlock()
         onDispose { }

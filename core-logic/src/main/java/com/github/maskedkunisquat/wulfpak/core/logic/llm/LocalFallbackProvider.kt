@@ -60,6 +60,11 @@ class LocalFallbackProvider(
         modelDownloader.enqueue(modelFile, "$HF_BASE_URL/$modelFile", MODEL_SHA256[modelFile])
     }
 
+    fun isModelAvailable(): Boolean {
+        val (modelFile, _) = selectModelAndBackends()
+        return File(context.filesDir, modelFile).exists()
+    }
+
     override fun initialize() {
         val (targetFile, _) = selectModelAndBackends()
         if (engine != null && _loadedModelName.value == targetFile) return
