@@ -49,6 +49,9 @@ interface ActivityDao {
     @Query("SELECT personId FROM activity_participants WHERE activityId = :activityId")
     suspend fun getParticipantIds(activityId: UUID): List<UUID>
 
+    @Query("SELECT * FROM activity_participants WHERE personId = :personId")
+    suspend fun getParticipantsByPerson(personId: UUID): List<ActivityParticipant>
+
     @Query("UPDATE activities SET embedding = :embedding WHERE id = :id")
     suspend fun updateEmbedding(id: UUID, embedding: FloatArray)
 }

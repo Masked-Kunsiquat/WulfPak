@@ -22,6 +22,9 @@ interface GiftDao {
     @Query("SELECT * FROM gifts WHERE id = :id")
     suspend fun getById(id: UUID): Gift?
 
+    @Query("UPDATE gifts SET personId = :toId WHERE personId = :fromId")
+    suspend fun reassignToPerson(fromId: UUID, toId: UUID)
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(gift: Gift)
 

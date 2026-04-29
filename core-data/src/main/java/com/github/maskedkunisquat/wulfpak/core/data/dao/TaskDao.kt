@@ -28,6 +28,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE id = :id")
     suspend fun getById(id: UUID): Task?
 
+    @Query("UPDATE tasks SET personId = :toId WHERE personId = :fromId")
+    suspend fun reassignToPerson(fromId: UUID, toId: UUID)
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(task: Task)
 
