@@ -38,7 +38,7 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     sealed class ImportState {
         object Idle    : ImportState()
         object Loading : ImportState()
-        data class Done(val added: Int)      : ImportState()
+        data class Done(val added: Int)       : ImportState()
         data class Error(val message: String) : ImportState()
     }
 
@@ -49,14 +49,22 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         data class Error(val message: String)              : CalendarState()
     }
 
+    sealed class PickerState {
+        object Hidden  : PickerState()
+        object Loading : PickerState()
+        data class Ready(val candidates: List<ContactSyncManager.ContactCandidate>) : PickerState()
+        data class Error(val message: String) : PickerState()
+    }
+
     var syncState     by mutableStateOf<SyncState>(SyncState.Idle)
         private set
     var importState   by mutableStateOf<ImportState>(ImportState.Idle)
         private set
     var calendarState by mutableStateOf<CalendarState>(CalendarState.Idle)
         private set
+    var pickerState   by mutableStateOf<PickerState>(PickerState.Hidden)
+        private set
 
-    // Biometric toggle
     val biometricEnabled = appApp.appDataStore.data
         .map { it[AppPrefsKeys.BIOMETRIC_ENABLED] ?: true }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
@@ -67,7 +75,6 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    // Model download
     val modelLoadState = appApp.llmProvider.modelLoadState
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ModelLoadState.IDLE)
 
@@ -78,18 +85,34 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         appApp.llmProvider.downloadModel()
     }
 
-    fun syncContacts() {
+    fun loadContactCandidates() {
+        if (pickerState is PickerState.Loading) return
+        pickerState = PickerState.Loading
+        viewModelScope.launch(Dispatchers.IO) {
+            pickerState = try {
+                val candidates = contactSyncManager.fetchCandidates(getApplication())
+                PickerState.Ready(candidates)
+            } catch (e: Exception) {
+                PickerState.Error(e.message ?: "Failed to load contacts")
+            }
+        }
+    }
+
+    fun importSelectedContacts(selected: List<ContactSyncManager.ContactCandidate>) {
+        pickerState = PickerState.Hidden
         if (syncState is SyncState.Loading) return
         syncState = SyncState.Loading
         viewModelScope.launch(Dispatchers.IO) {
             syncState = try {
-                val r = contactSyncManager.sync(getApplication())
+                val r = contactSyncManager.importSelected(getApplication(), selected)
                 SyncState.Done(r.added, r.skipped)
             } catch (e: Exception) {
-                SyncState.Error(e.message ?: "Sync failed")
+                SyncState.Error(e.message ?: "Import failed")
             }
         }
     }
+
+    fun dismissContactPicker() { pickerState = PickerState.Hidden }
 
     fun importVCard(uri: Uri) {
         if (importState is ImportState.Loading) return

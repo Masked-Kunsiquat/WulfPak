@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.maskedkunisquat.wulfpak.AppApplication
+import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetail
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Gift
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEvent
@@ -59,6 +60,10 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
     val tasks = _personId.filterNotNull()
         .flatMapLatest { db.taskDao().getForPerson(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList<Task>())
+
+    val contactDetails = _personId.filterNotNull()
+        .flatMapLatest { db.contactDetailDao().getForPerson(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList<ContactDetail>())
 
     fun load(personId: UUID) { _personId.value = personId }
 

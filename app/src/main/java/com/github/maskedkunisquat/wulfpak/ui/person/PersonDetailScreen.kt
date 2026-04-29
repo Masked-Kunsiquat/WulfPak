@@ -1,13 +1,18 @@
 package com.github.maskedkunisquat.wulfpak.ui.person
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -17,7 +22,9 @@ import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,10 +51,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetail
+import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetailType
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Gift
 import com.github.maskedkunisquat.wulfpak.core.data.entity.GiftStatus
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
@@ -78,12 +88,14 @@ fun PersonDetailScreen(
     onEditGift: (UUID) -> Unit,
     onEditTask: (UUID) -> Unit,
 ) {
-    val person       by viewModel.person.collectAsStateWithLifecycle()
-    val interactions by viewModel.interactions.collectAsStateWithLifecycle()
-    val notes        by viewModel.notes.collectAsStateWithLifecycle()
-    val lifeEvents   by viewModel.lifeEvents.collectAsStateWithLifecycle()
-    val gifts        by viewModel.gifts.collectAsStateWithLifecycle()
-    val tasks        by viewModel.tasks.collectAsStateWithLifecycle()
+    val context        = LocalContext.current
+    val person         by viewModel.person.collectAsStateWithLifecycle()
+    val interactions   by viewModel.interactions.collectAsStateWithLifecycle()
+    val notes          by viewModel.notes.collectAsStateWithLifecycle()
+    val lifeEvents     by viewModel.lifeEvents.collectAsStateWithLifecycle()
+    val gifts          by viewModel.gifts.collectAsStateWithLifecycle()
+    val tasks          by viewModel.tasks.collectAsStateWithLifecycle()
+    val contactDetails by viewModel.contactDetails.collectAsStateWithLifecycle()
 
     var selectedTab     by remember { mutableIntStateOf(0) }
     var showOverflow    by remember { mutableStateOf(false) }
@@ -165,6 +177,15 @@ fun PersonDetailScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                 }
+                if (contactDetails.isNotEmpty()) {
+                    Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)) {
+                        contactDetails.forEach { detail ->
+                            ContactDetailRow(detail) { intent ->
+                                context.startActivity(intent)
+                            }
+                        }
+                    }
+                }
             }
 
             PrimaryTabRow(selectedTabIndex = selectedTab) {
@@ -199,6 +220,37 @@ fun PersonDetailScreen(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ContactDetailRow(detail: ContactDetail, onLaunch: (Intent) -> Unit) {
+    val (icon, intent) = when (detail.type) {
+        ContactDetailType.PHONE -> Icons.Default.Phone to
+            Intent(Intent.ACTION_DIAL, Uri.parse("tel:${detail.value}"))
+        ContactDetailType.EMAIL -> Icons.Default.Email to
+            Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${detail.value}"))
+        else -> return
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onLaunch(intent) }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector        = icon,
+            contentDescription = null,
+            modifier           = Modifier.size(16.dp),
+            tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(8.dp))
+        Column {
+            Text(detail.value, style = MaterialTheme.typography.bodyMedium)
+            Text(detail.label, style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
