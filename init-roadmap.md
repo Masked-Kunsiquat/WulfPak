@@ -51,12 +51,13 @@
 - [x] `ContactSyncManager` (reads `ContactsContract`, deduplicates, creates `Person` rows)
 - [x] EZVCard integration for vCard/CSV import
 - [x] Import entry point in Settings screen
+- [ ] Contact merge UI — resolve name-matched duplicates from sync into a single `Person` record
 
 ## Phase 6 — Global screens
-- [ ] Activity feed screen (reverse-chronological Interactions + Activities)
-- [ ] Semantic search screen (query → embed → cosine rank)
-- [ ] Tasks screen (standalone + person-linked, due date, done toggle)
-- [ ] Settings screen (model download, biometric toggle, import)
+- [x] Activity feed screen (reverse-chronological Interactions + Activities)
+- [x] Semantic search screen (query → embed → cosine rank)
+- [x] Tasks screen (standalone + person-linked, due date, done toggle)
+- [x] Settings screen (model download, biometric toggle, import)
 
 ## Phase 7 — Calendar bridge
 - [ ] `CalendarBridge` (writes `LifeEvent` records as `CalendarContract` events)

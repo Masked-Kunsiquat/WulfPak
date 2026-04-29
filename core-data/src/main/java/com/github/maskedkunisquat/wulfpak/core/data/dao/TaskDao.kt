@@ -16,6 +16,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE personId = :personId ORDER BY dueAt ASC NULLS LAST")
     fun getForPerson(personId: UUID): Flow<List<Task>>
 
+    @Query("SELECT * FROM tasks ORDER BY isDone ASC, dueAt ASC NULLS LAST")
+    fun getAll(): Flow<List<Task>>
+
     @Query("SELECT * FROM tasks WHERE personId IS NULL ORDER BY dueAt ASC NULLS LAST")
     fun getStandalone(): Flow<List<Task>>
 

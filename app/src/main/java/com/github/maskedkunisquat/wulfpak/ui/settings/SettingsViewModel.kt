@@ -5,18 +5,26 @@ import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.maskedkunisquat.wulfpak.AppApplication
+import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
+import com.github.maskedkunisquat.wulfpak.appDataStore
+import com.github.maskedkunisquat.wulfpak.core.logic.llm.ModelLoadState
 import com.github.maskedkunisquat.wulfpak.sync.ContactSyncManager
 import com.github.maskedkunisquat.wulfpak.sync.VCardImporter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class SettingsViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val contactSyncManager = ContactSyncManager(getApplication<AppApplication>().db)
-    private val vCardImporter      = VCardImporter(getApplication<AppApplication>().db)
+    private val appApp             = getApplication<AppApplication>()
+    private val contactSyncManager = ContactSyncManager(appApp.db)
+    private val vCardImporter      = VCardImporter(appApp.db)
 
     sealed class SyncState {
         object Idle    : SyncState()
@@ -36,6 +44,28 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var importState by mutableStateOf<ImportState>(ImportState.Idle)
         private set
+
+    // Biometric toggle
+    val biometricEnabled = appApp.appDataStore.data
+        .map { it[AppPrefsKeys.BIOMETRIC_ENABLED] ?: true }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    fun setBiometricEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            appApp.appDataStore.edit { it[AppPrefsKeys.BIOMETRIC_ENABLED] = enabled }
+        }
+    }
+
+    // Model download
+    val modelLoadState = appApp.llmProvider.modelLoadState
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ModelLoadState.IDLE)
+
+    val isModelAvailable: Boolean
+        get() = appApp.llmProvider.isModelAvailable()
+
+    fun downloadModel() {
+        appApp.llmProvider.downloadModel()
+    }
 
     fun syncContacts() {
         if (syncState is SyncState.Loading) return
