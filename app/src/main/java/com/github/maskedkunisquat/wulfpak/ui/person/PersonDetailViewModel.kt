@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.maskedkunisquat.wulfpak.AppApplication
+import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetail
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Gift
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
@@ -61,6 +62,10 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
         .flatMapLatest { db.taskDao().getForPerson(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList<Task>())
 
+    val activities = _personId.filterNotNull()
+        .flatMapLatest { db.activityDao().getForPerson(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList<Activity>())
+
     val contactDetails = _personId.filterNotNull()
         .flatMapLatest { db.contactDetailDao().getForPerson(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList<ContactDetail>())
@@ -69,6 +74,10 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
 
     fun toggleTaskDone(task: Task) {
         viewModelScope.launch { db.taskDao().update(task.copy(isDone = !task.isDone)) }
+    }
+
+    fun deleteActivity(activity: Activity) {
+        viewModelScope.launch { db.activityDao().delete(activity) }
     }
 
     fun deleteInteraction(interaction: Interaction) {
