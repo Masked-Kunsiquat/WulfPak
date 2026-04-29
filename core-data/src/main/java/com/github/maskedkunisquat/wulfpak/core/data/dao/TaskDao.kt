@@ -22,6 +22,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE isDone = 0 ORDER BY dueAt ASC NULLS LAST")
     fun getPending(): Flow<List<Task>>
 
+    @Query("SELECT * FROM tasks WHERE id = :id")
+    suspend fun getById(id: UUID): Task?
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(task: Task)
 

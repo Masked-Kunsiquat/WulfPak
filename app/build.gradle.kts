@@ -64,8 +64,12 @@ dependencies {
 
     // Lifecycle
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // Material icons (extended set for Star, Image, etc.)
+    implementation(libs.androidx.compose.material.icons.extended)
 
     // Biometric gate
     implementation(libs.androidx.biometric)

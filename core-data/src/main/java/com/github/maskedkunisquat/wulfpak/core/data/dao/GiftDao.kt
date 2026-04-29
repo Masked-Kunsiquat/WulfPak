@@ -19,6 +19,9 @@ interface GiftDao {
     @Query("SELECT * FROM gifts WHERE status = :status")
     fun getByStatus(status: String): Flow<List<Gift>>
 
+    @Query("SELECT * FROM gifts WHERE id = :id")
+    suspend fun getById(id: UUID): Gift?
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(gift: Gift)
 

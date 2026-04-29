@@ -22,6 +22,9 @@ interface PersonDao {
     @Query("SELECT * FROM persons WHERE id = :id")
     suspend fun getById(id: UUID): Person?
 
+    @Query("SELECT * FROM persons WHERE id = :id")
+    fun observe(id: UUID): Flow<Person?>
+
     @Query("""
         SELECT * FROM persons
         WHERE firstName LIKE '%' || :query || '%'

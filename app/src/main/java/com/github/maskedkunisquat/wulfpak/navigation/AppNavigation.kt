@@ -6,12 +6,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.github.maskedkunisquat.wulfpak.ui.people.AddEditPersonScreen
+import com.github.maskedkunisquat.wulfpak.ui.people.PeopleListScreen
+import com.github.maskedkunisquat.wulfpak.ui.person.AddEditGiftScreen
+import com.github.maskedkunisquat.wulfpak.ui.person.AddEditInteractionScreen
+import com.github.maskedkunisquat.wulfpak.ui.person.AddEditLifeEventScreen
+import com.github.maskedkunisquat.wulfpak.ui.person.AddEditNoteScreen
+import com.github.maskedkunisquat.wulfpak.ui.person.AddEditTaskScreen
+import com.github.maskedkunisquat.wulfpak.ui.person.PersonDetailScreen
+import com.github.maskedkunisquat.wulfpak.ui.person.PersonDetailViewModel
+import java.util.UUID
 
 object Routes {
     const val PEOPLE_LIST        = "people_list"
@@ -55,21 +66,45 @@ fun AppNavHost(
     NavHost(navController = navController, startDestination = startDestination) {
 
         composable(Routes.PEOPLE_LIST) {
-            Placeholder("People List")
+            PeopleListScreen(
+                onAddPerson  = { navController.navigate(Routes.addEditPerson()) },
+                onOpenPerson = { id -> navController.navigate(Routes.personDetail(id.toString())) },
+            )
         }
 
         composable(
             route = Routes.PERSON_DETAIL,
             arguments = listOf(navArgument("personId") { type = NavType.StringType }),
-        ) {
-            Placeholder("Person Detail")
+        ) { back ->
+            val personIdStr = back.arguments!!.getString("personId")!!
+            val vm: PersonDetailViewModel = viewModel()
+            vm.load(UUID.fromString(personIdStr))
+            PersonDetailScreen(
+                viewModel         = vm,
+                onNavigateBack    = { navController.popBackStack() },
+                onEdit            = { navController.navigate(Routes.addEditPerson(personIdStr)) },
+                onAddInteraction  = { navController.navigate(Routes.addEditInteraction(personIdStr)) },
+                onAddNote         = { navController.navigate(Routes.addEditNote(personIdStr)) },
+                onAddLifeEvent    = { navController.navigate(Routes.addEditLifeEvent(personIdStr)) },
+                onAddGift         = { navController.navigate(Routes.addEditGift(personIdStr)) },
+                onAddTask         = { navController.navigate(Routes.addEditTask(personId = personIdStr)) },
+                onEditInteraction = { id -> navController.navigate(Routes.addEditInteraction(personIdStr, id.toString())) },
+                onEditNote        = { id -> navController.navigate(Routes.addEditNote(personIdStr, id.toString())) },
+                onEditLifeEvent   = { id -> navController.navigate(Routes.addEditLifeEvent(personIdStr, id.toString())) },
+                onEditGift        = { id -> navController.navigate(Routes.addEditGift(personIdStr, id.toString())) },
+                onEditTask        = { id -> navController.navigate(Routes.addEditTask(personId = personIdStr, taskId = id.toString())) },
+            )
         }
 
         composable(
             route = Routes.ADD_EDIT_PERSON,
             arguments = listOf(navArgument("personId") { nullable = true; defaultValue = null }),
-        ) {
-            Placeholder("Add / Edit Person")
+        ) { back ->
+            val personIdStr = back.arguments?.getString("personId")
+            AddEditPersonScreen(
+                personId       = personIdStr?.let { UUID.fromString(it) },
+                onNavigateBack = { navController.popBackStack() },
+            )
         }
 
         composable(
@@ -78,8 +113,14 @@ fun AppNavHost(
                 navArgument("personId") { type = NavType.StringType },
                 navArgument("interactionId") { nullable = true; defaultValue = null },
             ),
-        ) {
-            Placeholder("Add / Edit Interaction")
+        ) { back ->
+            val personIdStr     = back.arguments!!.getString("personId")!!
+            val interactionIdStr = back.arguments?.getString("interactionId")
+            AddEditInteractionScreen(
+                personId       = personIdStr,
+                interactionId  = interactionIdStr?.let { UUID.fromString(it) },
+                onNavigateBack = { navController.popBackStack() },
+            )
         }
 
         composable(
@@ -88,8 +129,14 @@ fun AppNavHost(
                 navArgument("personId") { type = NavType.StringType },
                 navArgument("noteId") { nullable = true; defaultValue = null },
             ),
-        ) {
-            Placeholder("Add / Edit Note")
+        ) { back ->
+            val personIdStr = back.arguments!!.getString("personId")!!
+            val noteIdStr   = back.arguments?.getString("noteId")
+            AddEditNoteScreen(
+                personId       = personIdStr,
+                noteId         = noteIdStr?.let { UUID.fromString(it) },
+                onNavigateBack = { navController.popBackStack() },
+            )
         }
 
         composable(
@@ -98,8 +145,14 @@ fun AppNavHost(
                 navArgument("personId") { type = NavType.StringType },
                 navArgument("lifeEventId") { nullable = true; defaultValue = null },
             ),
-        ) {
-            Placeholder("Add / Edit Life Event")
+        ) { back ->
+            val personIdStr  = back.arguments!!.getString("personId")!!
+            val lifeEventIdStr = back.arguments?.getString("lifeEventId")
+            AddEditLifeEventScreen(
+                personId       = personIdStr,
+                lifeEventId    = lifeEventIdStr?.let { UUID.fromString(it) },
+                onNavigateBack = { navController.popBackStack() },
+            )
         }
 
         composable(
@@ -108,8 +161,14 @@ fun AppNavHost(
                 navArgument("personId") { type = NavType.StringType },
                 navArgument("giftId") { nullable = true; defaultValue = null },
             ),
-        ) {
-            Placeholder("Add / Edit Gift")
+        ) { back ->
+            val personIdStr = back.arguments!!.getString("personId")!!
+            val giftIdStr   = back.arguments?.getString("giftId")
+            AddEditGiftScreen(
+                personId       = personIdStr,
+                giftId         = giftIdStr?.let { UUID.fromString(it) },
+                onNavigateBack = { navController.popBackStack() },
+            )
         }
 
         composable(
@@ -118,8 +177,14 @@ fun AppNavHost(
                 navArgument("personId") { nullable = true; defaultValue = null },
                 navArgument("taskId") { nullable = true; defaultValue = null },
             ),
-        ) {
-            Placeholder("Add / Edit Task")
+        ) { back ->
+            val personIdStr = back.arguments?.getString("personId")
+            val taskIdStr   = back.arguments?.getString("taskId")
+            AddEditTaskScreen(
+                personId       = personIdStr,
+                taskId         = taskIdStr?.let { UUID.fromString(it) },
+                onNavigateBack = { navController.popBackStack() },
+            )
         }
 
         composable(Routes.ACTIVITY_FEED) { Placeholder("Activity Feed") }
