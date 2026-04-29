@@ -10,19 +10,15 @@ internal object Prompts {
      * Rendered in the AI Summary card on PersonDetailScreen.
      *
      * Tuning notes:
-     * - Keep the grounding rule ("ONLY facts listed") — Gemma 1B hallucinates without it.
-     * - Fewer sentences = less room to confabulate.
-     * - Avoid "be specific/warm" — it encourages the model to invent supporting details.
+     * - Input is pre-extracted third-person facts from FactExtractor — no raw
+     *   first-person notes reach the model, so POV inversion is impossible.
+     * - Keep the grounding rule tight; 1B still hallucinates on sparse input.
+     * - Short output = less room to confabulate.
      */
     val SUMMARIZE_SYSTEM: String = """
-        Write a 2-3 sentence plain-text summary using ONLY the facts in the DATA section below.
-        Every statement must be directly supported by something in the DATA.
-        Do NOT invent, assume, or infer any detail — no names, dates, or events unless they are explicitly listed.
-        If a section says "(none)", do not mention that topic at all.
-        Plain sentences only — no markdown, bullets, or headers.
-        IMPORTANT: The DATA is written from the app USER's point of view, not the person being summarized.
-        Sections labeled "user wrote:" contain the USER's first-person notes — do not treat them as the contact's words or actions.
-        Do not invert the perspective — do not attribute the user's actions, family members, or relationships to the contact.
+        Write 2-3 plain sentences about the person described in the FACTS below.
+        Use ONLY the facts listed. Do not add, assume, or infer anything not explicitly stated.
+        Plain text only — no markdown, bullets, or headers.
     """.trimIndent()
 
     /**

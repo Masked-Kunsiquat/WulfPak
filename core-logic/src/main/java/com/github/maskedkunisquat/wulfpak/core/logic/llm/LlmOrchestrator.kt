@@ -7,14 +7,10 @@ import com.github.maskedkunisquat.wulfpak.core.data.dao.LifeEventDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.NoteDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.TaskDao
-import com.github.maskedkunisquat.wulfpak.core.data.entity.GiftStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import java.util.UUID
 
 class LlmOrchestrator(
@@ -27,113 +23,23 @@ class LlmOrchestrator(
     private val giftDao: GiftDao,
     private val taskDao: TaskDao,
 ) {
-    private val dateFmt = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
-
     fun summarize(personId: UUID): Flow<LlmResult> = flow {
         val person = personDao.getById(personId) ?: run {
             emit(LlmResult.Error(IllegalArgumentException("Person $personId not found")))
             return@flow
         }
 
-        val interactions = interactionDao.getForPerson(personId).first()
-        val notes        = noteDao.getForPerson(personId).first()
-        val activities   = activityDao.getForPerson(personId).first()
-        val lifeEvents   = lifeEventDao.getForPerson(personId).first()
-        val gifts        = giftDao.getForPerson(personId).first()
-        val tasks        = taskDao.getForPerson(personId).first()
+        val facts = FactExtractor.extract(
+            person       = person,
+            interactions = interactionDao.getForPerson(personId).first(),
+            notes        = noteDao.getForPerson(personId).first(),
+            activities   = activityDao.getForPerson(personId).first(),
+            lifeEvents   = lifeEventDao.getForPerson(personId).first(),
+            gifts        = giftDao.getForPerson(personId).first(),
+            tasks        = taskDao.getForPerson(personId).first(),
+        )
 
-        val name = buildString {
-            append(person.firstName)
-            person.lastName?.let { append(" $it") }
-        }
-
-        val openTasks    = tasks.filter { !it.isDone }
-        val pendingGifts = gifts.filter { it.status != GiftStatus.GIVEN }
-
-        val context = buildString {
-            appendLine("DATA:")
-            appendLine("Name: $name")
-            appendLine("Relation: ${person.relationLabel.replace('_', ' ')}")
-            person.nickname?.let { appendLine("Nickname: $it") }
-            person.closenessRating?.let { appendLine("Closeness: ${it}/5") }
-            person.lastContactedAt?.let {
-                val days = ((System.currentTimeMillis() - it) / 86_400_000L).toInt()
-                appendLine("Last contact: $days day${if (days == 1) "" else "s"} ago")
-            }
-
-            appendLine()
-            if (lifeEvents.isNotEmpty()) {
-                appendLine("Life events:")
-                lifeEvents.forEach { e ->
-                    val recurring = if (e.isRecurring) " (recurring)" else ""
-                    append("- ${e.eventType.replace('_', ' ')}: ${dateFmt.format(Date(e.date))}$recurring")
-                    e.note?.let { append(" — $it") }
-                    appendLine()
-                }
-            } else {
-                appendLine("Life events: (none)")
-            }
-
-            appendLine()
-            if (interactions.isNotEmpty()) {
-                appendLine("Recent interactions the user had with $name (latest first):")
-                interactions.take(20).forEach { i ->
-                    append("- [${dateFmt.format(Date(i.timestamp))}] ${i.type.replace('_', ' ')}")
-                    i.note?.let { append(" — user wrote: \"$it\"") }
-                    appendLine()
-                }
-            } else {
-                appendLine("Recent interactions with $name: (none)")
-            }
-
-            appendLine()
-            if (activities.isNotEmpty()) {
-                appendLine("Activities the user did together with $name:")
-                activities.take(10).forEach { a ->
-                    append("- [${dateFmt.format(Date(a.timestamp))}] ${a.title}")
-                    a.body?.let { append(" — user wrote: \"$it\"") }
-                    appendLine()
-                }
-            } else {
-                appendLine("Activities with $name: (none)")
-            }
-
-            appendLine()
-            if (notes.isNotEmpty()) {
-                appendLine("User's notes about $name:")
-                notes.take(15).forEach { n ->
-                    appendLine("- [${dateFmt.format(Date(n.timestamp))}] \"${n.body}\"")
-                }
-            } else {
-                appendLine("User's notes about $name: (none)")
-            }
-
-            appendLine()
-            if (openTasks.isNotEmpty()) {
-                appendLine("Open tasks:")
-                openTasks.forEach { t ->
-                    append("- ${t.title}")
-                    t.dueAt?.let { append(" (due ${dateFmt.format(Date(it))})") }
-                    appendLine()
-                }
-            } else {
-                appendLine("Open tasks: (none)")
-            }
-
-            appendLine()
-            if (pendingGifts.isNotEmpty()) {
-                appendLine("Gift tracking:")
-                pendingGifts.forEach { g ->
-                    append("- ${g.name} [${g.status.lowercase()}]")
-                    g.occasion?.let { append(" for $it") }
-                    appendLine()
-                }
-            } else {
-                appendLine("Gift tracking: (none)")
-            }
-        }
-
-        emitAll(provider.process(context, Prompts.SUMMARIZE_SYSTEM))
+        emitAll(provider.process(facts, Prompts.SUMMARIZE_SYSTEM))
     }
 
     fun query(naturalLanguage: String): Flow<LlmResult> =
