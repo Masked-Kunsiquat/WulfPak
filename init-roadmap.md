@@ -9,18 +9,18 @@
 - [x] Update `:app` `build.gradle.kts` for Kotlin + Compose + module deps
 
 ## Phase 1 — `:core-data` (Room + SQLCipher schema)
-- [ ] Copy `monice-dopple/db/` into `:core-data`, rename package to `com.github.maskedkunisquat.wulfpak`
-- [ ] Write `Person` entity + DAO
-- [ ] Write `ContactDetail` entity + DAO
-- [ ] Write `LifeEvent` entity + DAO
-- [ ] Write `Interaction` + `InteractionParticipant` entities + DAOs
-- [ ] Write `Activity` + `ActivityParticipant` entities + DAOs
-- [ ] Write `Note` entity + DAO
-- [ ] Write `Gift` entity + DAO
-- [ ] Write `Task` entity + DAO
-- [ ] Write `PersonRelationship` entity + DAO
-- [ ] Write `AppDatabase` (Room + SQLCipher, registers `AppTypeConverters`)
-- [ ] Wire `KeyProvider` into `AppDatabase` open helper
+- [x] Copy `monice-dopple/db/` into `:core-data`, rename package to `com.github.maskedkunisquat.wulfpak`
+- [x] Write `Person` entity + DAO
+- [x] Write `ContactDetail` entity + DAO
+- [x] Write `LifeEvent` entity + DAO
+- [x] Write `Interaction` + `InteractionParticipant` entities + DAOs
+- [x] Write `Activity` + `ActivityParticipant` entities + DAOs
+- [x] Write `Note` entity + DAO
+- [x] Write `Gift` entity + DAO
+- [x] Write `Task` entity + DAO
+- [x] Write `PersonRelationship` entity + DAO
+- [x] Write `AppDatabase` (Room + SQLCipher, registers `AppTypeConverters`)
+- [x] Wire `KeyProvider` into `AppDatabase` open helper
 
 ## Phase 2 — `:core-logic` (embeddings + search + LLM)
 - [ ] Copy `monice-dopple/embedding/` into `:core-logic`, rename package
