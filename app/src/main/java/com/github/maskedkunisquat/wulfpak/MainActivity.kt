@@ -1,8 +1,8 @@
 package com.github.maskedkunisquat.wulfpak
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -19,7 +19,7 @@ import com.github.maskedkunisquat.wulfpak.ui.LockScreen
 import com.github.maskedkunisquat.wulfpak.ui.theme.WulfPakTheme
 import kotlinx.coroutines.flow.map
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AppRoot(activity: ComponentActivity) {
+private fun AppRoot(activity: FragmentActivity) {
     var isUnlocked by remember { mutableStateOf(false) }
 
     val biometricEnabled by activity.application.appDataStore.data
