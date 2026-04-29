@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayDate
+import java.util.TimeZone
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,7 +57,9 @@ fun AddEditTaskScreen(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.dueAtMs = datePickerState.selectedDateMillis
+                    viewModel.dueAtMs = datePickerState.selectedDateMillis?.let { utc ->
+                        utc - TimeZone.getDefault().getOffset(utc)
+                    }
                     showDatePicker = false
                 }) { Text("OK") }
             },
