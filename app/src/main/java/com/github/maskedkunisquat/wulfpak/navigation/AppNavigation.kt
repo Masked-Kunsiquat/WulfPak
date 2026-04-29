@@ -25,6 +25,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.github.maskedkunisquat.wulfpak.ui.feed.ActivityFeedScreen
+import com.github.maskedkunisquat.wulfpak.ui.merge.MergeContactsScreen
 import com.github.maskedkunisquat.wulfpak.ui.people.AddEditPersonScreen
 import com.github.maskedkunisquat.wulfpak.ui.people.PeopleListScreen
 import com.github.maskedkunisquat.wulfpak.ui.person.AddEditGiftScreen
@@ -52,6 +53,7 @@ object Routes {
     const val SEARCH                = "search"
     const val TASKS                 = "tasks"
     const val SETTINGS              = "settings"
+    const val MERGE_CONTACTS        = "merge_contacts"
 
     fun personDetail(personId: String) = "person_detail/$personId"
     fun addEditPerson(personId: String? = null) =
@@ -240,7 +242,14 @@ fun AppNavHost(
             }
 
             composable(Routes.SETTINGS) {
-                SettingsScreen(onNavigateBack = { navController.popBackStack() })
+                SettingsScreen(
+                    onNavigateBack   = { navController.popBackStack() },
+                    onNavigateMerge  = { navController.navigate(Routes.MERGE_CONTACTS) },
+                )
+            }
+
+            composable(Routes.MERGE_CONTACTS) {
+                MergeContactsScreen(onNavigateBack = { navController.popBackStack() })
             }
         }
     }

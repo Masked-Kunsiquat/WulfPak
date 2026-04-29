@@ -28,6 +28,9 @@ interface NoteDao {
     @Query("SELECT * FROM notes WHERE embedding IS NULL")
     suspend fun getUnembedded(): List<Note>
 
+    @Query("UPDATE notes SET personId = :toId WHERE personId = :fromId")
+    suspend fun reassignToPerson(fromId: UUID, toId: UUID)
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(note: Note)
 

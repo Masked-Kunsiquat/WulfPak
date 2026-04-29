@@ -18,6 +18,9 @@ interface PersonRelationshipDao {
     """)
     fun getForPerson(personId: UUID): Flow<List<PersonRelationship>>
 
+    @Query("SELECT * FROM person_relationships WHERE personAId = :personId OR personBId = :personId")
+    suspend fun getForPersonOnce(personId: UUID): List<PersonRelationship>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(relationship: PersonRelationship)
 

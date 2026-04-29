@@ -51,7 +51,7 @@
 - [x] `ContactSyncManager` (reads `ContactsContract`, deduplicates, creates `Person` rows)
 - [x] EZVCard integration for vCard/CSV import
 - [x] Import entry point in Settings screen
-- [ ] Contact merge UI — resolve name-matched duplicates from sync into a single `Person` record
+- [x] Contact merge UI — resolve name-matched duplicates from sync into a single `Person` record
 
 ## Phase 6 — Global screens
 - [x] Activity feed screen (reverse-chronological Interactions + Activities)

@@ -16,6 +16,9 @@ interface ContactDetailDao {
     @Query("SELECT * FROM contact_details WHERE personId = :personId")
     fun getForPerson(personId: UUID): Flow<List<ContactDetail>>
 
+    @Query("SELECT * FROM contact_details WHERE personId = :personId")
+    suspend fun getForPersonOnce(personId: UUID): List<ContactDetail>
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(contactDetail: ContactDetail)
 

@@ -25,6 +25,9 @@ interface LifeEventDao {
     @Query("SELECT * FROM life_events WHERE id = :id")
     suspend fun getById(id: UUID): LifeEvent?
 
+    @Query("UPDATE life_events SET personId = :toId WHERE personId = :fromId")
+    suspend fun reassignToPerson(fromId: UUID, toId: UUID)
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(lifeEvent: LifeEvent)
 

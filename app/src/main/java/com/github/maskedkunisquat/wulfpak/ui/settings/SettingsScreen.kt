@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +44,7 @@ import com.github.maskedkunisquat.wulfpak.core.logic.llm.ModelLoadState
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
+    onNavigateMerge: () -> Unit,
     viewModel: SettingsViewModel = viewModel(),
 ) {
     val context = LocalContext.current
@@ -176,6 +178,16 @@ fun SettingsScreen(
                             viewModel.downloadModel()
                         }
                     },
+                )
+            }
+
+            item { SectionHeader("Contacts") }
+            item {
+                ListItem(
+                    headlineContent   = { Text("Resolve duplicate contacts") },
+                    supportingContent = { Text("Merge contacts that were imported with the same name") },
+                    leadingContent    = { Icon(Icons.Default.Group, contentDescription = null) },
+                    modifier          = Modifier.clickable { onNavigateMerge() },
                 )
             }
 
