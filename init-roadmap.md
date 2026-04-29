@@ -31,11 +31,11 @@
 - [x] Write WorkManager embedding worker (embed on write, store 384-dim BLOB)
 
 ## Phase 3 — `:app` scaffolding + biometric gate
-- [ ] Copy `monice-dopple/biometric/BiometricGate.kt` into `:app`, rename package
-- [ ] Write `AppApplication` singleton (lazy-init DB, embedding provider, LLM)
-- [ ] Set up Compose Navigation graph skeleton (destinations, no screens yet)
-- [ ] Wire `BiometricGate` to re-lock on every `ON_STOP`
-- [ ] Update `AndroidManifest.xml` (permissions, native library declarations, backup rules)
+- [x] Copy `monice-dopple/biometric/BiometricGate.kt` into `:app`, rename package
+- [x] Write `AppApplication` singleton (lazy-init DB, embedding provider, LLM)
+- [x] Set up Compose Navigation graph skeleton (destinations, no screens yet)
+- [x] Wire `BiometricGate` to re-lock on every `ON_STOP`
+- [x] Update `AndroidManifest.xml` (permissions, native library declarations, backup rules)
 
 ## Phase 4 — People list + Person detail
 - [ ] `PeopleListScreen` (list, search bar, FAB, favorites)
