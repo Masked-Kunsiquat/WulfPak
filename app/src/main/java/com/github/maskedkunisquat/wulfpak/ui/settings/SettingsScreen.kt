@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Fingerprint
@@ -54,6 +55,12 @@ fun SettingsScreen(
         ActivityResultContracts.RequestPermission()
     ) { granted -> if (granted) viewModel.syncContacts() }
 
+    val calendarPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { perms ->
+        if (perms[Manifest.permission.WRITE_CALENDAR] == true) viewModel.syncCalendar()
+    }
+
     val vCardPickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri -> uri?.let { viewModel.importVCard(it) } }
@@ -85,6 +92,22 @@ fun SettingsScreen(
             is SettingsViewModel.ImportState.Error -> {
                 snackbarHostState.showSnackbar("Import failed: ${s.message}")
                 viewModel.clearImportState()
+            }
+            else -> Unit
+        }
+    }
+
+    LaunchedEffect(viewModel.calendarState) {
+        when (val s = viewModel.calendarState) {
+            is SettingsViewModel.CalendarState.Done -> {
+                snackbarHostState.showSnackbar(
+                    "Added ${s.added} event${if (s.added == 1) "" else "s"}, ${s.skipped} already existed"
+                )
+                viewModel.clearCalendarState()
+            }
+            is SettingsViewModel.CalendarState.Error -> {
+                snackbarHostState.showSnackbar("Calendar sync failed: ${s.message}")
+                viewModel.clearCalendarState()
             }
             else -> Unit
         }
@@ -188,6 +211,28 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.clickable(enabled = !isImporting) {
                         vCardPickerLauncher.launch("text/vcard")
+                    },
+                )
+            }
+            item {
+                val isSyncing = viewModel.calendarState is SettingsViewModel.CalendarState.Loading
+                ListItem(
+                    headlineContent   = { Text("Export to Calendar") },
+                    supportingContent = { Text("Add life events (birthdays, anniversaries) to device calendar") },
+                    leadingContent    = { Icon(Icons.Default.DateRange, contentDescription = null) },
+                    trailingContent   = {
+                        if (isSyncing) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    },
+                    modifier = Modifier.clickable(enabled = !isSyncing) {
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
+                            == PackageManager.PERMISSION_GRANTED
+                        ) {
+                            viewModel.syncCalendar()
+                        } else {
+                            calendarPermissionLauncher.launch(
+                                arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
+                            )
+                        }
                     },
                 )
             }
