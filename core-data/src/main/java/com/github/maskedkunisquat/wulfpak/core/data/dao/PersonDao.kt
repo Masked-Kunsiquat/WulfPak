@@ -16,6 +16,9 @@ interface PersonDao {
     @Query("SELECT * FROM persons ORDER BY firstName, lastName")
     fun getAll(): Flow<List<Person>>
 
+    @Query("SELECT * FROM persons ORDER BY firstName, lastName")
+    suspend fun getAllOnce(): List<Person>
+
     @Query("SELECT * FROM persons WHERE isFavorite = 1 ORDER BY firstName, lastName")
     fun getFavorites(): Flow<List<Person>>
 

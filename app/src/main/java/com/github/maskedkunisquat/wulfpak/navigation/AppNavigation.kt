@@ -22,6 +22,7 @@ import com.github.maskedkunisquat.wulfpak.ui.person.AddEditNoteScreen
 import com.github.maskedkunisquat.wulfpak.ui.person.AddEditTaskScreen
 import com.github.maskedkunisquat.wulfpak.ui.person.PersonDetailScreen
 import com.github.maskedkunisquat.wulfpak.ui.person.PersonDetailViewModel
+import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsScreen
 import java.util.UUID
 
 object Routes {
@@ -67,8 +68,9 @@ fun AppNavHost(
 
         composable(Routes.PEOPLE_LIST) {
             PeopleListScreen(
-                onAddPerson  = { navController.navigate(Routes.addEditPerson()) },
-                onOpenPerson = { id -> navController.navigate(Routes.personDetail(id.toString())) },
+                onAddPerson    = { navController.navigate(Routes.addEditPerson()) },
+                onOpenPerson   = { id -> navController.navigate(Routes.personDetail(id.toString())) },
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
             )
         }
 
@@ -190,7 +192,9 @@ fun AppNavHost(
         composable(Routes.ACTIVITY_FEED) { Placeholder("Activity Feed") }
         composable(Routes.SEARCH)        { Placeholder("Search") }
         composable(Routes.TASKS)         { Placeholder("Tasks") }
-        composable(Routes.SETTINGS)      { Placeholder("Settings") }
+        composable(Routes.SETTINGS) {
+            SettingsScreen(onNavigateBack = { navController.popBackStack() })
+        }
     }
 }
 

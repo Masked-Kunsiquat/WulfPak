@@ -48,9 +48,9 @@
 - [x] `AddEditTaskScreen`
 
 ## Phase 5 — Contact import
-- [ ] `ContactSyncManager` (reads `ContactsContract`, deduplicates, creates `Person` rows)
-- [ ] EZVCard integration for vCard/CSV import
-- [ ] Import entry point in Settings screen
+- [x] `ContactSyncManager` (reads `ContactsContract`, deduplicates, creates `Person` rows)
+- [x] EZVCard integration for vCard/CSV import
+- [x] Import entry point in Settings screen
 
 ## Phase 6 — Global screens
 - [ ] Activity feed screen (reverse-chronological Interactions + Activities)

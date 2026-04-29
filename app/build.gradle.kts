@@ -80,6 +80,9 @@ dependencies {
     // Model download worker
     implementation(libs.androidx.work.runtime.ktx)
 
+    // vCard import
+    implementation(libs.ez.vcard)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
