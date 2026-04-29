@@ -12,6 +12,7 @@ import com.github.maskedkunisquat.wulfpak.AppApplication
 import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
 import com.github.maskedkunisquat.wulfpak.appDataStore
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.ModelLoadState
+import com.github.maskedkunisquat.wulfpak.sync.CalendarBridge
 import com.github.maskedkunisquat.wulfpak.sync.ContactSyncManager
 import com.github.maskedkunisquat.wulfpak.sync.VCardImporter
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +26,7 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     private val appApp             = getApplication<AppApplication>()
     private val contactSyncManager = ContactSyncManager(appApp.db)
     private val vCardImporter      = VCardImporter(appApp.db)
+    private val calendarBridge     = CalendarBridge(appApp.db)
 
     sealed class SyncState {
         object Idle    : SyncState()
@@ -40,9 +42,18 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         data class Error(val message: String) : ImportState()
     }
 
-    var syncState   by mutableStateOf<SyncState>(SyncState.Idle)
+    sealed class CalendarState {
+        object Idle    : CalendarState()
+        object Loading : CalendarState()
+        data class Done(val added: Int, val skipped: Int) : CalendarState()
+        data class Error(val message: String)              : CalendarState()
+    }
+
+    var syncState     by mutableStateOf<SyncState>(SyncState.Idle)
         private set
-    var importState by mutableStateOf<ImportState>(ImportState.Idle)
+    var importState   by mutableStateOf<ImportState>(ImportState.Idle)
+        private set
+    var calendarState by mutableStateOf<CalendarState>(CalendarState.Idle)
         private set
 
     // Biometric toggle
@@ -94,6 +105,20 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun clearSyncState()   { syncState   = SyncState.Idle }
-    fun clearImportState() { importState = ImportState.Idle }
+    fun syncCalendar() {
+        if (calendarState is CalendarState.Loading) return
+        calendarState = CalendarState.Loading
+        viewModelScope.launch(Dispatchers.IO) {
+            calendarState = try {
+                val r = calendarBridge.sync(getApplication())
+                CalendarState.Done(r.added, r.skipped)
+            } catch (e: Exception) {
+                CalendarState.Error(e.message ?: "Calendar sync failed")
+            }
+        }
+    }
+
+    fun clearSyncState()      { syncState     = SyncState.Idle }
+    fun clearImportState()    { importState   = ImportState.Idle }
+    fun clearCalendarState()  { calendarState = CalendarState.Idle }
 }

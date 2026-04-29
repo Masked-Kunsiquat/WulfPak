@@ -60,7 +60,7 @@
 - [x] Settings screen (model download, biometric toggle, import)
 
 ## Phase 7 — Calendar bridge
-- [ ] `CalendarBridge` (writes `LifeEvent` records as `CalendarContract` events)
+- [x] `CalendarBridge` (writes `LifeEvent` records as `CalendarContract` events)
 
 ## Phase 8 — LLM features
 - [ ] Person detail "Summarize" card (`LlmOrchestrator.summarize(personId)`)
