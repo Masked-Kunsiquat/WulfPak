@@ -23,12 +23,12 @@
 - [x] Wire `KeyProvider` into `AppDatabase` open helper
 
 ## Phase 2 — `:core-logic` (embeddings + search + LLM)
-- [ ] Copy `monice-dopple/embedding/` into `:core-logic`, rename package
-- [ ] Copy `monice-dopple/search/` into `:core-logic`, rename package
-- [ ] Copy `monice-dopple/llm/` into `:core-logic`, rename package
-- [ ] Write `SearchRepository` (cosine search over Note, Interaction, Activity embeddings)
-- [ ] Write `LlmOrchestrator` (summarize history, NL query, follow-up suggestion)
-- [ ] Write WorkManager embedding worker (embed on write, store 384-dim BLOB)
+- [x] Copy `monice-dopple/embedding/` into `:core-logic`, rename package
+- [x] Copy `monice-dopple/search/` into `:core-logic`, rename package
+- [x] Copy `monice-dopple/llm/` into `:core-logic`, rename package
+- [x] Write `SearchRepository` (cosine search over Note, Interaction, Activity embeddings)
+- [x] Write `LlmOrchestrator` (summarize history, NL query, follow-up suggestion)
+- [x] Write WorkManager embedding worker (embed on write, store 384-dim BLOB)
 
 ## Phase 3 — `:app` scaffolding + biometric gate
 - [ ] Copy `monice-dopple/biometric/BiometricGate.kt` into `:app`, rename package
