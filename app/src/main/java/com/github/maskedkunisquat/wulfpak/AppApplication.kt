@@ -1,7 +1,12 @@
 package com.github.maskedkunisquat.wulfpak
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
 import androidx.work.Configuration
+import androidx.work.DelegatingWorkerFactory
+import androidx.work.WorkManager
 import com.github.maskedkunisquat.wulfpak.core.data.AppDatabase
 import com.github.maskedkunisquat.wulfpak.core.data.db.KeyProvider
 import com.github.maskedkunisquat.wulfpak.core.logic.embedding.EmbeddingProvider
@@ -10,6 +15,7 @@ import com.github.maskedkunisquat.wulfpak.core.logic.llm.LlmOrchestrator
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchRepository
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
 import com.github.maskedkunisquat.wulfpak.download.DownloadManagerModelDownloader
+import com.github.maskedkunisquat.wulfpak.worker.ContactReminderWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -52,15 +58,31 @@ class AppApplication : Application(), Configuration.Provider {
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
-            .setWorkerFactory(EmbeddingWorker.Factory(db, embeddingProvider))
+            .setWorkerFactory(DelegatingWorkerFactory().also { factory ->
+                factory.addFactory(EmbeddingWorker.Factory(db, embeddingProvider))
+                factory.addFactory(ContactReminderWorker.Factory(db, llmOrchestrator))
+            })
             .build()
 
     override fun onCreate() {
         super.onCreate()
-        // Initialize the embedding model on a background thread — 87 MB asset load, non-blocking.
-        // generateEmbedding() returns zero-vectors safely until initialization finishes.
+        createNotificationChannels()
         appScope.launch {
             embeddingProvider.initialize(this@AppApplication)
+        }
+        ContactReminderWorker.schedule(WorkManager.getInstance(this))
+    }
+
+    private fun createNotificationChannels() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                ContactReminderWorker.CHANNEL_ID,
+                "Contact Reminders",
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ).apply {
+                description = "Reminds you to reach out to people you haven't contacted recently"
+            }
+            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }
 }
