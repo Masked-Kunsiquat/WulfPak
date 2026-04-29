@@ -8,10 +8,17 @@ object RelationLabel {
     const val MOTHER = "mother"; const val FATHER = "father"
     const val SIBLING = "sibling"; const val CHILD = "child"
     const val GRANDPARENT = "grandparent"; const val COUSIN = "cousin"
+    const val AUNT = "aunt"; const val UNCLE = "uncle"
     const val FRIEND = "friend"; const val BEST_FRIEND = "best_friend"
     const val ACQUAINTANCE = "acquaintance"; const val ROMANTIC_PARTNER = "romantic_partner"
     const val COLLEAGUE = "colleague"; const val MANAGER = "manager"
     const val REPORT = "report"; const val MENTOR = "mentor"; const val CLIENT = "client"
+
+    val ALL = listOf(
+        FRIEND, BEST_FRIEND, ACQUAINTANCE, ROMANTIC_PARTNER,
+        MOTHER, FATHER, SIBLING, CHILD, GRANDPARENT, COUSIN, AUNT, UNCLE,
+        COLLEAGUE, MANAGER, REPORT, MENTOR, CLIENT,
+    )
 }
 
 @Entity(tableName = "persons")

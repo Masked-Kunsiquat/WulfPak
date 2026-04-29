@@ -44,13 +44,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.RelationLabel
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
 import java.util.UUID
 
-private val ALL_RELATION_LABELS = listOf(
-    RelationLabel.FRIEND, RelationLabel.BEST_FRIEND, RelationLabel.ACQUAINTANCE,
-    RelationLabel.ROMANTIC_PARTNER, RelationLabel.MOTHER, RelationLabel.FATHER,
-    RelationLabel.SIBLING, RelationLabel.CHILD, RelationLabel.GRANDPARENT,
-    RelationLabel.COUSIN, RelationLabel.COLLEAGUE, RelationLabel.MANAGER,
-    RelationLabel.REPORT, RelationLabel.MENTOR, RelationLabel.CLIENT,
-)
+private val ALL_RELATION_LABELS = RelationLabel.ALL
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

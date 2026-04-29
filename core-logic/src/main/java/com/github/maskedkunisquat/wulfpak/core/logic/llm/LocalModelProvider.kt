@@ -7,5 +7,5 @@ interface LocalModelProvider : LlmProvider {
     val loadedModelName: StateFlow<String?>
 
     fun initialize()
-    fun downloadModel()
+    fun downloadModel(): Long
 }

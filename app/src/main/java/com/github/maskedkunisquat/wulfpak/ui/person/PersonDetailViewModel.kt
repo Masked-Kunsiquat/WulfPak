@@ -118,6 +118,18 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun addContactDetail(detail: ContactDetail) {
+        viewModelScope.launch { db.contactDetailDao().insert(detail) }
+    }
+
+    fun updateContactDetail(detail: ContactDetail) {
+        viewModelScope.launch { db.contactDetailDao().update(detail) }
+    }
+
+    fun deleteContactDetail(detail: ContactDetail) {
+        viewModelScope.launch { db.contactDetailDao().delete(detail) }
+    }
+
     fun deletePerson(onDone: () -> Unit) {
         viewModelScope.launch {
             person.value?.let { db.personDao().delete(it) }

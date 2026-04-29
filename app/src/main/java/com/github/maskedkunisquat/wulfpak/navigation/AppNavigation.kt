@@ -5,11 +5,13 @@ import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -125,8 +127,12 @@ fun AppNavHost(
                 }
             }
         }
-    ) { _ ->
-        NavHost(navController = navController, startDestination = startDestination) {
+    ) { outerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = startDestination,
+            modifier = Modifier.padding(bottom = outerPadding.calculateBottomPadding()),
+        ) {
 
             composable(Routes.PEOPLE_LIST) {
                 PeopleListScreen(

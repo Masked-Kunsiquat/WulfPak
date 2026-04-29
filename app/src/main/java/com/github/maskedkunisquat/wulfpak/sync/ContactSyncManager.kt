@@ -1,6 +1,7 @@
 package com.github.maskedkunisquat.wulfpak.sync
 
 import android.content.Context
+import android.net.Uri
 import android.provider.ContactsContract
 import com.github.maskedkunisquat.wulfpak.core.data.AppDatabase
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetail
@@ -124,6 +125,97 @@ class ContactSyncManager(private val db: AppDatabase) {
                         label    = label,
                         value    = address,
                     )
+                }
+            }
+
+            if (details.isNotEmpty()) db.contactDetailDao().insertAll(details)
+            added++
+        }
+
+        return SyncResult(added, skipped)
+    }
+
+    suspend fun fetchByUris(context: Context, uris: List<Uri>): List<ContactCandidate> {
+        val existing = db.personDao().getAllOnce()
+        val existingKeys = existing.map { normalizeKey(it.firstName, it.lastName) }.toSet()
+        val cr = context.contentResolver
+        return uris.mapNotNull { uri ->
+            try {
+                cr.query(
+                    uri,
+                    arrayOf(ContactsContract.Contacts._ID, ContactsContract.Contacts.DISPLAY_NAME_PRIMARY),
+                    null, null, null,
+                )?.use { c ->
+                    if (!c.moveToFirst()) return@mapNotNull null
+                    val id = c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts._ID))
+                        ?: return@mapNotNull null
+                    val name = c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts.DISPLAY_NAME_PRIMARY))
+                        ?.trim()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                    val (firstName, lastName) = splitDisplayName(name)
+                    ContactCandidate(
+                        contactId       = id,
+                        displayName     = name,
+                        firstName       = firstName,
+                        lastName        = lastName,
+                        alreadyImported = normalizeKey(firstName, lastName) in existingKeys,
+                    )
+                }
+            } catch (e: Exception) { null }
+        }.distinctBy { it.contactId }
+    }
+
+    suspend fun importWithRelations(
+        context: Context,
+        assignments: List<Pair<ContactCandidate, String>>,
+    ): SyncResult {
+        val existing = db.personDao().getAllOnce()
+        val existingKeys = existing.map { normalizeKey(it.firstName, it.lastName) }.toMutableSet()
+        val cr = context.contentResolver
+        var added = 0; var skipped = 0
+
+        for ((candidate, relation) in assignments) {
+            val key = normalizeKey(candidate.firstName, candidate.lastName)
+            if (key in existingKeys) { skipped++; continue }
+
+            val person = Person(
+                firstName     = candidate.firstName,
+                lastName      = candidate.lastName,
+                relationLabel = relation,
+            )
+            db.personDao().insert(person)
+            existingKeys.add(key)
+
+            val details = mutableListOf<ContactDetail>()
+
+            cr.query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER, ContactsContract.CommonDataKinds.Phone.TYPE),
+                "${ContactsContract.CommonDataKinds.Phone.CONTACT_ID} = ?",
+                arrayOf(candidate.contactId), null,
+            )?.use { pc ->
+                val numCol  = pc.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                val typeCol = pc.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.TYPE)
+                while (pc.moveToNext()) {
+                    val number = pc.getString(numCol)?.trim() ?: continue
+                    val label  = ContactsContract.CommonDataKinds.Phone
+                        .getTypeLabel(context.resources, pc.getInt(typeCol), "Mobile").toString()
+                    details += ContactDetail(personId = person.id, type = ContactDetailType.PHONE, label = label, value = number)
+                }
+            }
+
+            cr.query(
+                ContactsContract.CommonDataKinds.Email.CONTENT_URI,
+                arrayOf(ContactsContract.CommonDataKinds.Email.ADDRESS, ContactsContract.CommonDataKinds.Email.TYPE),
+                "${ContactsContract.CommonDataKinds.Email.CONTACT_ID} = ?",
+                arrayOf(candidate.contactId), null,
+            )?.use { ec ->
+                val addrCol = ec.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Email.ADDRESS)
+                val typeCol = ec.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Email.TYPE)
+                while (ec.moveToNext()) {
+                    val address = ec.getString(addrCol)?.trim() ?: continue
+                    val label   = ContactsContract.CommonDataKinds.Email
+                        .getTypeLabel(context.resources, ec.getInt(typeCol), "Email").toString()
+                    details += ContactDetail(personId = person.id, type = ContactDetailType.EMAIL, label = label, value = address)
                 }
             }
 

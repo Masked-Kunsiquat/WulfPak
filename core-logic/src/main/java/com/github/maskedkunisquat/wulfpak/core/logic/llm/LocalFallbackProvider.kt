@@ -57,9 +57,9 @@ class LocalFallbackProvider(
     private val modelDir: java.io.File
         get() = context.getExternalFilesDir(null) ?: context.filesDir
 
-    override fun downloadModel() {
+    override fun downloadModel(): Long {
         val (modelFile, _) = selectModelAndBackends()
-        modelDownloader.enqueue(modelFile, "$HF_BASE_URL/$modelFile", MODEL_SHA256[modelFile])
+        return modelDownloader.enqueue(modelFile, "$HF_BASE_URL/$modelFile", MODEL_SHA256[modelFile])
     }
 
     fun isModelAvailable(): Boolean {
