@@ -25,6 +25,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.github.maskedkunisquat.wulfpak.ui.feed.ActivityFeedScreen
+import com.github.maskedkunisquat.wulfpak.ui.feed.AddEditActivityScreen
 import com.github.maskedkunisquat.wulfpak.ui.merge.MergeContactsScreen
 import com.github.maskedkunisquat.wulfpak.ui.people.AddEditPersonScreen
 import com.github.maskedkunisquat.wulfpak.ui.people.PeopleListScreen
@@ -45,6 +46,7 @@ object Routes {
     const val PERSON_DETAIL         = "person_detail/{personId}"
     const val ADD_EDIT_PERSON       = "add_edit_person?personId={personId}"
     const val ADD_EDIT_INTERACTION  = "add_edit_interaction/{personId}?interactionId={interactionId}"
+    const val ADD_EDIT_ACTIVITY     = "add_edit_activity?personId={personId}&activityId={activityId}"
     const val ADD_EDIT_NOTE         = "add_edit_note/{personId}?noteId={noteId}"
     const val ADD_EDIT_LIFE_EVENT   = "add_edit_life_event/{personId}?lifeEventId={lifeEventId}"
     const val ADD_EDIT_GIFT         = "add_edit_gift/{personId}?giftId={giftId}"
@@ -60,6 +62,13 @@ object Routes {
         if (personId != null) "add_edit_person?personId=$personId" else "add_edit_person"
     fun addEditInteraction(personId: String, interactionId: String? = null) =
         "add_edit_interaction/$personId" + (interactionId?.let { "?interactionId=$it" } ?: "")
+    fun addEditActivity(personId: String? = null, activityId: String? = null): String {
+        val params = listOfNotNull(
+            personId?.let { "personId=$it" },
+            activityId?.let { "activityId=$it" },
+        ).joinToString("&")
+        return if (params.isEmpty()) "add_edit_activity" else "add_edit_activity?$params"
+    }
     fun addEditNote(personId: String, noteId: String? = null) =
         "add_edit_note/$personId" + (noteId?.let { "?noteId=$it" } ?: "")
     fun addEditLifeEvent(personId: String, lifeEventId: String? = null) =
@@ -139,11 +148,13 @@ fun AppNavHost(
                     onNavigateBack    = { navController.popBackStack() },
                     onEdit            = { navController.navigate(Routes.addEditPerson(personIdStr)) },
                     onAddInteraction  = { navController.navigate(Routes.addEditInteraction(personIdStr)) },
+                    onAddActivity     = { navController.navigate(Routes.addEditActivity(personId = personIdStr)) },
                     onAddNote         = { navController.navigate(Routes.addEditNote(personIdStr)) },
                     onAddLifeEvent    = { navController.navigate(Routes.addEditLifeEvent(personIdStr)) },
                     onAddGift         = { navController.navigate(Routes.addEditGift(personIdStr)) },
                     onAddTask         = { navController.navigate(Routes.addEditTask(personId = personIdStr)) },
                     onEditInteraction = { id -> navController.navigate(Routes.addEditInteraction(personIdStr, id.toString())) },
+                    onEditActivity    = { id -> navController.navigate(Routes.addEditActivity(activityId = id.toString())) },
                     onEditNote        = { id -> navController.navigate(Routes.addEditNote(personIdStr, id.toString())) },
                     onEditLifeEvent   = { id -> navController.navigate(Routes.addEditLifeEvent(personIdStr, id.toString())) },
                     onEditGift        = { id -> navController.navigate(Routes.addEditGift(personIdStr, id.toString())) },
@@ -171,6 +182,20 @@ fun AppNavHost(
                 AddEditInteractionScreen(
                     personId       = back.arguments!!.getString("personId")!!,
                     interactionId  = back.arguments?.getString("interactionId")?.let { UUID.fromString(it) },
+                    onNavigateBack = { navController.popBackStack() },
+                )
+            }
+
+            composable(
+                route = Routes.ADD_EDIT_ACTIVITY,
+                arguments = listOf(
+                    navArgument("personId")    { nullable = true; defaultValue = null },
+                    navArgument("activityId")  { nullable = true; defaultValue = null },
+                ),
+            ) { back ->
+                AddEditActivityScreen(
+                    personId       = back.arguments?.getString("personId"),
+                    activityId     = back.arguments?.getString("activityId")?.let { UUID.fromString(it) },
                     onNavigateBack = { navController.popBackStack() },
                 )
             }
@@ -231,7 +256,12 @@ fun AppNavHost(
                 )
             }
 
-            composable(Routes.ACTIVITY_FEED) { ActivityFeedScreen() }
+            composable(Routes.ACTIVITY_FEED) {
+                ActivityFeedScreen(
+                    onAddActivity  = { navController.navigate(Routes.addEditActivity()) },
+                    onEditActivity = { id -> navController.navigate(Routes.addEditActivity(activityId = id.toString())) },
+                )
+            }
 
             composable(Routes.SEARCH) { SearchScreen() }
 

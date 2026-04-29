@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetail
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetailType
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Gift
@@ -69,7 +70,7 @@ import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayDate
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
 import java.util.UUID
 
-private val TABS = listOf("Interactions", "Notes", "Life Events", "Gifts", "Tasks", "Summarize")
+private val TABS = listOf("Interactions", "Activities", "Notes", "Life Events", "Gifts", "Tasks", "Summarize")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,11 +79,13 @@ fun PersonDetailScreen(
     onNavigateBack: () -> Unit,
     onEdit: () -> Unit,
     onAddInteraction: () -> Unit,
+    onAddActivity: () -> Unit,
     onAddNote: () -> Unit,
     onAddLifeEvent: () -> Unit,
     onAddGift: () -> Unit,
     onAddTask: () -> Unit,
     onEditInteraction: (UUID) -> Unit,
+    onEditActivity: (UUID) -> Unit,
     onEditNote: (UUID) -> Unit,
     onEditLifeEvent: (UUID) -> Unit,
     onEditGift: (UUID) -> Unit,
@@ -91,22 +94,24 @@ fun PersonDetailScreen(
     val context        = LocalContext.current
     val person         by viewModel.person.collectAsStateWithLifecycle()
     val interactions   by viewModel.interactions.collectAsStateWithLifecycle()
+    val activities     by viewModel.activities.collectAsStateWithLifecycle()
     val notes          by viewModel.notes.collectAsStateWithLifecycle()
     val lifeEvents     by viewModel.lifeEvents.collectAsStateWithLifecycle()
     val gifts          by viewModel.gifts.collectAsStateWithLifecycle()
     val tasks          by viewModel.tasks.collectAsStateWithLifecycle()
     val contactDetails by viewModel.contactDetails.collectAsStateWithLifecycle()
 
-    var selectedTab     by remember { mutableIntStateOf(0) }
-    var showOverflow    by remember { mutableStateOf(false) }
+    var selectedTab       by remember { mutableIntStateOf(0) }
+    var showOverflow      by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val fabAction: (() -> Unit)? = when (selectedTab) {
         0 -> onAddInteraction
-        1 -> onAddNote
-        2 -> onAddLifeEvent
-        3 -> onAddGift
-        4 -> onAddTask
+        1 -> onAddActivity
+        2 -> onAddNote
+        3 -> onAddLifeEvent
+        4 -> onAddGift
+        5 -> onAddTask
         else -> null  // Summarize tab — no FAB
     }
 
@@ -200,20 +205,23 @@ fun PersonDetailScreen(
                     0 -> InteractionsTab(interactions,
                         onEdit = onEditInteraction,
                         onDelete = viewModel::deleteInteraction)
-                    1 -> NotesTab(notes,
+                    1 -> ActivitiesTab(activities,
+                        onEdit = onEditActivity,
+                        onDelete = viewModel::deleteActivity)
+                    2 -> NotesTab(notes,
                         onEdit = onEditNote,
                         onDelete = viewModel::deleteNote)
-                    2 -> LifeEventsTab(lifeEvents,
+                    3 -> LifeEventsTab(lifeEvents,
                         onEdit = onEditLifeEvent,
                         onDelete = viewModel::deleteLifeEvent)
-                    3 -> GiftsTab(gifts,
+                    4 -> GiftsTab(gifts,
                         onEdit = onEditGift,
                         onDelete = viewModel::deleteGift)
-                    4 -> TasksTab(tasks,
+                    5 -> TasksTab(tasks,
                         onToggleDone = viewModel::toggleTaskDone,
                         onEdit = onEditTask,
                         onDelete = viewModel::deleteTask)
-                    5 -> SummarizeTab(
+                    6 -> SummarizeTab(
                         text = viewModel.summarizeText,
                         isLoading = viewModel.isSummarizing,
                         onSummarize = viewModel::summarize,
@@ -280,6 +288,33 @@ private fun InteractionsTab(
                 overlineContent = { Text(interaction.timestamp.toDisplayDate()) },
                 trailingContent = {
                     IconButton(onClick = { onDelete(interaction) }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error)
+                    }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActivitiesTab(
+    items: List<Activity>,
+    onEdit: (UUID) -> Unit,
+    onDelete: (Activity) -> Unit,
+) {
+    if (items.isEmpty()) { EmptyTab("No activities yet — tap + to log one"); return }
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        items(items, key = { it.id }) { activity ->
+            ListItem(
+                modifier = Modifier.clickable { onEdit(activity.id) },
+                headlineContent = { Text(activity.title) },
+                supportingContent = {
+                    activity.body?.let { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) }
+                },
+                overlineContent = { Text(activity.timestamp.toDisplayDate()) },
+                trailingContent = {
+                    IconButton(onClick = { onDelete(activity) }) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete",
                             tint = MaterialTheme.colorScheme.error)
                     }
