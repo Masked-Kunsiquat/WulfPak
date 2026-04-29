@@ -316,7 +316,7 @@ private fun AiSummaryCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("AI Summary", style = MaterialTheme.typography.labelMedium,
+                Text("Summary", style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary)
                 if (!isSummarizing) {
                     IconButton(onClick = onSummarize, modifier = Modifier.size(28.dp)) {
@@ -330,7 +330,7 @@ private fun AiSummaryCard(
                     modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                 )
                 summarizeText.isEmpty() -> Text(
-                    "Tap refresh to generate an AI summary.",
+                    "Tap refresh to generate a summary.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),

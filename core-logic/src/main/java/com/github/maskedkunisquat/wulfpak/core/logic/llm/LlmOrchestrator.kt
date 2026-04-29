@@ -28,8 +28,7 @@ class LlmOrchestrator(
             emit(LlmResult.Error(IllegalArgumentException("Person $personId not found")))
             return@flow
         }
-
-        val facts = FactExtractor.extract(
+        val summary = FactExtractor.buildSummary(
             person       = person,
             interactions = interactionDao.getForPerson(personId).first(),
             notes        = noteDao.getForPerson(personId).first(),
@@ -38,8 +37,8 @@ class LlmOrchestrator(
             gifts        = giftDao.getForPerson(personId).first(),
             tasks        = taskDao.getForPerson(personId).first(),
         )
-
-        emitAll(provider.process(facts, Prompts.SUMMARIZE_SYSTEM))
+        emit(LlmResult.Token(summary))
+        emit(LlmResult.Complete)
     }
 
     fun query(naturalLanguage: String): Flow<LlmResult> =

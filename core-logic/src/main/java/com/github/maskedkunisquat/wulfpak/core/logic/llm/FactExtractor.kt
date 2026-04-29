@@ -5,30 +5,121 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.Gift
 import com.github.maskedkunisquat.wulfpak.core.data.entity.GiftStatus
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEvent
+import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEventType
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Task
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-/**
- * Converts raw DB records into deterministic third-person fact statements
- * before they reach the LLM. Keeps the model's job to language only —
- * no perspective inference, no relationship reasoning.
- *
- * Rules:
- * - Activity/interaction bodies are EXCLUDED: they're first-person user
- *   notes ("did X, went to Y") that small models consistently misattribute
- *   to the contact. Only title, type, and date are safe structured facts.
- * - Notes tab content IS included as labeled quotes: the user writes these
- *   ABOUT the contact ("loves hiking, works at Google"), not about their
- *   own actions, so they're genuinely third-person observations.
- * - Life event notes are included as annotations for the same reason.
- */
 internal object FactExtractor {
 
-    private val dateFmt = SimpleDateFormat("MMM d, yyyy", Locale.ROOT)
+    private val longFmt  = SimpleDateFormat("MMM d, yyyy", Locale.ROOT)
+    private val shortFmt = SimpleDateFormat("MMM d", Locale.ROOT)
+
+    // -------------------------------------------------------------------------
+    // Programmatic summary — deterministic, zero hallucination.
+    // Used by LlmOrchestrator.summarize() instead of routing through the LLM.
+    // -------------------------------------------------------------------------
+
+    fun buildSummary(
+        person: Person,
+        interactions: List<Interaction>,
+        notes: List<Note>,
+        activities: List<Activity>,
+        lifeEvents: List<LifeEvent>,
+        gifts: List<Gift>,
+        tasks: List<Task>,
+    ): String {
+        val firstName = person.firstName
+        val name = buildString {
+            append(firstName)
+            person.lastName?.let { append(" $it") }
+        }
+        val relation = person.relationLabel.replace('_', ' ')
+        val sentences = mutableListOf<String>()
+
+        // 1. Identity
+        sentences += buildString {
+            append("$name is your $relation")
+            person.nickname?.let { append(", known as \"$it\"") }
+            person.closenessRating?.let { append(", with a closeness rating of $it/5") }
+            append(".")
+        }
+
+        // 2. Last contact
+        val lastMs = person.lastContactedAt
+        if (lastMs != null) {
+            val days = ((System.currentTimeMillis() - lastMs) / 86_400_000L).toInt()
+            val ago  = when (days) { 0 -> "today"; 1 -> "yesterday"; else -> "$days days ago" }
+            val via  = interactions.firstOrNull()?.let { " via ${it.type.replace('_', ' ')}" } ?: ""
+            sentences += "You last had contact $ago$via."
+        } else {
+            sentences += "No contact has been logged yet."
+        }
+
+        // 3. Shared history (activities take priority for the "most recently" callout)
+        val actCount = activities.size
+        val intCount = interactions.size
+        if (actCount > 0 || intCount > 0) {
+            sentences += buildString {
+                when {
+                    actCount > 0 && intCount > 0 -> {
+                        val r = activities.first()
+                        append("You've shared $actCount ${pl(actCount, "activity", "activities")} ")
+                        append("and logged $intCount ${pl(intCount, "interaction")} with $firstName, ")
+                        append("most recently \"${r.title}\" on ${shortFmt.format(Date(r.timestamp))}.")
+                    }
+                    actCount > 0 -> {
+                        val r = activities.first()
+                        append("You've shared $actCount ${pl(actCount, "activity", "activities")} with $firstName, ")
+                        append("most recently \"${r.title}\" on ${shortFmt.format(Date(r.timestamp))}.")
+                    }
+                    else -> {
+                        val r = interactions.first()
+                        append("You've logged $intCount ${pl(intCount, "interaction")} with $firstName, ")
+                        append("most recently a ${r.type.replace('_', ' ')} on ${shortFmt.format(Date(r.timestamp))}.")
+                    }
+                }
+            }
+        }
+
+        // 4. Birthday callout (recurring) or generic life event count
+        val birthday = lifeEvents.firstOrNull {
+            it.eventType == LifeEventType.BIRTHDAY && it.isRecurring
+        }
+        if (birthday != null) {
+            val daysUntil = daysUntilNextOccurrence(birthday.date)
+            sentences += when {
+                daysUntil == 0   -> "$firstName's birthday is today!"
+                daysUntil <= 30  -> "$firstName's birthday is coming up in $daysUntil days."
+                else             -> "$firstName's birthday is ${shortFmt.format(Date(birthday.date))}."
+            }
+        } else if (lifeEvents.isNotEmpty()) {
+            sentences += "$firstName has ${lifeEvents.size} recorded life ${pl(lifeEvents.size, "event")}."
+        }
+
+        // 5. Pending items (tasks + gifts)
+        val openTasks    = tasks.filter { !it.isDone }
+        val pendingGifts = gifts.filter { it.status != GiftStatus.GIVEN }
+        if (openTasks.isNotEmpty() || pendingGifts.isNotEmpty()) {
+            val parts = buildList {
+                if (openTasks.isNotEmpty())    add("${openTasks.size} open ${pl(openTasks.size, "task")}")
+                if (pendingGifts.isNotEmpty()) add("${pendingGifts.size} pending gift ${pl(pendingGifts.size, "idea")}")
+            }
+            sentences += "You have ${parts.joinToString(" and ")} for $firstName."
+        }
+
+        return sentences.joinToString(" ")
+    }
+
+    // -------------------------------------------------------------------------
+    // Structured fact list — reserved for future LLM tool-calling / chat use.
+    // When the user asks "tell me more about that Cancer Walk event," the LLM
+    // can request specific records and receive a clean fact block like this.
+    // -------------------------------------------------------------------------
 
     fun extract(
         person: Person,
@@ -46,83 +137,83 @@ internal object FactExtractor {
 
         val facts = mutableListOf<String>()
 
-        // --- Identity ---
         facts += "$name is the user's ${person.relationLabel.replace('_', ' ')}."
         person.nickname?.let { facts += "$name goes by \"$it\"." }
         person.closenessRating?.let { facts += "Closeness rating: $it out of 5." }
 
-        // --- Last contact ---
         val lastContactMs = person.lastContactedAt
         if (lastContactMs != null) {
             val days = ((System.currentTimeMillis() - lastContactMs) / 86_400_000L).toInt()
             facts += when (days) {
                 0    -> "The user last had contact with $name today."
                 1    -> "The user last had contact with $name yesterday."
-                else -> "The user last had contact with $name $days days ago (${dateFmt.format(Date(lastContactMs))})."
+                else -> "The user last had contact with $name $days days ago (${longFmt.format(Date(lastContactMs))})."
             }
         } else {
             facts += "No contact has been logged yet."
         }
 
-        // --- Life events ---
         lifeEvents.forEach { e ->
-            val type    = e.eventType.replace('_', ' ')
-            val dateStr = dateFmt.format(Date(e.date))
-            val recur   = if (e.isRecurring) " (annual)" else ""
+            val type       = e.eventType.replace('_', ' ')
+            val dateStr    = longFmt.format(Date(e.date))
+            val recur      = if (e.isRecurring) " (annual)" else ""
             val annotation = e.note?.let { " — \"$it\"" } ?: ""
             facts += "$name has a $type on $dateStr$recur$annotation."
         }
 
-        // --- Interactions — type + date only, no free-text body ---
         if (interactions.isNotEmpty()) {
-            val total = interactions.size
-            facts += "The user has logged $total interaction${if (total == 1) "" else "s"} with $name."
+            facts += "The user has logged ${interactions.size} ${pl(interactions.size, "interaction")} with $name."
             interactions.take(5).forEach { i ->
-                val type    = i.type.replace('_', ' ')
-                val dateStr = dateFmt.format(Date(i.timestamp))
-                facts += "On $dateStr, the user had a $type with $name."
+                facts += "On ${longFmt.format(Date(i.timestamp))}, the user had a ${i.type.replace('_', ' ')} with $name."
             }
         }
 
-        // --- Activities — title + date only, no free-text body ---
         if (activities.isNotEmpty()) {
-            val total = activities.size
-            facts += "The user has shared $total activit${if (total == 1) "y" else "ies"} with $name."
+            facts += "The user has shared ${activities.size} ${pl(activities.size, "activity", "activities")} with $name."
             activities.take(5).forEach { a ->
-                val dateStr = dateFmt.format(Date(a.timestamp))
-                facts += "On $dateStr, the user and $name took part in: ${a.title}."
+                facts += "On ${longFmt.format(Date(a.timestamp))}, the user and $name took part in: ${a.title}."
             }
         }
 
-        // --- Notes — included as-is: written ABOUT the contact, not about user's actions ---
         if (notes.isNotEmpty()) {
             notes.take(10).forEach { n ->
-                val dateStr = dateFmt.format(Date(n.timestamp))
-                facts += "User observation about $name (${dateStr}): \"${n.body}\""
+                facts += "User observation about $name (${longFmt.format(Date(n.timestamp))}): \"${n.body}\""
             }
         }
 
-        // --- Open tasks ---
-        val openTasks = tasks.filter { !it.isDone }
-        if (openTasks.isNotEmpty()) {
-            openTasks.forEach { t ->
-                val due = t.dueAt?.let { " (due ${dateFmt.format(Date(it))})" } ?: ""
-                facts += "Open task for $name: \"${t.title}\"$due."
-            }
+        tasks.filter { !it.isDone }.forEach { t ->
+            val due = t.dueAt?.let { " (due ${longFmt.format(Date(it))})" } ?: ""
+            facts += "Open task for $name: \"${t.title}\"$due."
         }
 
-        // --- Pending gifts ---
-        val pendingGifts = gifts.filter { it.status != GiftStatus.GIVEN }
-        if (pendingGifts.isNotEmpty()) {
-            pendingGifts.forEach { g ->
-                val occasion = g.occasion?.let { " for $it" } ?: ""
-                facts += "Gift idea for $name: \"${g.name}\" (${g.status.lowercase()})$occasion."
-            }
+        gifts.filter { it.status != GiftStatus.GIVEN }.forEach { g ->
+            val occasion = g.occasion?.let { " for $it" } ?: ""
+            facts += "Gift idea for $name: \"${g.name}\" (${g.status.lowercase()})$occasion."
         }
 
         return buildString {
             appendLine("FACTS ABOUT $name:")
             facts.forEach { appendLine("- $it") }
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    private fun pl(n: Int, singular: String, plural: String = "${singular}s") =
+        if (n == 1) singular else plural
+
+    private fun daysUntilNextOccurrence(birthdayMs: Long): Int {
+        val bday = Calendar.getInstance().apply { timeInMillis = birthdayMs }
+        val next = Calendar.getInstance().apply {
+            set(Calendar.MONTH, bday.get(Calendar.MONTH))
+            set(Calendar.DAY_OF_MONTH, bday.get(Calendar.DAY_OF_MONTH))
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }
+        val now = Calendar.getInstance()
+        if (!next.after(now)) next.add(Calendar.YEAR, 1)
+        return ((next.timeInMillis - now.timeInMillis) / 86_400_000L).toInt()
     }
 }
