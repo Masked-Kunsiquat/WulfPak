@@ -2,6 +2,7 @@ package com.github.maskedkunisquat.wulfpak.ui.person
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -23,22 +25,31 @@ import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -52,6 +63,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,7 +72,6 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetail
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetailType
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Gift
-import com.github.maskedkunisquat.wulfpak.core.data.entity.GiftStatus
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEvent
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
@@ -70,7 +81,7 @@ import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayDate
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
 import java.util.UUID
 
-private val TABS = listOf("Interactions", "Activities", "Notes", "Life Events", "Gifts", "Tasks", "Summarize")
+private val TABS = listOf("Interactions", "Activities", "Notes", "Life Events", "Gifts", "Tasks")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,9 +112,12 @@ fun PersonDetailScreen(
     val tasks          by viewModel.tasks.collectAsStateWithLifecycle()
     val contactDetails by viewModel.contactDetails.collectAsStateWithLifecycle()
 
-    var selectedTab       by remember { mutableIntStateOf(0) }
-    var showOverflow      by remember { mutableStateOf(false) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var selectedTab        by remember { mutableIntStateOf(0) }
+    var showOverflow       by remember { mutableStateOf(false) }
+    var showDeleteConfirm  by remember { mutableStateOf(false) }
+    var contactsExpanded   by remember { mutableStateOf(true) }
+    var showAddDetail      by remember { mutableStateOf(false) }
+    var editingDetail      by remember { mutableStateOf<ContactDetail?>(null) }
 
     val fabAction: (() -> Unit)? = when (selectedTab) {
         0 -> onAddInteraction
@@ -112,7 +126,7 @@ fun PersonDetailScreen(
         3 -> onAddLifeEvent
         4 -> onAddGift
         5 -> onAddTask
-        else -> null  // Summarize tab — no FAB
+        else -> null
     }
 
     if (showDeleteConfirm) {
@@ -127,6 +141,25 @@ fun PersonDetailScreen(
                 TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
             },
         )
+    }
+
+    person?.let { p ->
+        if (showAddDetail) {
+            ContactDetailDialog(
+                existing = null,
+                personId = p.id,
+                onSave   = { detail -> viewModel.addContactDetail(detail); showAddDetail = false },
+                onDismiss = { showAddDetail = false },
+            )
+        }
+        editingDetail?.let { editing ->
+            ContactDetailDialog(
+                existing  = editing,
+                personId  = editing.personId,
+                onSave    = { detail -> viewModel.updateContactDetail(detail); editingDetail = null },
+                onDismiss = { editingDetail = null },
+            )
+        }
     }
 
     Scaffold(
@@ -167,6 +200,7 @@ fun PersonDetailScreen(
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
             person?.let { p ->
+                // Avatar + relation header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -182,18 +216,68 @@ fun PersonDetailScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                 }
-                if (contactDetails.isNotEmpty()) {
-                    Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)) {
-                        contactDetails.forEach { detail ->
-                            ContactDetailRow(detail) { intent ->
-                                context.startActivity(intent)
+
+                // Collapsible contact info section
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Contact Info",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Row {
+                        IconButton(onClick = { showAddDetail = true }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Add, contentDescription = "Add contact info",
+                                modifier = Modifier.size(18.dp))
+                        }
+                        IconButton(onClick = { contactsExpanded = !contactsExpanded }, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                imageVector = if (contactsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (contactsExpanded) "Collapse" else "Expand",
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+                }
+
+                AnimatedVisibility(visible = contactsExpanded) {
+                    if (contactDetails.isEmpty()) {
+                        Text(
+                            "No contact info — tap + to add",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
+                        )
+                    } else {
+                        Column(modifier = Modifier.padding(start = 16.dp, end = 8.dp, bottom = 4.dp)) {
+                            contactDetails.forEach { detail ->
+                                ContactDetailRow(
+                                    detail    = detail,
+                                    onLaunch  = { intent -> context.startActivity(intent) },
+                                    onEdit    = { editingDetail = it },
+                                    onDelete  = { viewModel.deleteContactDetail(it) },
+                                )
                             }
                         }
                     }
                 }
+
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+
+                // AI Summary card
+                AiSummaryCard(
+                    summarizeText = viewModel.summarizeText,
+                    isSummarizing = viewModel.isSummarizing,
+                    onSummarize   = viewModel::summarize,
+                )
             }
 
-            PrimaryTabRow(selectedTabIndex = selectedTab) {
+            ScrollableTabRow(selectedTabIndex = selectedTab, edgePadding = 0.dp) {
                 TABS.forEachIndexed { i, title ->
                     Tab(selected = selectedTab == i, onClick = { selectedTab = i },
                         text = { Text(title) })
@@ -202,30 +286,13 @@ fun PersonDetailScreen(
 
             Box(modifier = Modifier.fillMaxSize()) {
                 when (selectedTab) {
-                    0 -> InteractionsTab(interactions,
-                        onEdit = onEditInteraction,
-                        onDelete = viewModel::deleteInteraction)
-                    1 -> ActivitiesTab(activities,
-                        onEdit = onEditActivity,
-                        onDelete = viewModel::deleteActivity)
-                    2 -> NotesTab(notes,
-                        onEdit = onEditNote,
-                        onDelete = viewModel::deleteNote)
-                    3 -> LifeEventsTab(lifeEvents,
-                        onEdit = onEditLifeEvent,
-                        onDelete = viewModel::deleteLifeEvent)
-                    4 -> GiftsTab(gifts,
-                        onEdit = onEditGift,
-                        onDelete = viewModel::deleteGift)
-                    5 -> TasksTab(tasks,
-                        onToggleDone = viewModel::toggleTaskDone,
-                        onEdit = onEditTask,
-                        onDelete = viewModel::deleteTask)
-                    6 -> SummarizeTab(
-                        text = viewModel.summarizeText,
-                        isLoading = viewModel.isSummarizing,
-                        onSummarize = viewModel::summarize,
-                    )
+                    0 -> InteractionsTab(interactions, onEdit = onEditInteraction, onDelete = viewModel::deleteInteraction)
+                    1 -> ActivitiesTab(activities, onEdit = onEditActivity, onDelete = viewModel::deleteActivity)
+                    2 -> NotesTab(notes, onEdit = onEditNote, onDelete = viewModel::deleteNote)
+                    3 -> LifeEventsTab(lifeEvents, onEdit = onEditLifeEvent, onDelete = viewModel::deleteLifeEvent)
+                    4 -> GiftsTab(gifts, onEdit = onEditGift, onDelete = viewModel::deleteGift)
+                    5 -> TasksTab(tasks, onToggleDone = viewModel::toggleTaskDone,
+                        onEdit = onEditTask, onDelete = viewModel::deleteTask)
                 }
             }
         }
@@ -233,32 +300,171 @@ fun PersonDetailScreen(
 }
 
 @Composable
-private fun ContactDetailRow(detail: ContactDetail, onLaunch: (Intent) -> Unit) {
-    val (icon, intent) = when (detail.type) {
-        ContactDetailType.PHONE -> Icons.Default.Phone to
-            Intent(Intent.ACTION_DIAL, Uri.parse("tel:${detail.value}"))
-        ContactDetailType.EMAIL -> Icons.Default.Email to
-            Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${detail.value}"))
-        else -> return
+private fun AiSummaryCard(
+    summarizeText: String,
+    isSummarizing: Boolean,
+    onSummarize: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("AI Summary", style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary)
+                if (!isSummarizing) {
+                    IconButton(onClick = onSummarize, modifier = Modifier.size(28.dp)) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Regenerate",
+                            modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
+            when {
+                isSummarizing -> LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                )
+                summarizeText.isEmpty() -> Text(
+                    "Tap refresh to generate an AI summary.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                else -> Text(
+                    summarizeText,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 5,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ContactDetailDialog(
+    existing: ContactDetail?,
+    personId: UUID,
+    onSave: (ContactDetail) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var type by remember { mutableStateOf(existing?.type ?: ContactDetailType.PHONE) }
+    var label by remember { mutableStateOf(existing?.label ?: "") }
+    var value by remember { mutableStateOf(existing?.value ?: "") }
+    var typeExpanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (existing == null) "Add Contact Info" else "Edit Contact Info") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ExposedDropdownMenuBox(expanded = typeExpanded, onExpandedChange = { typeExpanded = it }) {
+                    OutlinedTextField(
+                        value = type.toDisplayLabel(),
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Type") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                    )
+                    ExposedDropdownMenu(expanded = typeExpanded, onDismissRequest = { typeExpanded = false }) {
+                        listOf(ContactDetailType.PHONE, ContactDetailType.EMAIL,
+                               ContactDetailType.SOCIAL, ContactDetailType.ADDRESS).forEach { t ->
+                            DropdownMenuItem(
+                                text = { Text(t.toDisplayLabel()) },
+                                onClick = { type = t; typeExpanded = false },
+                            )
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = label,
+                    onValueChange = { label = it },
+                    label = { Text("Label (e.g. Mobile, Work)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = { value = it },
+                    label = { Text("Value") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = when (type) {
+                            ContactDetailType.PHONE -> KeyboardType.Phone
+                            ContactDetailType.EMAIL -> KeyboardType.Email
+                            else -> KeyboardType.Text
+                        }
+                    ),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val detail = existing?.copy(type = type, label = label, value = value)
+                        ?: ContactDetail(personId = personId, type = type, label = label, value = value)
+                    onSave(detail)
+                },
+                enabled = value.isNotBlank() && label.isNotBlank(),
+            ) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+@Composable
+private fun ContactDetailRow(
+    detail: ContactDetail,
+    onLaunch: (Intent) -> Unit,
+    onEdit: (ContactDetail) -> Unit,
+    onDelete: (ContactDetail) -> Unit,
+) {
+    val icon = when (detail.type) {
+        ContactDetailType.PHONE -> Icons.Default.Phone
+        ContactDetailType.EMAIL -> Icons.Default.Email
+        ContactDetailType.SOCIAL -> Icons.Default.Share
+        else -> Icons.Default.Home
+    }
+    val intent: Intent? = when (detail.type) {
+        ContactDetailType.PHONE -> Intent(Intent.ACTION_DIAL, Uri.parse("tel:${detail.value}"))
+        ContactDetailType.EMAIL -> Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${detail.value}"))
+        else -> null
     }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onLaunch(intent) }
-            .padding(vertical = 4.dp),
+            .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            imageVector        = icon,
-            contentDescription = null,
-            modifier           = Modifier.size(16.dp),
-            tint               = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(8.dp))
-        Column {
+        Column(
+            modifier = if (intent != null)
+                Modifier.weight(1f).clickable { onLaunch(intent) }
+            else
+                Modifier.weight(1f)
+        ) {
             Text(detail.value, style = MaterialTheme.typography.bodyMedium)
             Text(detail.label, style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        IconButton(onClick = { onEdit(detail) }, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Default.Edit, contentDescription = "Edit",
+                modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        IconButton(onClick = { onDelete(detail) }, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Default.Delete, contentDescription = "Delete",
+                modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
         }
     }
 }
@@ -271,11 +477,7 @@ private fun EmptyTab(message: String) {
 }
 
 @Composable
-private fun InteractionsTab(
-    items: List<Interaction>,
-    onEdit: (UUID) -> Unit,
-    onDelete: (Interaction) -> Unit,
-) {
+private fun InteractionsTab(items: List<Interaction>, onEdit: (UUID) -> Unit, onDelete: (Interaction) -> Unit) {
     if (items.isEmpty()) { EmptyTab("No interactions yet — tap + to log one"); return }
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(items, key = { it.id }) { interaction ->
@@ -298,11 +500,7 @@ private fun InteractionsTab(
 }
 
 @Composable
-private fun ActivitiesTab(
-    items: List<Activity>,
-    onEdit: (UUID) -> Unit,
-    onDelete: (Activity) -> Unit,
-) {
+private fun ActivitiesTab(items: List<Activity>, onEdit: (UUID) -> Unit, onDelete: (Activity) -> Unit) {
     if (items.isEmpty()) { EmptyTab("No activities yet — tap + to log one"); return }
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(items, key = { it.id }) { activity ->
@@ -345,11 +543,7 @@ private fun NotesTab(items: List<Note>, onEdit: (UUID) -> Unit, onDelete: (Note)
 }
 
 @Composable
-private fun LifeEventsTab(
-    items: List<LifeEvent>,
-    onEdit: (UUID) -> Unit,
-    onDelete: (LifeEvent) -> Unit,
-) {
+private fun LifeEventsTab(items: List<LifeEvent>, onEdit: (UUID) -> Unit, onDelete: (LifeEvent) -> Unit) {
     if (items.isEmpty()) { EmptyTab("No life events — tap + to add one"); return }
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(items, key = { it.id }) { event ->
@@ -431,43 +625,6 @@ private fun TasksTab(
                     }
                 },
             )
-        }
-    }
-}
-
-@Composable
-private fun SummarizeTab(text: String, isLoading: Boolean, onSummarize: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        when {
-            text.isEmpty() && !isLoading -> {
-                Button(
-                    onClick = onSummarize,
-                    modifier = Modifier.align(Alignment.Center),
-                ) { Text("Generate Summary") }
-            }
-            text.isEmpty() -> {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            }
-            else -> {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                    ) {
-                        item { Text(text, style = MaterialTheme.typography.bodyMedium) }
-                    }
-                    if (!isLoading) {
-                        HorizontalDivider()
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(8.dp),
-                            horizontalArrangement = Arrangement.End,
-                        ) {
-                            TextButton(onClick = onSummarize) { Text("Regenerate") }
-                        }
-                    }
-                }
-            }
         }
     }
 }

@@ -1,39 +1,55 @@
 package com.github.maskedkunisquat.wulfpak.ui.settings
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,8 +64,25 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.github.maskedkunisquat.wulfpak.core.data.entity.RelationLabel
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.ModelLoadState
-import com.github.maskedkunisquat.wulfpak.sync.ContactSyncManager
+import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
+
+private class PickMultipleContactsCompat : ActivityResultContract<Unit, List<Uri>>() {
+    override fun createIntent(context: Context, input: Unit) =
+        Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI).apply {
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        }
+    override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> {
+        if (resultCode != Activity.RESULT_OK || intent == null) return emptyList()
+        val uris = mutableListOf<Uri>()
+        intent.data?.let { uris.add(it) }
+        intent.clipData?.let { clip ->
+            for (i in 0 until clip.itemCount) { clip.getItemAt(i).uri?.let { uris.add(it) } }
+        }
+        return uris
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,9 +97,13 @@ fun SettingsScreen(
     val biometricEnabled by viewModel.biometricEnabled.collectAsStateWithLifecycle()
     val modelLoadState   by viewModel.modelLoadState.collectAsStateWithLifecycle()
 
+    val contactPickerLauncher = rememberLauncherForActivityResult(PickMultipleContactsCompat()) { uris ->
+        if (uris.isNotEmpty()) viewModel.startCarousel(uris)
+    }
+
     val contactPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted -> if (granted) viewModel.loadContactCandidates() }
+    ) { granted -> if (granted) contactPickerLauncher.launch(Unit) }
 
     val calendarPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -126,224 +163,246 @@ fun SettingsScreen(
         }
     }
 
-    LaunchedEffect(viewModel.pickerState) {
-        if (viewModel.pickerState is SettingsViewModel.PickerState.Error) {
-            snackbarHostState.showSnackbar(
-                "Failed to load contacts: ${(viewModel.pickerState as SettingsViewModel.PickerState.Error).message}"
-            )
-            viewModel.dismissContactPicker()
-        }
-    }
-
-    val pickerState = viewModel.pickerState
-    if (pickerState is SettingsViewModel.PickerState.Ready) {
-        ContactPickerDialog(
-            candidates = pickerState.candidates,
-            onConfirm  = { viewModel.importSelectedContacts(it) },
-            onDismiss  = { viewModel.dismissContactPicker() },
-        )
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Settings") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-    ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding)) {
-
-            item { SectionHeader("Security") }
-            item {
-                ListItem(
-                    headlineContent   = { Text("Biometric lock") },
-                    supportingContent = { Text("Re-lock when app goes to background") },
-                    leadingContent    = { Icon(Icons.Default.Fingerprint, contentDescription = null) },
-                    trailingContent   = {
-                        Switch(
-                            checked = biometricEnabled,
-                            onCheckedChange = { viewModel.setBiometricEnabled(it) },
-                        )
-                    },
-                )
-            }
-
-            item { SectionHeader("AI features") }
-            item {
-                val modelReady      = modelLoadState == ModelLoadState.READY
-                val modelLoading    = modelLoadState == ModelLoadState.LOADING_SESSION
-                val modelAvailable  = viewModel.isModelAvailable
-                ListItem(
-                    headlineContent = {
-                        Text(when {
-                            modelReady     -> "AI model ready"
-                            modelLoading   -> "Loading model…"
-                            modelAvailable -> "AI model downloaded"
-                            else           -> "Download AI model"
-                        })
-                    },
-                    supportingContent = {
-                        Text(when {
-                            modelReady     -> "On-device Gemma 3 1B is loaded and ready"
-                            modelAvailable -> "Tap to load into memory"
-                            else           -> "Gemma 3 1B (~1 GB) — required for AI features"
-                        })
-                    },
-                    leadingContent = { Icon(Icons.Default.Download, contentDescription = null) },
-                    trailingContent = {
-                        if (modelLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    },
-                    modifier = Modifier.clickable(enabled = !modelReady && !modelLoading) {
-                        if (modelAvailable) {
-                            // file exists but not loaded — LlmOrchestrator calls initialize() on first use
-                        } else {
-                            viewModel.downloadModel()
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Settings") },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     },
                 )
-            }
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+        ) { padding ->
+            LazyColumn(modifier = Modifier.padding(padding)) {
 
-            item { SectionHeader("Contacts") }
-            item {
-                ListItem(
-                    headlineContent   = { Text("Resolve duplicate contacts") },
-                    supportingContent = { Text("Merge contacts that were imported with the same name") },
-                    leadingContent    = { Icon(Icons.Default.Group, contentDescription = null) },
-                    modifier          = Modifier.clickable { onNavigateMerge() },
-                )
-            }
-
-            item { SectionHeader("Data import") }
-            item {
-                val isLoadingPicker = viewModel.pickerState is SettingsViewModel.PickerState.Loading
-                val isSyncing       = viewModel.syncState is SettingsViewModel.SyncState.Loading
-                ListItem(
-                    headlineContent   = { Text("Import from Contacts") },
-                    supportingContent = { Text("Choose contacts from your device to add to WulfPak") },
-                    leadingContent    = { Icon(Icons.Default.Sync, contentDescription = null) },
-                    trailingContent   = {
-                        if (isLoadingPicker || isSyncing) CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    },
-                    modifier = Modifier.clickable(enabled = !isLoadingPicker && !isSyncing) {
-                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS)
-                            == PackageManager.PERMISSION_GRANTED
-                        ) {
-                            viewModel.loadContactCandidates()
-                        } else {
-                            contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-                        }
-                    },
-                )
-            }
-            item {
-                val isImporting = viewModel.importState is SettingsViewModel.ImportState.Loading
-                ListItem(
-                    headlineContent   = { Text("Import vCard file") },
-                    supportingContent = { Text("Import contacts from a .vcf file") },
-                    leadingContent    = { Icon(Icons.Default.FileOpen, contentDescription = null) },
-                    trailingContent   = {
-                        if (isImporting) CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    },
-                    modifier = Modifier.clickable(enabled = !isImporting) {
-                        vCardPickerLauncher.launch("text/vcard")
-                    },
-                )
-            }
-            item {
-                val isSyncing = viewModel.calendarState is SettingsViewModel.CalendarState.Loading
-                ListItem(
-                    headlineContent   = { Text("Export to Calendar") },
-                    supportingContent = { Text("Add life events (birthdays, anniversaries) to device calendar") },
-                    leadingContent    = { Icon(Icons.Default.DateRange, contentDescription = null) },
-                    trailingContent   = {
-                        if (isSyncing) CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    },
-                    modifier = Modifier.clickable(enabled = !isSyncing) {
-                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
-                            == PackageManager.PERMISSION_GRANTED
-                        ) {
-                            viewModel.syncCalendar()
-                        } else {
-                            calendarPermissionLauncher.launch(
-                                arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
+                item { SectionHeader("Security") }
+                item {
+                    ListItem(
+                        headlineContent   = { Text("Biometric lock") },
+                        supportingContent = { Text("Re-lock when app goes to background") },
+                        leadingContent    = { Icon(Icons.Default.Fingerprint, contentDescription = null) },
+                        trailingContent   = {
+                            Switch(
+                                checked         = biometricEnabled,
+                                onCheckedChange = { viewModel.setBiometricEnabled(it) },
                             )
-                        }
-                    },
+                        },
+                    )
+                }
+
+                item { SectionHeader("AI features") }
+                item {
+                    val modelReady     = modelLoadState == ModelLoadState.READY
+                    val modelLoading   = modelLoadState == ModelLoadState.LOADING_SESSION
+                    val modelAvailable = viewModel.isModelAvailable
+                    val progress       = viewModel.downloadProgress
+                    ListItem(
+                        headlineContent = {
+                            Text(when {
+                                modelReady     -> "AI model ready"
+                                modelLoading   -> "Loading model…"
+                                progress != null -> "Downloading AI model ($progress%)"
+                                modelAvailable -> "AI model downloaded"
+                                else           -> "Download AI model"
+                            })
+                        },
+                        supportingContent = {
+                            Column {
+                                Text(when {
+                                    modelReady     -> "On-device Gemma 3 1B is loaded and ready"
+                                    modelLoading   -> "Initializing model engine…"
+                                    progress != null -> "Download in progress…"
+                                    modelAvailable -> "Tap to load into memory"
+                                    else           -> "Gemma 3 1B (~1 GB) — required for AI features"
+                                })
+                                if (progress != null) {
+                                    LinearProgressIndicator(
+                                        progress = { progress / 100f },
+                                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                    )
+                                }
+                            }
+                        },
+                        leadingContent  = {
+                            if (modelLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            else Icon(Icons.Default.Download, contentDescription = null)
+                        },
+                        modifier = Modifier.clickable(enabled = !modelReady && !modelLoading && progress == null) {
+                            if (modelAvailable) viewModel.loadModel()
+                            else viewModel.downloadModel()
+                        },
+                    )
+                }
+
+                item { SectionHeader("Contacts") }
+                item {
+                    ListItem(
+                        headlineContent   = { Text("Resolve duplicate contacts") },
+                        supportingContent = { Text("Merge contacts that were imported with the same name") },
+                        leadingContent    = { Icon(Icons.Default.Group, contentDescription = null) },
+                        modifier          = Modifier.clickable { onNavigateMerge() },
+                    )
+                }
+
+                item { SectionHeader("Data import") }
+                item {
+                    val isLoading = viewModel.carouselState is SettingsViewModel.CarouselState.Loading
+                        || viewModel.syncState is SettingsViewModel.SyncState.Loading
+                    ListItem(
+                        headlineContent   = { Text("Import from Contacts") },
+                        supportingContent = { Text("Pick contacts from your device to import") },
+                        leadingContent    = { Icon(Icons.Default.Sync, contentDescription = null) },
+                        trailingContent   = {
+                            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        },
+                        modifier = Modifier.clickable(enabled = !isLoading) {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS)
+                                == PackageManager.PERMISSION_GRANTED
+                            ) {
+                                contactPickerLauncher.launch(Unit)
+                            } else {
+                                contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                            }
+                        },
+                    )
+                }
+                item {
+                    val isImporting = viewModel.importState is SettingsViewModel.ImportState.Loading
+                    ListItem(
+                        headlineContent   = { Text("Import vCard file") },
+                        supportingContent = { Text("Import contacts from a .vcf file") },
+                        leadingContent    = { Icon(Icons.Default.FileOpen, contentDescription = null) },
+                        trailingContent   = {
+                            if (isImporting) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        },
+                        modifier = Modifier.clickable(enabled = !isImporting) {
+                            vCardPickerLauncher.launch("text/vcard")
+                        },
+                    )
+                }
+                item {
+                    val isSyncing = viewModel.calendarState is SettingsViewModel.CalendarState.Loading
+                    ListItem(
+                        headlineContent   = { Text("Export to Calendar") },
+                        supportingContent = { Text("Add life events (birthdays, anniversaries) to device calendar") },
+                        leadingContent    = { Icon(Icons.Default.DateRange, contentDescription = null) },
+                        trailingContent   = {
+                            if (isSyncing) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        },
+                        modifier = Modifier.clickable(enabled = !isSyncing) {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR)
+                                == PackageManager.PERMISSION_GRANTED
+                            ) {
+                                viewModel.syncCalendar()
+                            } else {
+                                calendarPermissionLauncher.launch(
+                                    arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
+                                )
+                            }
+                        },
+                    )
+                }
+            }
+        }
+
+        // Carousel overlay (full-screen, shown above settings)
+        val cs = viewModel.carouselState
+        if (cs is SettingsViewModel.CarouselState.Active) {
+            Surface(modifier = Modifier.fillMaxSize()) {
+                ContactImportCarousel(
+                    state    = cs,
+                    onAssign = { relation -> viewModel.carouselAssignAndNext(relation) },
+                    onSkip   = { viewModel.carouselSkip() },
+                    onDismiss = { viewModel.dismissCarousel() },
                 )
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ContactPickerDialog(
-    candidates: List<ContactSyncManager.ContactCandidate>,
-    onConfirm: (List<ContactSyncManager.ContactCandidate>) -> Unit,
+private fun ContactImportCarousel(
+    state: SettingsViewModel.CarouselState.Active,
+    onAssign: (String) -> Unit,
+    onSkip: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val importable = remember(candidates) { candidates.filter { !it.alreadyImported } }
-    var selected by remember { mutableStateOf(emptySet<String>()) }
+    val contact  = state.contacts[state.currentIndex]
+    val total    = state.contacts.size
+    val current  = state.currentIndex + 1
+    var relation by remember(state.currentIndex) { mutableStateOf(RelationLabel.ACQUAINTANCE) }
+    var expanded by remember { mutableStateOf(false) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Select Contacts to Import") },
-        text = {
-            if (importable.isEmpty()) {
-                Text("All contacts from this device are already in WulfPak.")
-            } else {
-                LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
-                    items(importable, key = { it.contactId }) { candidate ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    selected = if (candidate.contactId in selected)
-                                        selected - candidate.contactId
-                                    else
-                                        selected + candidate.contactId
-                                }
-                                .padding(vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Checkbox(
-                                checked = candidate.contactId in selected,
-                                onCheckedChange = { checked ->
-                                    selected = if (checked)
-                                        selected + candidate.contactId
-                                    else
-                                        selected - candidate.contactId
-                                },
-                            )
-                            Text(
-                                text     = candidate.displayName,
-                                modifier = Modifier.padding(start = 4.dp),
-                                style    = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Import contact $current of $total") },
+                navigationIcon = {
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Cancel import")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            LinearProgressIndicator(
+                progress = { current.toFloat() / total },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Text(contact.candidate.displayName, style = MaterialTheme.typography.headlineSmall)
+
+            Text("Assign a relationship:", style = MaterialTheme.typography.labelMedium)
+
+            ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+                OutlinedTextField(
+                    value = relation.toDisplayLabel(),
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Relationship") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                )
+                ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    RelationLabel.ALL.forEach { label ->
+                        DropdownMenuItem(
+                            text = { Text(label.toDisplayLabel()) },
+                            onClick = { relation = label; expanded = false },
+                        )
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onConfirm(importable.filter { it.contactId in selected })
-                },
-                enabled = selected.isNotEmpty(),
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(if (selected.isEmpty()) "Import" else "Import (${selected.size})")
+                OutlinedButton(onClick = onSkip, modifier = Modifier.weight(1f)) {
+                    Text("Skip")
+                }
+                Button(
+                    onClick = { onAssign(relation) },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(if (current == total) "Import" else "Next")
+                }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        },
-    )
+        }
+    }
 }
 
 @Composable
