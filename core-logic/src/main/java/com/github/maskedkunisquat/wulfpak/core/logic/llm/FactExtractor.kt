@@ -16,8 +16,8 @@ import java.util.Locale
 
 internal object FactExtractor {
 
-    private val longFmt  = SimpleDateFormat("MMM d, yyyy", Locale.ROOT)
-    private val shortFmt = SimpleDateFormat("MMM d", Locale.ROOT)
+    private val longFmt  = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH)
+    private val shortFmt = SimpleDateFormat("MMM d", Locale.ENGLISH)
 
     // -------------------------------------------------------------------------
     // Programmatic summary — deterministic, zero hallucination.
