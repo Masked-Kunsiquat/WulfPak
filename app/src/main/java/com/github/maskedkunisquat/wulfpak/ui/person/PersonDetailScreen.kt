@@ -274,9 +274,10 @@ fun PersonDetailScreen(
 
                 // AI Summary card
                 AiSummaryCard(
-                    summarizeText = viewModel.summarizeText,
-                    isSummarizing = viewModel.isSummarizing,
-                    onSummarize   = viewModel::summarize,
+                    summarizeText      = viewModel.summarizeText,
+                    isSummarizing      = viewModel.isSummarizing,
+                    summaryGeneratedAt = viewModel.summaryGeneratedAt,
+                    onSummarize        = viewModel::summarize,
                 )
             }
 
@@ -306,6 +307,7 @@ fun PersonDetailScreen(
 private fun AiSummaryCard(
     summarizeText: String,
     isSummarizing: Boolean,
+    summaryGeneratedAt: Long?,
     onSummarize: () -> Unit,
 ) {
     Card(
@@ -319,8 +321,17 @@ private fun AiSummaryCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Summary", style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary)
+                Column {
+                    Text("Summary", style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary)
+                    if (summaryGeneratedAt != null && summarizeText.isNotEmpty()) {
+                        Text(
+                            "Updated ${summaryGeneratedAt.toDisplayDate()}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
                 if (!isSummarizing) {
                     IconButton(onClick = onSummarize, modifier = Modifier.size(28.dp)) {
                         Icon(Icons.Default.Refresh, contentDescription = "Regenerate",

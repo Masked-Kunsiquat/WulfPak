@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ActivityParticipant
+import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
@@ -27,6 +28,17 @@ interface ActivityDao {
 
     @Query("SELECT * FROM activities WHERE id = :id")
     suspend fun getById(id: UUID): Activity?
+
+    @Query("SELECT * FROM activities WHERE id = :id")
+    fun observe(id: UUID): Flow<Activity?>
+
+    @Query("""
+        SELECT p.* FROM persons p
+        INNER JOIN activity_participants ap ON p.id = ap.personId
+        WHERE ap.activityId = :activityId
+        ORDER BY p.firstName
+    """)
+    fun getParticipants(activityId: UUID): Flow<List<Person>>
 
     @Query("SELECT * FROM activities WHERE embedding IS NULL")
     suspend fun getUnembedded(): List<Activity>

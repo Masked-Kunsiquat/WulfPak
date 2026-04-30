@@ -27,8 +27,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.github.maskedkunisquat.wulfpak.ui.feed.ActivityDetailScreen
+import com.github.maskedkunisquat.wulfpak.ui.feed.ActivityDetailViewModel
 import com.github.maskedkunisquat.wulfpak.ui.feed.ActivityFeedScreen
 import com.github.maskedkunisquat.wulfpak.ui.feed.AddEditActivityScreen
+import com.github.maskedkunisquat.wulfpak.ui.feed.InteractionDetailScreen
+import com.github.maskedkunisquat.wulfpak.ui.feed.InteractionDetailViewModel
 import com.github.maskedkunisquat.wulfpak.ui.merge.MergeContactsScreen
 import com.github.maskedkunisquat.wulfpak.ui.people.AddEditPersonScreen
 import com.github.maskedkunisquat.wulfpak.ui.people.PeopleListScreen
@@ -57,6 +61,8 @@ object Routes {
     const val ADD_EDIT_GIFT         = "add_edit_gift/{personId}?giftId={giftId}"
     const val ADD_EDIT_TASK         = "add_edit_task?personId={personId}&taskId={taskId}"
     const val ACTIVITY_FEED         = "activity_feed"
+    const val ACTIVITY_DETAIL       = "activity_detail/{activityId}"
+    const val INTERACTION_DETAIL    = "interaction_detail/{interactionId}"
     const val SEARCH                = "search"
     const val TASKS                 = "tasks"
     const val SETTINGS              = "settings"
@@ -88,6 +94,9 @@ object Routes {
         ).joinToString("&")
         return if (params.isEmpty()) "add_edit_task" else "add_edit_task?$params"
     }
+
+    fun activityDetail(activityId: String)       = "activity_detail/$activityId"
+    fun interactionDetail(interactionId: String) = "interaction_detail/$interactionId"
 }
 
 private data class TopLevelDest(val route: String, val icon: ImageVector, val label: String)
@@ -268,8 +277,38 @@ fun AppNavHost(
 
             composable(Routes.ACTIVITY_FEED) {
                 ActivityFeedScreen(
-                    onAddActivity  = { navController.navigate(Routes.addEditActivity()) },
-                    onEditActivity = { id -> navController.navigate(Routes.addEditActivity(activityId = id.toString())) },
+                    onAddActivity     = { navController.navigate(Routes.addEditActivity()) },
+                    onViewActivity    = { id -> navController.navigate(Routes.activityDetail(id.toString())) },
+                    onViewInteraction = { id -> navController.navigate(Routes.interactionDetail(id.toString())) },
+                )
+            }
+
+            composable(
+                route = Routes.ACTIVITY_DETAIL,
+                arguments = listOf(navArgument("activityId") { type = NavType.StringType }),
+            ) { back ->
+                val activityIdStr = back.arguments!!.getString("activityId")!!
+                val vm: ActivityDetailViewModel = viewModel()
+                ActivityDetailScreen(
+                    activityId    = UUID.fromString(activityIdStr),
+                    onNavigateBack = { navController.popBackStack() },
+                    onEdit         = { id -> navController.navigate(Routes.addEditActivity(activityId = id.toString())) },
+                    onOpenPerson   = { id -> navController.navigate(Routes.personDetail(id.toString())) },
+                    viewModel      = vm,
+                )
+            }
+
+            composable(
+                route = Routes.INTERACTION_DETAIL,
+                arguments = listOf(navArgument("interactionId") { type = NavType.StringType }),
+            ) { back ->
+                val interactionIdStr = back.arguments!!.getString("interactionId")!!
+                val vm: InteractionDetailViewModel = viewModel()
+                InteractionDetailScreen(
+                    interactionId  = UUID.fromString(interactionIdStr),
+                    onNavigateBack = { navController.popBackStack() },
+                    onOpenPerson   = { id -> navController.navigate(Routes.personDetail(id.toString())) },
+                    viewModel      = vm,
                 )
             }
 

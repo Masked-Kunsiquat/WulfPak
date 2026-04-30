@@ -31,7 +31,8 @@ import java.util.UUID
 @Composable
 fun ActivityFeedScreen(
     onAddActivity: () -> Unit,
-    onEditActivity: (UUID) -> Unit,
+    onViewActivity: (UUID) -> Unit,
+    onViewInteraction: (UUID) -> Unit,
     viewModel: ActivityFeedViewModel = viewModel(),
 ) {
     val feed by viewModel.feed.collectAsStateWithLifecycle()
@@ -61,6 +62,7 @@ fun ActivityFeedScreen(
                         is FeedItem.InteractionItem -> {
                             val i = item.interaction
                             ListItem(
+                                modifier          = Modifier.clickable { onViewInteraction(i.id) },
                                 headlineContent   = { Text(i.type.toDisplayLabel()) },
                                 supportingContent = {
                                     i.note?.let { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) }
@@ -71,7 +73,7 @@ fun ActivityFeedScreen(
                         is FeedItem.ActivityItem -> {
                             val a = item.activity
                             ListItem(
-                                modifier          = Modifier.clickable { onEditActivity(a.id) },
+                                modifier          = Modifier.clickable { onViewActivity(a.id) },
                                 headlineContent   = { Text(a.title) },
                                 supportingContent = {
                                     a.body?.let { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) }
