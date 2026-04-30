@@ -29,6 +29,9 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
         "Who are my best friends?",
         "Who am I closest to?",
         "Who goes by a nickname?",
+        "What did I do with my contacts recently?",
+        "What notes do I have about my contacts?",
+        "Who did I last call?",
     )
 
     private var suggestionOffset = 0

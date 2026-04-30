@@ -49,14 +49,15 @@ class AppApplication : Application(), Configuration.Provider {
 
     val llmOrchestrator: LlmOrchestrator by lazy {
         LlmOrchestrator(
-            provider       = llmProvider,
-            personDao      = db.personDao(),
-            interactionDao = db.interactionDao(),
-            noteDao        = db.noteDao(),
-            activityDao    = db.activityDao(),
-            lifeEventDao   = db.lifeEventDao(),
-            giftDao        = db.giftDao(),
-            taskDao        = db.taskDao(),
+            provider          = llmProvider,
+            personDao         = db.personDao(),
+            interactionDao    = db.interactionDao(),
+            noteDao           = db.noteDao(),
+            activityDao       = db.activityDao(),
+            lifeEventDao      = db.lifeEventDao(),
+            giftDao           = db.giftDao(),
+            taskDao           = db.taskDao(),
+            searchRepository  = searchRepository,
         )
     }
 
