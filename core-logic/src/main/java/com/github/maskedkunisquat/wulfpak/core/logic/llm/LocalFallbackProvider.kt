@@ -5,6 +5,7 @@ import android.os.Build
 import android.util.Log
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Contents
+import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
@@ -41,6 +42,7 @@ class LocalFallbackProvider(
     override val id = "gemma3n_e4b_litertlm"
 
     @Volatile private var engine: Engine? = null
+    @Volatile private var chatConversation: Conversation? = null
     @Volatile private var initAttempted = false
     @Volatile private var initFailureReason: String? = null
     @Volatile private var openClFailed = false
@@ -76,6 +78,8 @@ class LocalFallbackProvider(
             if (engine != null) {
                 Log.i(TAG, "Closing existing engine: ${_loadedModelName.value} -> $targetFile")
                 engineLock.writeLock().withLock {
+                    (chatConversation as? AutoCloseable)?.runCatching { close() }
+                    chatConversation = null
                     (engine as? AutoCloseable)?.runCatching { close() }
                     engine = null
                     _loadedModelName.value = null
@@ -174,9 +178,62 @@ class LocalFallbackProvider(
         }
     }.flowOn(dispatcher)
 
+    override fun chatSend(prompt: String, systemInstruction: String?): Flow<LlmResult> =
+        chatSendInternal(prompt, systemInstruction, allowOpenClRetry = true)
+
+    private fun chatSendInternal(
+        prompt: String,
+        systemInstruction: String?,
+        allowOpenClRetry: Boolean,
+    ): Flow<LlmResult> = flow {
+        val eng = engineLock.readLock().withLock {
+            engine ?: throw IllegalStateException(
+                "Model not loaded. ${initFailureReason ?: "Call initialize() first."}"
+            )
+        }
+
+        engineLock.readLock().lock()
+        try {
+            val conv = chatConversation ?: run {
+                val config = if (systemInstruction != null) {
+                    ConversationConfig(systemInstruction = Contents.of(systemInstruction))
+                } else {
+                    ConversationConfig()
+                }
+                eng.createConversation(config).also { chatConversation = it }
+            }
+            conv.sendMessageAsync(prompt).collect { message ->
+                val text = message.toString()
+                if (text.isNotEmpty()) emit(LlmResult.Token(text))
+            }
+            emit(LlmResult.Complete)
+        } finally {
+            engineLock.readLock().unlock()
+        }
+    }.catch { e ->
+        if (allowOpenClRetry && !openClFailed &&
+            e.message?.contains("OpenCL", ignoreCase = true) == true) {
+            Log.w(TAG, "GPU inference failed — OpenCL unavailable, switching to CPU")
+            openClFailed = true
+            withContext(dispatcher) { switchToCpu() }
+            emitAll(chatSendInternal(prompt, systemInstruction, allowOpenClRetry = false))
+        } else {
+            emit(LlmResult.Error(e))
+        }
+    }.flowOn(dispatcher)
+
+    override fun resetChat() {
+        engineLock.writeLock().withLock {
+            (chatConversation as? AutoCloseable)?.runCatching { close() }
+            chatConversation = null
+        }
+    }
+
     private fun switchToCpu() {
         synchronized(initLock) {
             engineLock.writeLock().withLock {
+                (chatConversation as? AutoCloseable)?.runCatching { close() }
+                chatConversation = null
                 (engine as? AutoCloseable)?.runCatching { close() }
                 engine = null
                 _loadedModelName.value = null

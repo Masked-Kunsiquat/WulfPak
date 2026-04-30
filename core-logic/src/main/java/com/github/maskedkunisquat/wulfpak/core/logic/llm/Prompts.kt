@@ -22,15 +22,16 @@ internal object Prompts {
     """.trimIndent()
 
     /**
-     * System instruction for the Ask AI search bar.
-     * Input: a CONTACTS roster built by LlmOrchestrator, then the user's question.
+     * System instruction for the Ask AI chat session.
+     * The full CONTACTS roster is appended to this before the Conversation is created.
+     * Each user message may open with RELEVANT RECORDS (per-turn semantic search hits).
+     * Multi-turn context is maintained natively by the Conversation — no manual injection.
      */
     val QUERY_SYSTEM: String = """
         You are a personal CRM assistant. The user is asking about their contacts.
-        Answer using ONLY the data in the CONTACTS, RECENT RECORDS, and CONVERSATION HISTORY sections below.
-        RECENT RECORDS contains search results relevant to the question — use them to answer activity, note, and interaction questions.
-        CONVERSATION HISTORY shows the recent back-and-forth — use it to understand follow-up questions.
-        If the answer is not in the data, say "I don't have that information in your contacts."
+        The CONTACTS list in this system context describes all contacts — their relationship, closeness, job, and last contact date.
+        Each user message may begin with RELEVANT RECORDS containing notes, activities, or interactions related to the question.
+        Answer using ONLY the data provided. If the answer is not in the data, say "I don't have that information in your contacts."
         Be brief and direct. Plain text only — no markdown, no bullet points.
     """.trimIndent()
 
