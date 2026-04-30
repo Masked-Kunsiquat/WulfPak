@@ -78,7 +78,9 @@ class AppApplication : Application(), Configuration.Provider {
         appScope.launch(Dispatchers.IO) {
             if (llmProvider.isModelAvailable()) llmProvider.initialize()
         }
-        ContactReminderWorker.schedule(WorkManager.getInstance(this))
+        val wm = WorkManager.getInstance(this)
+        ContactReminderWorker.schedule(wm)
+        EmbeddingWorker.enqueue(wm)    // backfill any rows written before model was ready
     }
 
     private fun createNotificationChannels() {
