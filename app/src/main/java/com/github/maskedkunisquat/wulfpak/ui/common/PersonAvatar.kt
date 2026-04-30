@@ -10,28 +10,44 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
+import java.io.File
 
 @Composable
 fun PersonAvatar(person: Person, size: Dp = 40.dp, modifier: Modifier = Modifier) {
-    val initials = buildString {
-        append(person.firstName.firstOrNull() ?: "")
-        append(person.lastName?.firstOrNull() ?: "")
-    }.uppercase()
-    Box(
-        modifier = modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = initials,
-            style = if (size >= 56.dp) MaterialTheme.typography.titleLarge
-                    else MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
+    val photoFile = person.photoUri?.let { File(it) }?.takeIf { it.exists() }
+
+    if (photoFile != null) {
+        AsyncImage(
+            model = photoFile,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+                .size(size)
+                .clip(CircleShape),
         )
+    } else {
+        val initials = buildString {
+            append(person.firstName.firstOrNull() ?: "")
+            append(person.lastName?.firstOrNull() ?: "")
+        }.uppercase()
+        Box(
+            modifier = modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = initials,
+                style = if (size >= 56.dp) MaterialTheme.typography.titleLarge
+                        else MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
     }
 }

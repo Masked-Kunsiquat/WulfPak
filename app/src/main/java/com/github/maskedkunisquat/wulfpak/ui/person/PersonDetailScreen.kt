@@ -214,6 +214,9 @@ fun PersonDetailScreen(
                             color = MaterialTheme.colorScheme.primary)
                         p.nickname?.let { Text("\"$it\"", style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        val job = listOfNotNull(p.jobTitle, p.company).joinToString(" at ")
+                        if (job.isNotBlank()) Text(job, style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
 
