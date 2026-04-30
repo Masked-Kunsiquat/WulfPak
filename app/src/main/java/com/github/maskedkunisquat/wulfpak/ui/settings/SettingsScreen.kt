@@ -224,7 +224,7 @@ fun SettingsScreen(
                                     modelLoading   -> "Initializing model engine…"
                                     progress != null -> "Download in progress…"
                                     modelAvailable -> "Tap to load into memory"
-                                    else           -> "Gemma 3n E4B (~2.4 GB) — required for AI features"
+                                    else           -> "Gemma 3n E4B (~4.9 GB) — required for AI features"
                                 })
                                 if (progress != null) {
                                     LinearProgressIndicator(
