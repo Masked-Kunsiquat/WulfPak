@@ -170,6 +170,44 @@ internal class ContactsToolSet(
         }
     }
 
+    @Tool(description = "Get a contact's profile — birthday, current age, relationship, job, and last contact date. Use this when asked about a contact's age, birthday, or general details.")
+    fun getContactDetails(
+        @ToolParam(description = "First name or nickname of the contact.") name: String,
+    ): String = runBlocking {
+        Log.i(TAG, "getContactDetails — name=$name")
+        eventSink?.invoke(LlmResult.ToolCall("getContactDetails", mapOf("name" to name)))
+        val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\"."
+        val lifeEvents = lifeEventDao.getForPerson(person.id).first()
+        val birthday   = lifeEvents.firstOrNull { it.eventType == "birthday" }
+        val death      = lifeEvents.firstOrNull { it.eventType == "death" }
+        buildString {
+            val fullName = "${person.firstName}${person.lastName?.let { " $it" } ?: ""}"
+            appendLine("$fullName — ${person.relationLabel.replace('_', ' ')}")
+            person.nickname?.let { appendLine("Goes by: \"$it\"") }
+            person.closenessRating?.let { appendLine("Closeness: $it/5") }
+            listOfNotNull(person.jobTitle, person.company).joinToString(" at ").takeIf { it.isNotBlank() }
+                ?.let { appendLine("Work: $it") }
+            if (birthday != null) {
+                val birthYear = Calendar.getInstance().apply { timeInMillis = birthday.date }.get(Calendar.YEAR)
+                if (birthYear != 1900) {
+                    val asOf = death?.date ?: System.currentTimeMillis()
+                    val age  = calcAge(birthday.date, asOf)
+                    appendLine("Birthday: ${fmt.format(Date(birthday.date))}")
+                    if (death != null) appendLine("Age at passing: $age")
+                    else appendLine("Current age: $age")
+                } else {
+                    appendLine("Birthday: ${SimpleDateFormat("MMM d", Locale.ENGLISH).format(Date(birthday.date))} (year unknown)")
+                }
+            }
+            death?.let { appendLine("Passed away: ${fmt.format(Date(it.date))}") }
+            person.lastContactedAt?.let { last ->
+                val days = ((System.currentTimeMillis() - last) / 86_400_000L).toInt()
+                val ago  = when (days) { 0 -> "today"; 1 -> "yesterday"; else -> "$days days ago" }
+                appendLine("Last contact: $ago")
+            } ?: appendLine("Last contact: never logged")
+        }.trimEnd()
+    }
+
     @Tool(description = "Get contacts with upcoming birthdays or anniversaries, sorted by soonest first.")
     fun getUpcomingEvents(): String = runBlocking {
         Log.i(TAG, "getUpcomingEvents called")
@@ -200,6 +238,16 @@ internal class ContactsToolSet(
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private fun calcAge(birthdayMs: Long, asOfMs: Long): Int {
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = asOfMs
+        val nowYear = cal.get(Calendar.YEAR); val nowMonth = cal.get(Calendar.MONTH); val nowDay = cal.get(Calendar.DAY_OF_MONTH)
+        cal.timeInMillis = birthdayMs
+        var age = nowYear - cal.get(Calendar.YEAR)
+        if (nowMonth < cal.get(Calendar.MONTH) || (nowMonth == cal.get(Calendar.MONTH) && nowDay < cal.get(Calendar.DAY_OF_MONTH))) age--
+        return age
+    }
 
     private suspend fun findPerson(name: String): Person? {
         val parts = name.trim().split(" ", limit = 2)

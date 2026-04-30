@@ -90,12 +90,12 @@ internal object FactExtractor {
         val birthday  = lifeEvents.firstOrNull { it.eventType == LifeEventType.BIRTHDAY && it.isRecurring }
         val deathDate = lifeEvents.firstOrNull { it.eventType == LifeEventType.DEATH }?.date
         if (birthday != null) {
-            val currentAge = calculateAge(birthday.date)
             val daysUntil  = daysUntilNextOccurrence(birthday.date)
+            val currentAge = if (birthYearIsKnown(birthday.date)) calculateAge(birthday.date) else null
             sentences += when {
-                daysUntil == 0  -> "$firstName's birthday is today — turning $currentAge!"
-                daysUntil <= 30 -> "$firstName's birthday is coming up in $daysUntil days — turning ${currentAge + 1}."
-                else            -> "$firstName's birthday is ${shortFmt.format(Date(birthday.date))} — $currentAge years old."
+                daysUntil == 0  -> "$firstName's birthday is today${currentAge?.let { " — turning $it" } ?: ""}!"
+                daysUntil <= 30 -> "$firstName's birthday is coming up in $daysUntil days${currentAge?.let { " — turning ${it + 1}" } ?: ""}."
+                else            -> "$firstName's birthday is ${shortFmt.format(Date(birthday.date))}${currentAge?.let { " — $it years old" } ?: ""}."
             }
         } else if (lifeEvents.isNotEmpty()) {
             sentences += "$firstName has ${lifeEvents.size} recorded life ${pl(lifeEvents.size, "event")}."
@@ -165,9 +165,10 @@ internal object FactExtractor {
         }
 
         // Explicit age fact so the LLM doesn't have to do arithmetic
-        birthdayEvent?.let { b ->
+        // Skip if birth year is the 1900 sentinel (year-less import from contacts)
+        if (birthdayEvent != null && birthYearIsKnown(birthdayEvent.date)) {
             val asOf = deathEvent?.date ?: System.currentTimeMillis()
-            val age  = calculateAge(b.date, asOf)
+            val age  = calculateAge(birthdayEvent.date, asOf)
             if (deathEvent != null) {
                 facts += "$name was $age years old when they passed away."
             } else {
@@ -217,6 +218,9 @@ internal object FactExtractor {
 
     private fun pl(n: Int, singular: String, plural: String = "${singular}s") =
         if (n == 1) singular else plural
+
+    private fun birthYearIsKnown(ms: Long): Boolean =
+        Calendar.getInstance().apply { timeInMillis = ms }.get(Calendar.YEAR) != 1900
 
     private fun calculateAge(birthdayMs: Long, asOfMs: Long = System.currentTimeMillis()): Int {
         val cal = Calendar.getInstance()

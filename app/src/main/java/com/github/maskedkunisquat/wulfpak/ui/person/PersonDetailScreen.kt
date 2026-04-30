@@ -80,6 +80,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEventType
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Task
 import com.github.maskedkunisquat.wulfpak.ui.common.PersonAvatar
+import com.github.maskedkunisquat.wulfpak.ui.common.birthYearIsKnown
 import com.github.maskedkunisquat.wulfpak.ui.common.calculateAge
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayDate
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
@@ -221,9 +222,9 @@ fun PersonDetailScreen(
                         val birthday = lifeEvents.firstOrNull { it.eventType == LifeEventType.BIRTHDAY }
                         val death    = lifeEvents.firstOrNull { it.eventType == LifeEventType.DEATH }
                         val ageLabel = if (!showBirthdayAge) "" else when {
-                            birthday != null && death != null ->
+                            birthday != null && birthday.date.birthYearIsKnown() && death != null ->
                                 " · Passed away at ${calculateAge(birthday.date, death.date)}"
-                            birthday != null ->
+                            birthday != null && birthday.date.birthYearIsKnown() ->
                                 " · ${calculateAge(birthday.date)} years old"
                             else -> ""
                         }
