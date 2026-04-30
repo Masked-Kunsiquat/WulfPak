@@ -204,11 +204,11 @@ fun SettingsScreen(
                         supportingContent = {
                             Column {
                                 Text(when {
-                                    modelReady     -> "On-device Gemma 3n E4B is loaded and ready"
+                                    modelReady     -> "On-device Gemma 4 E4B is loaded and ready"
                                     modelLoading   -> "Initializing model engine…"
                                     progress != null -> "Download in progress…"
                                     modelAvailable -> "Tap to load into memory"
-                                    else           -> "Gemma 3n E4B (~4.9 GB) — required for AI features"
+                                    else           -> "Gemma 4 E4B (~3.65 GB) — required for AI features"
                                 })
                                 if (progress != null) {
                                     LinearProgressIndicator(
