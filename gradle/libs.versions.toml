@@ -67,7 +67,6 @@ androidx-biometric = { group = "androidx.biometric", name = "biometric", version
 
 # LiteRT (TFLite) + LiteRT-LM
 litert = { group = "com.google.ai.edge.litert", name = "litert", version.ref = "litert" }
-litert-gpu = { group = "com.google.ai.edge.litert", name = "litert-gpu", version.ref = "litert" }
 litertlm-android = { group = "com.google.ai.edge.litertlm", name = "litertlm-android", version.ref = "litertlm" }
 
 # WorkManager
