@@ -65,6 +65,7 @@ class LlmOrchestrator(
                     p.nickname?.let { append(", known as \"$it\"") }
                     val job = listOfNotNull(p.jobTitle, p.company).joinToString(" at ")
                     if (job.isNotBlank()) append(", works as $job")
+                    p.closenessRating?.let { append(", closeness $it/5") }
                     p.lastContactedAt?.let {
                         val days = ((System.currentTimeMillis() - it) / 86_400_000L).toInt()
                         append(", last contact $days days ago")
