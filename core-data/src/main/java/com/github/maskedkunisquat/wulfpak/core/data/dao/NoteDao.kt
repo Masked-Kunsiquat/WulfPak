@@ -41,5 +41,5 @@ interface NoteDao {
     suspend fun delete(note: Note)
 
     @Query("UPDATE notes SET embedding = :embedding WHERE id = :id")
-    suspend fun updateEmbedding(id: UUID, embedding: FloatArray)
+    suspend fun updateEmbedding(id: UUID, embedding: ByteArray)
 }

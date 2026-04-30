@@ -11,6 +11,8 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.github.maskedkunisquat.wulfpak.core.data.AppDatabase
 import com.github.maskedkunisquat.wulfpak.core.logic.embedding.EmbeddingProvider
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 /**
  * One-shot worker that embeds all unembedded Notes, Interactions, and Activities.
@@ -39,7 +41,7 @@ class EmbeddingWorker(
             try {
                 val vec = embeddingProvider.generateEmbedding(note.body)
                 if (vec.any { it != 0f }) {
-                    db.noteDao().updateEmbedding(note.id, vec)
+                    db.noteDao().updateEmbedding(note.id, vec.toBlob())
                     embedded++
                 }
             } catch (e: Exception) {
@@ -53,7 +55,7 @@ class EmbeddingWorker(
             try {
                 val vec = embeddingProvider.generateEmbedding(text)
                 if (vec.any { it != 0f }) {
-                    db.interactionDao().updateEmbedding(interaction.id, vec)
+                    db.interactionDao().updateEmbedding(interaction.id, vec.toBlob())
                     embedded++
                 }
             } catch (e: Exception) {
@@ -70,7 +72,7 @@ class EmbeddingWorker(
             try {
                 val vec = embeddingProvider.generateEmbedding(text)
                 if (vec.any { it != 0f }) {
-                    db.activityDao().updateEmbedding(activity.id, vec)
+                    db.activityDao().updateEmbedding(activity.id, vec.toBlob())
                     embedded++
                 }
             } catch (e: Exception) {
@@ -119,3 +121,8 @@ class EmbeddingWorker(
         }
     }
 }
+
+// Room's @Query treats FloatArray as a collection (IN clause), so we pre-serialize to a BLOB.
+private fun FloatArray.toBlob(): ByteArray =
+    ByteBuffer.allocate(size * Float.SIZE_BYTES).order(ByteOrder.LITTLE_ENDIAN)
+        .apply { asFloatBuffer().put(this@toBlob) }.array()
