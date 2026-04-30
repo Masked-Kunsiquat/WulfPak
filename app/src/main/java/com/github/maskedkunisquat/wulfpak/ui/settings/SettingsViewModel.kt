@@ -54,6 +54,17 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         data class Error(val message: String)              : CalendarState()
     }
 
+    // ── In-app contact picker state ───────────────────────────────────────
+
+    sealed class CandidatePickState {
+        object Idle    : CandidatePickState()
+        object Loading : CandidatePickState()
+        data class Active(
+            val candidates: List<ContactSyncManager.ContactCandidate>,
+            val selected: Set<Int> = emptySet(),
+        ) : CandidatePickState()
+    }
+
     // ── Carousel state ────────────────────────────────────────────────────
 
     data class CarouselContact(
@@ -62,20 +73,20 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     )
 
     sealed class CarouselState {
-        object Idle    : CarouselState()
-        object Loading : CarouselState()
+        object Idle : CarouselState()
         data class Active(val contacts: List<CarouselContact>, val currentIndex: Int) : CarouselState()
     }
 
     // ── Observable state ──────────────────────────────────────────────────
 
-    var syncState      by mutableStateOf<SyncState>(SyncState.Idle)         ; private set
-    var importState    by mutableStateOf<ImportState>(ImportState.Idle)     ; private set
-    var calendarState  by mutableStateOf<CalendarState>(CalendarState.Idle) ; private set
-    var carouselState  by mutableStateOf<CarouselState>(CarouselState.Idle) ; private set
-    var downloadProgress  by mutableStateOf<Int?>(null)     ; private set
-    var downloadError     by mutableStateOf<String?>(null)  ; private set
-    var carouselMessage   by mutableStateOf<String?>(null)  ; private set
+    var syncState          by mutableStateOf<SyncState>(SyncState.Idle)                       ; private set
+    var importState        by mutableStateOf<ImportState>(ImportState.Idle)                   ; private set
+    var calendarState      by mutableStateOf<CalendarState>(CalendarState.Idle)               ; private set
+    var candidatePickState by mutableStateOf<CandidatePickState>(CandidatePickState.Idle)     ; private set
+    var carouselState      by mutableStateOf<CarouselState>(CarouselState.Idle)               ; private set
+    var downloadProgress   by mutableStateOf<Int?>(null)                                      ; private set
+    var downloadError      by mutableStateOf<String?>(null)                                   ; private set
+    var carouselMessage    by mutableStateOf<String?>(null)                                   ; private set
 
     val biometricEnabled = appApp.appDataStore.data
         .map { it[AppPrefsKeys.BIOMETRIC_ENABLED] ?: true }
@@ -147,24 +158,44 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    // ── Contact import carousel ───────────────────────────────────────────
+    // ── In-app contact picker ─────────────────────────────────────────────
 
-    fun startCarousel(uris: List<Uri>) {
-        if (carouselState is CarouselState.Loading) return
-        carouselState = CarouselState.Loading
+    fun startCandidatePick() {
+        if (candidatePickState is CandidatePickState.Loading) return
+        candidatePickState = CandidatePickState.Loading
         viewModelScope.launch(Dispatchers.IO) {
-            carouselState = try {
-                val candidates = contactSyncManager.fetchByUris(getApplication(), uris)
-                    .filter { !it.alreadyImported }
-                if (candidates.isEmpty()) {
-                    carouselMessage = "All selected contacts are already in your list"
-                    CarouselState.Idle
-                } else CarouselState.Active(candidates.map { CarouselContact(it) }, 0)
+            candidatePickState = try {
+                CandidatePickState.Active(contactSyncManager.fetchCandidates(getApplication()))
             } catch (e: Exception) {
-                CarouselState.Idle
+                CandidatePickState.Idle
             }
         }
     }
+
+    fun candidatePickToggle(index: Int) {
+        val state = candidatePickState as? CandidatePickState.Active ?: return
+        val newSelected = state.selected.toMutableSet()
+        if (index in newSelected) newSelected.remove(index) else newSelected.add(index)
+        candidatePickState = state.copy(selected = newSelected)
+    }
+
+    fun candidatePickConfirm() {
+        val state = candidatePickState as? CandidatePickState.Active ?: return
+        val toImport = state.selected
+            .sorted()
+            .map { state.candidates[it] }
+            .filter { !it.alreadyImported }
+        candidatePickState = CandidatePickState.Idle
+        if (toImport.isEmpty()) {
+            carouselMessage = "No new contacts selected"
+            return
+        }
+        carouselState = CarouselState.Active(toImport.map { CarouselContact(it) }, 0)
+    }
+
+    fun dismissCandidatePick() { candidatePickState = CandidatePickState.Idle }
+
+    // ── Contact import carousel ───────────────────────────────────────────
 
     fun carouselAssignAndNext(relation: String) {
         val state = carouselState as? CarouselState.Active ?: return

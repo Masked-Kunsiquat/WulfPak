@@ -1,14 +1,9 @@
 package com.github.maskedkunisquat.wulfpak.ui.settings
 
 import android.Manifest
-import android.app.Activity
-import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,7 +38,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -68,27 +62,13 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.RelationLabel
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.ModelLoadState
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
 
-private class PickMultipleContactsCompat : ActivityResultContract<Unit, List<Uri>>() {
-    override fun createIntent(context: Context, input: Unit) =
-        Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI).apply {
-            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-        }
-    override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> {
-        if (resultCode != Activity.RESULT_OK || intent == null) return emptyList()
-        val uris = mutableListOf<Uri>()
-        intent.data?.let { uris.add(it) }
-        intent.clipData?.let { clip ->
-            for (i in 0 until clip.itemCount) { clip.getItemAt(i).uri?.let { uris.add(it) } }
-        }
-        return uris
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateMerge: () -> Unit,
+    onNavigateContactPick: () -> Unit,
     viewModel: SettingsViewModel = viewModel(),
 ) {
     val context = LocalContext.current
@@ -97,13 +77,9 @@ fun SettingsScreen(
     val biometricEnabled by viewModel.biometricEnabled.collectAsStateWithLifecycle()
     val modelLoadState   by viewModel.modelLoadState.collectAsStateWithLifecycle()
 
-    val contactPickerLauncher = rememberLauncherForActivityResult(PickMultipleContactsCompat()) { uris ->
-        if (uris.isNotEmpty()) viewModel.startCarousel(uris)
-    }
-
     val contactPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted -> if (granted) contactPickerLauncher.launch(Unit) }
+    ) { granted -> if (granted) onNavigateContactPick() }
 
     val calendarPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -264,20 +240,19 @@ fun SettingsScreen(
 
                 item { SectionHeader("Data import") }
                 item {
-                    val isLoading = viewModel.carouselState is SettingsViewModel.CarouselState.Loading
-                        || viewModel.syncState is SettingsViewModel.SyncState.Loading
+                    val isImportingContacts = viewModel.syncState is SettingsViewModel.SyncState.Loading
                     ListItem(
                         headlineContent   = { Text("Import from Contacts") },
                         supportingContent = { Text("Pick contacts from your device to import") },
                         leadingContent    = { Icon(Icons.Default.Sync, contentDescription = null) },
                         trailingContent   = {
-                            if (isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            if (isImportingContacts) CircularProgressIndicator(modifier = Modifier.size(24.dp))
                         },
-                        modifier = Modifier.clickable(enabled = !isLoading) {
+                        modifier = Modifier.clickable(enabled = !isImportingContacts) {
                             if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS)
                                 == PackageManager.PERMISSION_GRANTED
                             ) {
-                                contactPickerLauncher.launch(Unit)
+                                onNavigateContactPick()
                             } else {
                                 contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
                             }
@@ -328,9 +303,9 @@ fun SettingsScreen(
         if (cs is SettingsViewModel.CarouselState.Active) {
             Surface(modifier = Modifier.fillMaxSize()) {
                 ContactImportCarousel(
-                    state    = cs,
-                    onAssign = { relation -> viewModel.carouselAssignAndNext(relation) },
-                    onSkip   = { viewModel.carouselSkip() },
+                    state     = cs,
+                    onAssign  = { relation -> viewModel.carouselAssignAndNext(relation) },
+                    onSkip    = { viewModel.carouselSkip() },
                     onDismiss = { viewModel.dismissCarousel() },
                 )
             }
@@ -418,6 +393,7 @@ private fun ContactImportCarousel(
         }
     }
 }
+
 
 @Composable
 private fun SectionHeader(text: String) {
