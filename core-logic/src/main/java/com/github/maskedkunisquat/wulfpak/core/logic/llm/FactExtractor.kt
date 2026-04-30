@@ -87,15 +87,15 @@ internal object FactExtractor {
         }
 
         // 4. Birthday callout (recurring) or generic life event count
-        val birthday = lifeEvents.firstOrNull {
-            it.eventType == LifeEventType.BIRTHDAY && it.isRecurring
-        }
+        val birthday  = lifeEvents.firstOrNull { it.eventType == LifeEventType.BIRTHDAY && it.isRecurring }
+        val deathDate = lifeEvents.firstOrNull { it.eventType == LifeEventType.DEATH }?.date
         if (birthday != null) {
-            val daysUntil = daysUntilNextOccurrence(birthday.date)
+            val currentAge = calculateAge(birthday.date)
+            val daysUntil  = daysUntilNextOccurrence(birthday.date)
             sentences += when {
-                daysUntil == 0   -> "$firstName's birthday is today!"
-                daysUntil <= 30  -> "$firstName's birthday is coming up in $daysUntil days."
-                else             -> "$firstName's birthday is ${shortFmt.format(Date(birthday.date))}."
+                daysUntil == 0  -> "$firstName's birthday is today — turning $currentAge!"
+                daysUntil <= 30 -> "$firstName's birthday is coming up in $daysUntil days — turning ${currentAge + 1}."
+                else            -> "$firstName's birthday is ${shortFmt.format(Date(birthday.date))} — $currentAge years old."
             }
         } else if (lifeEvents.isNotEmpty()) {
             sentences += "$firstName has ${lifeEvents.size} recorded life ${pl(lifeEvents.size, "event")}."
@@ -153,12 +153,26 @@ internal object FactExtractor {
             facts += "No contact has been logged yet."
         }
 
+        val birthdayEvent = lifeEvents.firstOrNull { it.eventType == LifeEventType.BIRTHDAY }
+        val deathEvent    = lifeEvents.firstOrNull { it.eventType == LifeEventType.DEATH }
+
         lifeEvents.forEach { e ->
             val type       = e.eventType.replace('_', ' ')
             val dateStr    = longFmt.format(Date(e.date))
             val recur      = if (e.isRecurring) " (annual)" else ""
             val annotation = e.note?.let { " — \"$it\"" } ?: ""
             facts += "$name has a $type on $dateStr$recur$annotation."
+        }
+
+        // Explicit age fact so the LLM doesn't have to do arithmetic
+        birthdayEvent?.let { b ->
+            val asOf = deathEvent?.date ?: System.currentTimeMillis()
+            val age  = calculateAge(b.date, asOf)
+            if (deathEvent != null) {
+                facts += "$name was $age years old when they passed away."
+            } else {
+                facts += "$name is currently $age years old."
+            }
         }
 
         if (interactions.isNotEmpty()) {
@@ -203,6 +217,21 @@ internal object FactExtractor {
 
     private fun pl(n: Int, singular: String, plural: String = "${singular}s") =
         if (n == 1) singular else plural
+
+    private fun calculateAge(birthdayMs: Long, asOfMs: Long = System.currentTimeMillis()): Int {
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = asOfMs
+        val nowYear  = cal.get(Calendar.YEAR)
+        val nowMonth = cal.get(Calendar.MONTH)
+        val nowDay   = cal.get(Calendar.DAY_OF_MONTH)
+        cal.timeInMillis = birthdayMs
+        val birthYear  = cal.get(Calendar.YEAR)
+        val birthMonth = cal.get(Calendar.MONTH)
+        val birthDay   = cal.get(Calendar.DAY_OF_MONTH)
+        var age = nowYear - birthYear
+        if (nowMonth < birthMonth || (nowMonth == birthMonth && nowDay < birthDay)) age--
+        return age
+    }
 
     private fun daysUntilNextOccurrence(birthdayMs: Long): Int {
         val bday = Calendar.getInstance().apply { timeInMillis = birthdayMs }
