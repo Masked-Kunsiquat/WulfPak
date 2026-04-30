@@ -11,6 +11,7 @@ import com.github.maskedkunisquat.wulfpak.core.logic.llm.LlmResult
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.ModelLoadState
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchHit
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -101,6 +102,7 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
     // ── Ask AI conversation ───────────────────────────────────────────────
 
     var messages by mutableStateOf<List<ChatMessage>>(emptyList()); private set
+    private var streamingJob: Job? = null
 
     val isNlQuerying: Boolean
         get() = (messages.lastOrNull() as? ChatMessage.Assistant)?.isStreaming == true
@@ -115,7 +117,7 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
             ChatMessage.Assistant("", isStreaming = true),
         )
 
-        viewModelScope.launch {
+        streamingJob = viewModelScope.launch {
             try {
                 llmOrchestrator.query(q).collect { result ->
                     val idx  = messages.lastIndex
@@ -135,8 +137,12 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun clearConversation() {
+        streamingJob?.cancel()
+        streamingJob = null
         messages = emptyList()
         query = ""
-        llmOrchestrator.resetChat()
+        viewModelScope.launch(Dispatchers.IO) {
+            llmOrchestrator.resetChat()
+        }
     }
 }
