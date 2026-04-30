@@ -132,6 +132,7 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
                         db.personDao().updateSummary(id, summarizeText, now)
                     }
                     is LlmResult.Error -> isSummarizing = false
+                    is LlmResult.ToolCall -> Unit
                 }
             }
         }

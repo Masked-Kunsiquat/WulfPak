@@ -345,10 +345,10 @@ private fun ChatBubble(message: ChatMessage) {
 @Composable
 private fun ToolCallBubble(message: ChatMessage.ToolCall, onToggle: () -> Unit) {
     val label = when (message.name) {
-        "getContactNotes"   -> "looked up notes for ${message.args["name"]}"
-        "getContactGifts"   -> "looked up gifts for ${message.args["name"]}"
-        "getContactHistory" -> "looked up history for ${message.args["name"]}"
-        "getPendingTasks"   -> message.args["name"]?.let { "looked up tasks for $it" } ?: "looked up pending tasks"
+        "getContactNotes"   -> message.args["name"]?.takeIf { it.isNotBlank() }?.let { "looked up notes for $it" } ?: "looked up recent notes"
+        "getContactGifts"   -> message.args["name"]?.takeIf { it.isNotBlank() }?.let { "looked up gifts for $it" } ?: "looked up all gift ideas"
+        "getContactHistory" -> message.args["name"]?.takeIf { it.isNotBlank() }?.let { "looked up history for $it" } ?: "looked up recent activity"
+        "getPendingTasks"   -> message.args["name"]?.takeIf { it.isNotBlank() }?.let { "looked up tasks for $it" } ?: "looked up pending tasks"
         "getUpcomingEvents" -> "looked up upcoming events"
         else -> message.name
     }
