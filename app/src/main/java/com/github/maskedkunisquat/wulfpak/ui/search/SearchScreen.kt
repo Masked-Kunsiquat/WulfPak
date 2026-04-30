@@ -1,6 +1,7 @@
 package com.github.maskedkunisquat.wulfpak.ui.search
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -24,8 +26,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
@@ -50,6 +55,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -163,8 +169,14 @@ fun SearchScreen(
                             }
                         }
                     } else {
-                        itemsIndexed(viewModel.messages, key = { idx, _ -> idx }) { _, msg ->
-                            ChatBubble(msg)
+                        itemsIndexed(viewModel.messages, key = { idx, _ -> idx }) { idx, msg ->
+                            when (msg) {
+                                is ChatMessage.ToolCall -> ToolCallBubble(
+                                    message  = msg,
+                                    onToggle = { viewModel.toggleToolCall(idx) },
+                                )
+                                else -> ChatBubble(msg)
+                            }
                         }
                         // Model warning as last item when not ready and there are messages
                         if (!modelReady) {
@@ -276,6 +288,7 @@ fun SearchScreen(
 @Composable
 private fun ChatBubble(message: ChatMessage) {
     when (message) {
+        is ChatMessage.ToolCall -> Unit  // handled by caller
         is ChatMessage.User -> {
             Box(
                 modifier = Modifier
@@ -323,6 +336,69 @@ private fun ChatBubble(message: ChatMessage) {
                             color    = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ToolCallBubble(message: ChatMessage.ToolCall, onToggle: () -> Unit) {
+    val label = when (message.name) {
+        "getContactNotes"   -> "looked up notes for ${message.args["name"]}"
+        "getContactGifts"   -> "looked up gifts for ${message.args["name"]}"
+        "getContactHistory" -> "looked up history for ${message.args["name"]}"
+        "getPendingTasks"   -> message.args["name"]?.let { "looked up tasks for $it" } ?: "looked up pending tasks"
+        "getUpcomingEvents" -> "looked up upcoming events"
+        else -> message.name
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            onClick = onToggle,
+            shape   = MaterialTheme.shapes.small,
+            color   = MaterialTheme.colorScheme.tertiaryContainer,
+            modifier = Modifier.wrapContentWidth(),
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                Row(
+                    verticalAlignment    = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Icon(
+                        Icons.Default.Build,
+                        contentDescription = null,
+                        modifier = Modifier.size(12.dp),
+                        tint     = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                    Icon(
+                        if (message.isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (message.isExpanded) "Collapse" else "Expand",
+                        modifier = Modifier.size(12.dp),
+                        tint     = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+                AnimatedVisibility(visible = message.isExpanded) {
+                    val detail = buildString {
+                        appendLine("fn: ${message.name}")
+                        message.args.forEach { (k, v) -> appendLine("$k: $v") }
+                    }.trimEnd()
+                    Text(
+                        detail,
+                        modifier = Modifier.padding(top = 4.dp),
+                        style    = MaterialTheme.typography.labelSmall,
+                        color    = MaterialTheme.colorScheme.onTertiaryContainer,
+                        fontFamily = FontFamily.Monospace,
+                    )
                 }
             }
         }

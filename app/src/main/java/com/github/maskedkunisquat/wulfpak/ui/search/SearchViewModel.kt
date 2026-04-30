@@ -126,6 +126,9 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
                         is LlmResult.Token    -> messages.toMutableList().also { it[idx] = last.copy(text = last.text + result.text) }
                         is LlmResult.Complete -> messages.toMutableList().also { it[idx] = last.copy(isStreaming = false) }
                         is LlmResult.Error    -> messages.toMutableList().also { it[idx] = last.copy(isStreaming = false) }
+                        is LlmResult.ToolCall -> messages.toMutableList().also {
+                            it.add(idx, ChatMessage.ToolCall(result.name, result.args))
+                        }
                     }
                 }
             } catch (_: Exception) {
@@ -134,6 +137,11 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
                 messages = messages.toMutableList().also { it[idx] = last.copy(isStreaming = false) }
             }
         }
+    }
+
+    fun toggleToolCall(index: Int) {
+        val msg = messages.getOrNull(index) as? ChatMessage.ToolCall ?: return
+        messages = messages.toMutableList().also { it[index] = msg.copy(isExpanded = !msg.isExpanded) }
     }
 
     fun clearConversation() {

@@ -1,5 +1,6 @@
 package com.github.maskedkunisquat.wulfpak.core.logic.llm
 
+import android.util.Log
 import com.github.maskedkunisquat.wulfpak.core.data.dao.ActivityDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.GiftDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.InteractionDao
@@ -7,6 +8,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.dao.LifeEventDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.NoteDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.TaskDao
+import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
 import com.google.ai.edge.litertlm.Tool
 import com.google.ai.edge.litertlm.ToolParam
 import com.google.ai.edge.litertlm.ToolSet
@@ -27,52 +29,99 @@ internal class ContactsToolSet(
     private val taskDao: TaskDao,
 ) : ToolSet {
 
-    @Tool(description = "Get full details about a specific contact: their interactions, notes, activities, tasks, gifts, and life events.")
-    fun getContactDetails(
-        @ToolParam(description = "First name or nickname of the contact to look up") name: String,
-    ): String = runBlocking {
-        val person = personDao.getAllOnce().firstOrNull {
-            it.firstName.equals(name, ignoreCase = true) ||
-            it.nickname?.equals(name, ignoreCase = true) == true
-        } ?: return@runBlocking "No contact found with name \"$name\"."
-        FactExtractor.extract(
-            person       = person,
-            interactions = interactionDao.getForPerson(person.id).first(),
-            notes        = noteDao.getForPerson(person.id).first(),
-            activities   = activityDao.getForPerson(person.id).first(),
-            lifeEvents   = lifeEventDao.getForPerson(person.id).first(),
-            gifts        = giftDao.getForPerson(person.id).first(),
-            tasks        = taskDao.getForPerson(person.id).first(),
-        )
+    private companion object {
+        const val TAG = "ContactsToolSet"
+        val fmt = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH)
     }
 
-    @Tool(description = "Get all open (not yet done) tasks. Optionally filter by contact name. Leave name blank for all pending tasks.")
-    fun getPendingTasks(
-        @ToolParam(description = "Contact first name to filter by. Default is empty (returns all pending tasks).") name: String = "",
+    // Called by LlmOrchestrator to receive tool invocation events.
+    @Volatile var eventSink: ((LlmResult.ToolCall) -> Unit)? = null
+
+    // ── Tools ─────────────────────────────────────────────────────────────────
+
+    @Tool(description = "Get all notes and written observations for a specific contact by first name.")
+    fun getContactNotes(
+        @ToolParam(description = "First name or nickname of the contact") name: String,
     ): String = runBlocking {
+        Log.i(TAG, "getContactNotes — name=$name")
+        eventSink?.invoke(LlmResult.ToolCall("getContactNotes", mapOf("name" to name)))
+        val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\"."
+        val notes = noteDao.getForPerson(person.id).first()
+        if (notes.isEmpty()) return@runBlocking "No notes found for ${person.firstName}."
+        notes.joinToString("\n") { n -> "- [${fmt.format(Date(n.timestamp))}] ${n.body}" }
+    }
+
+    @Tool(description = "Get gift ideas, gifts given, and gifts received for a specific contact by first name.")
+    fun getContactGifts(
+        @ToolParam(description = "First name or nickname of the contact") name: String,
+    ): String = runBlocking {
+        Log.i(TAG, "getContactGifts — name=$name")
+        eventSink?.invoke(LlmResult.ToolCall("getContactGifts", mapOf("name" to name)))
+        val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\"."
+        val gifts = giftDao.getForPerson(person.id).first()
+        if (gifts.isEmpty()) return@runBlocking "No gifts found for ${person.firstName}."
+        gifts.joinToString("\n") { g ->
+            val occasion = g.occasion?.let { " for $it" } ?: ""
+            val note = g.note?.let { " — $it" } ?: ""
+            "- ${g.name} [${g.status.lowercase()}]$occasion$note"
+        }
+    }
+
+    @Tool(description = "Get interaction history (calls, texts, meetings, visits) and shared activities for a specific contact by first name.")
+    fun getContactHistory(
+        @ToolParam(description = "First name or nickname of the contact") name: String,
+    ): String = runBlocking {
+        Log.i(TAG, "getContactHistory — name=$name")
+        eventSink?.invoke(LlmResult.ToolCall("getContactHistory", mapOf("name" to name)))
+        val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\"."
+        val interactions = interactionDao.getForPerson(person.id).first()
+        val activities   = activityDao.getForPerson(person.id).first()
+        if (interactions.isEmpty() && activities.isEmpty())
+            return@runBlocking "No interaction history found for ${person.firstName}."
+        buildString {
+            if (interactions.isNotEmpty()) {
+                appendLine("Interactions with ${person.firstName}:")
+                interactions.forEach { i ->
+                    val note = i.note?.let { " — $it" } ?: ""
+                    appendLine("- ${fmt.format(Date(i.timestamp))}: ${i.type.replace('_', ' ')}$note")
+                }
+            }
+            if (activities.isNotEmpty()) {
+                appendLine("Activities with ${person.firstName}:")
+                activities.forEach { a ->
+                    val body = a.body?.let { " — $it" } ?: ""
+                    appendLine("- ${fmt.format(Date(a.timestamp))}: ${a.title}$body")
+                }
+            }
+        }.trimEnd()
+    }
+
+    @Tool(description = "Get all open (not yet done) tasks. Optionally filter by contact first name; leave blank for all pending tasks.")
+    fun getPendingTasks(
+        @ToolParam(description = "Contact first name to filter by, or blank for all pending tasks.") name: String = "",
+    ): String = runBlocking {
+        Log.i(TAG, "getPendingTasks — name=${name.ifBlank { "(all)" }}")
+        eventSink?.invoke(LlmResult.ToolCall("getPendingTasks", if (name.isBlank()) emptyMap() else mapOf("name" to name)))
         val tasks = if (name.isBlank()) {
             taskDao.getPending().first()
         } else {
-            val person = personDao.getAllOnce().firstOrNull {
-                it.firstName.equals(name, ignoreCase = true) ||
-                it.nickname?.equals(name, ignoreCase = true) == true
-            } ?: return@runBlocking "No contact found with name \"$name\"."
+            val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\"."
             taskDao.getForPerson(person.id).first().filter { !it.isDone }
         }
         if (tasks.isEmpty()) return@runBlocking "No pending tasks${if (name.isBlank()) "" else " for $name"}."
-        val fmt = SimpleDateFormat("MMM d", Locale.ENGLISH)
         tasks.joinToString("\n") { t ->
             val due = t.dueAt?.let { " (due ${fmt.format(Date(it))})" } ?: ""
             "- ${t.title}$due"
         }
     }
 
-    @Tool(description = "Get contacts with upcoming recurring events like birthdays or anniversaries, sorted by soonest first.")
+    @Tool(description = "Get contacts with upcoming birthdays or anniversaries, sorted by soonest first.")
     fun getUpcomingEvents(): String = runBlocking {
+        Log.i(TAG, "getUpcomingEvents called")
+        eventSink?.invoke(LlmResult.ToolCall("getUpcomingEvents", emptyMap()))
         val events = lifeEventDao.getAllRecurring().first()
         if (events.isEmpty()) return@runBlocking "No recurring events found."
         val persons = personDao.getAllOnce()
-        val fmt = SimpleDateFormat("MMM d", Locale.ENGLISH)
         val now = Calendar.getInstance()
         events
             .mapNotNull { event ->
@@ -94,4 +143,12 @@ internal class ContactsToolSet(
             .take(10)
             .joinToString("\n") { it.third }
     }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private suspend fun findPerson(name: String): Person? =
+        personDao.getAllOnce().firstOrNull {
+            it.firstName.equals(name, ignoreCase = true) ||
+            it.nickname?.equals(name, ignoreCase = true) == true
+        }
 }

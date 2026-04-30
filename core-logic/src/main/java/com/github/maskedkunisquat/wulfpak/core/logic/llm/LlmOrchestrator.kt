@@ -105,7 +105,22 @@ class LlmOrchestrator(
             append("QUESTION: $naturalLanguage")
         }
 
-        emitAll(provider.chatSend(userMsg, Prompts.QUERY_SYSTEM + "\n\n" + roster, listOf(contactsToolSet)))
+        // Buffer tool call events (emitted from LiteRT's thread inside @Tool methods).
+        // Flushed just before the first token so they appear inline in the chat above the response.
+        val toolBuffer = ArrayList<LlmResult.ToolCall>()
+        contactsToolSet.eventSink = { toolBuffer.add(it) }
+        try {
+            provider.chatSend(userMsg, Prompts.QUERY_SYSTEM + "\n\n" + roster, listOf(contactsToolSet))
+                .collect { result ->
+                    if (toolBuffer.isNotEmpty()) {
+                        toolBuffer.forEach { emit(it) }
+                        toolBuffer.clear()
+                    }
+                    emit(result)
+                }
+        } finally {
+            contactsToolSet.eventSink = null
+        }
     }
 
     fun resetChat() { provider.resetChat() }
