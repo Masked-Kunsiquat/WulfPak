@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -39,7 +40,9 @@ import com.github.maskedkunisquat.wulfpak.ui.person.AddEditTaskScreen
 import com.github.maskedkunisquat.wulfpak.ui.person.PersonDetailScreen
 import com.github.maskedkunisquat.wulfpak.ui.person.PersonDetailViewModel
 import com.github.maskedkunisquat.wulfpak.ui.search.SearchScreen
+import com.github.maskedkunisquat.wulfpak.ui.settings.ContactPickScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsScreen
+import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsViewModel
 import com.github.maskedkunisquat.wulfpak.ui.tasks.TasksScreen
 import java.util.UUID
 
@@ -57,6 +60,7 @@ object Routes {
     const val SEARCH                = "search"
     const val TASKS                 = "tasks"
     const val SETTINGS              = "settings"
+    const val CONTACT_PICK          = "contact_pick"
     const val MERGE_CONTACTS        = "merge_contacts"
 
     fun personDetail(personId: String) = "person_detail/$personId"
@@ -279,8 +283,20 @@ fun AppNavHost(
 
             composable(Routes.SETTINGS) {
                 SettingsScreen(
-                    onNavigateBack   = { navController.popBackStack() },
-                    onNavigateMerge  = { navController.navigate(Routes.MERGE_CONTACTS) },
+                    onNavigateBack        = { navController.popBackStack() },
+                    onNavigateMerge       = { navController.navigate(Routes.MERGE_CONTACTS) },
+                    onNavigateContactPick = { navController.navigate(Routes.CONTACT_PICK) },
+                )
+            }
+
+            composable(Routes.CONTACT_PICK) {
+                val settingsEntry = remember(navController) {
+                    navController.getBackStackEntry(Routes.SETTINGS)
+                }
+                val vm: SettingsViewModel = viewModel(settingsEntry)
+                ContactPickScreen(
+                    viewModel      = vm,
+                    onNavigateBack = { navController.popBackStack() },
                 )
             }
 
