@@ -46,7 +46,10 @@ class LlmOrchestrator(
         emit(LlmResult.Complete)
     }
 
-    fun query(naturalLanguage: String): Flow<LlmResult> = flow {
+    fun query(
+        naturalLanguage: String,
+        history: List<Pair<String, String>> = emptyList(),
+    ): Flow<LlmResult> = flow {
         val dateFmt = SimpleDateFormat("MMM d", Locale.ENGLISH)
         val persons = personDao.getAllOnce()
         val hits = try { searchRepository.search(naturalLanguage, limit = 5) } catch (_: Exception) { emptyList() }
@@ -96,6 +99,14 @@ class LlmOrchestrator(
                     }
                 }
                 appendLine()
+            }
+            if (history.isNotEmpty()) {
+                appendLine("CONVERSATION HISTORY:")
+                history.forEach { (q, a) ->
+                    appendLine("User: $q")
+                    appendLine("Assistant: $a")
+                    appendLine()
+                }
             }
             appendLine("QUESTION: $naturalLanguage")
         }
