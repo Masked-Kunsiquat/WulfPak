@@ -44,6 +44,7 @@ import com.github.maskedkunisquat.wulfpak.ui.person.AddEditTaskScreen
 import com.github.maskedkunisquat.wulfpak.ui.person.PersonDetailScreen
 import com.github.maskedkunisquat.wulfpak.ui.person.PersonDetailViewModel
 import com.github.maskedkunisquat.wulfpak.ui.search.SearchScreen
+import com.github.maskedkunisquat.wulfpak.ui.search.SearchViewModel
 import com.github.maskedkunisquat.wulfpak.ui.settings.ContactPickScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsViewModel
@@ -312,7 +313,14 @@ fun AppNavHost(
                 )
             }
 
-            composable(Routes.SEARCH) { SearchScreen() }
+            composable(Routes.SEARCH) {
+                SearchScreen(
+                    onOpenPerson      = { id -> navController.navigate(Routes.personDetail(id.toString())) },
+                    onOpenActivity    = { id -> navController.navigate(Routes.activityDetail(id.toString())) },
+                    onOpenInteraction = { id -> navController.navigate(Routes.interactionDetail(id.toString())) },
+                    onOpenSettings    = { navController.navigate(Routes.SETTINGS) },
+                )
+            }
 
             composable(Routes.TASKS) {
                 TasksScreen(
