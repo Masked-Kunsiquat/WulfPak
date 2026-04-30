@@ -11,14 +11,14 @@ import java.nio.ByteOrder
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Generates 384-dim sentence embeddings using Snowflake Arctic Embed XS TFLite (float16, 33 MB).
+ * Generates 384-dim sentence embeddings using Snowflake Arctic Embed XS TFLite (float32, 86 MB).
  *
  * Call [initialize] once (e.g. in AppApplication) before [generateEmbedding].
  * Falls back to zero-vectors when the model asset is absent so the app remains
  * functional during development.
  *
  * Assets bundled in core-logic/src/main/assets/:
- *   - snowflake-arctic-embed-xs_float16.tflite  (33 MB)
+ *   - snowflake-arctic-embed-xs.tflite  (86 MB, float32)
  *   - vocab.txt
  */
 open class EmbeddingProvider(
@@ -39,10 +39,6 @@ open class EmbeddingProvider(
                 .order(ByteOrder.nativeOrder())
                 .apply { put(modelBytes); rewind() }
 
-            // NOTE: snowflake-arctic-embed-xs_float16.tflite has mixed-precision tensors
-            // (FLOAT32 vs FLOAT16 at SUB node 36) that the CPU interpreter rejects.
-            // This model must be replaced with the float32 variant (.tflite without _float16).
-            // Until then, interpreter stays null and generateEmbedding returns zero-vectors.
             interpreter = try {
                 Interpreter(buf, Interpreter.Options().apply { numThreads = 4 })
                     .also { Log.i(TAG, "Initialized on CPU") }
@@ -85,13 +81,16 @@ open class EmbeddingProvider(
         }
 
         val output = Array(1) { Array(MODEL_SEQ_LEN) { FloatArray(EMBEDDING_DIM) } }
-        interp.runSignature(
-            mapOf(
-                "input_ids"      to Array(1) { inputIds },
-                "attention_mask" to Array(1) { attnMask },
-                "token_type_ids" to Array(1) { LongArray(MODEL_SEQ_LEN) },
+        // onnx2tf models have no TFLite signature; use positional I/O instead.
+        // Input order matches tensor indices: [0]=input_ids, [1]=attention_mask, [2]=token_type_ids
+        // Output index 0 = last_hidden_state [1, 128, 384]; index 1 = tanh pooler (unused)
+        interp.runForMultipleInputsOutputs(
+            arrayOf(
+                Array(1) { inputIds },
+                Array(1) { attnMask },
+                Array(1) { LongArray(MODEL_SEQ_LEN) },
             ),
-            mapOf("last_hidden_state" to output)
+            mutableMapOf(0 to output as Any)
         )
         return maskedMeanPool(output[0], attnMask)
     }
@@ -113,7 +112,7 @@ open class EmbeddingProvider(
     companion object {
         const val EMBEDDING_DIM = 384
         const val MODEL_SEQ_LEN = 128
-        private const val MODEL_ASSET = "snowflake-arctic-embed-xs_float16.tflite"
+        private const val MODEL_ASSET = "snowflake-arctic-embed-xs.tflite"
         private const val VOCAB_ASSET = "vocab.txt"
         private const val TAG = "EmbeddingProvider"
     }
