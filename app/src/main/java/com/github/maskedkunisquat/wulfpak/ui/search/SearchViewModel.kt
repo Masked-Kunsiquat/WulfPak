@@ -9,7 +9,6 @@ import androidx.lifecycle.viewModelScope
 import com.github.maskedkunisquat.wulfpak.AppApplication
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.LlmResult
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.ModelLoadState
-import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchHit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.StateFlow
@@ -17,14 +16,13 @@ import kotlinx.coroutines.launch
 
 class SearchViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val db               = getApplication<AppApplication>().db
-    private val searchRepository = getApplication<AppApplication>().searchRepository
-    private val llmOrchestrator  = getApplication<AppApplication>().llmOrchestrator
+    private val db              = getApplication<AppApplication>().db
+    private val llmOrchestrator = getApplication<AppApplication>().llmOrchestrator
 
     val modelLoadState: StateFlow<ModelLoadState> =
         getApplication<AppApplication>().llmProvider.modelLoadState
 
-    // ── Ask AI suggestion chips ───────────────────────────────────────────
+    // ── Suggestion chips ──────────────────────────────────────────────────
 
     private companion object {
         val STATIC_SUGGESTIONS = listOf(
@@ -41,7 +39,7 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    private var suggestionPool = STATIC_SUGGESTIONS
+    private var suggestionPool   = STATIC_SUGGESTIONS
     private var suggestionOffset = 0
     var suggestions by mutableStateOf(STATIC_SUGGESTIONS.take(3)); private set
 
@@ -51,16 +49,11 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
             if (persons.isEmpty()) return@launch
 
             val dynamic = buildList {
-                // Most overdue contact
                 persons.filter { it.lastContactedAt != null }
                     .maxByOrNull { System.currentTimeMillis() - it.lastContactedAt!! }
                     ?.let { add("When did I last talk to ${it.firstName}?") }
-
-                // A starred contact
                 persons.filter { it.isFavorite }.randomOrNull()
                     ?.let { add("How has ${it.firstName} been lately?") }
-
-                // Most interacted contact
                 persons.maxByOrNull { it.interactionCount }
                     ?.takeIf { it.interactionCount > 0 }
                     ?.let { add("What's new with ${it.firstName}?") }
@@ -77,39 +70,18 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
         suggestions = (suggestionPool.drop(suggestionOffset) + suggestionPool).take(3)
     }
 
-    // ── Shared ────────────────────────────────────────────────────────────
+    // ── Chat ──────────────────────────────────────────────────────────────
 
-    var query by mutableStateOf("")
-    var isAskAiMode by mutableStateOf(false)
-
-    // ── Semantic search ───────────────────────────────────────────────────
-
-    var results by mutableStateOf<List<SearchHit>>(emptyList()); private set
-    var isSearching by mutableStateOf(false); private set
-
-    fun search() {
-        val q = query.trim()
-        if (q.isBlank() || isSearching) return
-        isSearching = true
-        viewModelScope.launch(Dispatchers.IO) {
-            results = try { searchRepository.search(q) } catch (_: Exception) { emptyList() }
-            isSearching = false
-        }
-    }
-
-    fun clearResults() { results = emptyList() }
-
-    // ── Ask AI conversation ───────────────────────────────────────────────
-
+    var query    by mutableStateOf("")
     var messages by mutableStateOf<List<ChatMessage>>(emptyList()); private set
     private var streamingJob: Job? = null
 
-    val isNlQuerying: Boolean
+    val isQuerying: Boolean
         get() = (messages.lastOrNull() as? ChatMessage.Assistant)?.isStreaming == true
 
     fun askAi() {
         val q = query.trim()
-        if (q.isBlank() || isNlQuerying) return
+        if (q.isBlank() || isQuerying) return
 
         query = ""
         messages = messages + listOf(

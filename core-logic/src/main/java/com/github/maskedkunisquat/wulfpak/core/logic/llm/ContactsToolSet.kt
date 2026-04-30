@@ -10,6 +10,8 @@ import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.TaskDao
 import com.github.maskedkunisquat.wulfpak.core.data.entity.GiftStatus
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
+import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchHit
+import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchRepository
 import com.google.ai.edge.litertlm.Tool
 import com.google.ai.edge.litertlm.ToolParam
 import com.google.ai.edge.litertlm.ToolSet
@@ -28,6 +30,7 @@ internal class ContactsToolSet(
     private val lifeEventDao: LifeEventDao,
     private val giftDao: GiftDao,
     private val taskDao: TaskDao,
+    private val searchRepository: SearchRepository,
 ) : ToolSet {
 
     private companion object {
@@ -205,6 +208,45 @@ internal class ContactsToolSet(
                 val ago  = when (days) { 0 -> "today"; 1 -> "yesterday"; else -> "$days days ago" }
                 appendLine("Last contact: $ago")
             } ?: appendLine("Last contact: never logged")
+        }.trimEnd()
+    }
+
+    @Tool(description = "Search across all notes, interactions, and activities using natural language — topics, places, events, or phrases. Use this when asked to find a memory, conversation, or event by topic rather than by person.")
+    fun searchAcrossContacts(
+        @ToolParam(description = "The topic, place, event name, or phrase to search for.") query: String,
+    ): String = runBlocking {
+        Log.i(TAG, "searchAcrossContacts — query=$query")
+        eventSink?.invoke(LlmResult.ToolCall("searchAcrossContacts", mapOf("query" to query)))
+        val hits = try { searchRepository.search(query, limit = 8) } catch (_: Exception) { emptyList() }
+        if (hits.isEmpty()) return@runBlocking "No results found for \"$query\"."
+        val persons = personDao.getAllOnce()
+        buildString {
+            hits.forEach { hit ->
+                when (hit) {
+                    is SearchHit.NoteHit -> {
+                        val who = hit.note.personId
+                            ?.let { pid -> persons.firstOrNull { it.id == pid } }
+                            ?.let { p -> "${p.firstName}${p.lastName?.let { " $it" } ?: ""}" }
+                            ?: "standalone"
+                        val body = if (hit.note.body.length > 200) hit.note.body.take(200) + "…" else hit.note.body
+                        appendLine("Note for $who (${fmt.format(Date(hit.note.timestamp))}): \"$body\"")
+                    }
+                    is SearchHit.ActivityHit -> {
+                        val body = hit.activity.body?.let { b ->
+                            val s = if (b.length > 150) b.take(150) + "…" else b
+                            ": $s"
+                        } ?: ""
+                        appendLine("Activity \"${hit.activity.title}\" on ${fmt.format(Date(hit.activity.timestamp))}$body")
+                    }
+                    is SearchHit.InteractionHit -> {
+                        val note = hit.interaction.note?.let { n ->
+                            val s = if (n.length > 120) n.take(120) + "…" else n
+                            ": \"$s\""
+                        } ?: ""
+                        appendLine("${hit.interaction.type.replace('_', ' ')} on ${fmt.format(Date(hit.interaction.timestamp))}$note")
+                    }
+                }
+            }
         }.trimEnd()
     }
 

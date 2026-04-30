@@ -9,11 +9,13 @@ import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.WorkManager
 import com.github.maskedkunisquat.wulfpak.AppApplication
 import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
 import com.github.maskedkunisquat.wulfpak.appDataStore
 import com.github.maskedkunisquat.wulfpak.core.data.entity.RelationLabel
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.ModelLoadState
+import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
 import com.github.maskedkunisquat.wulfpak.sync.CalendarBridge
 import com.github.maskedkunisquat.wulfpak.sync.ContactSyncManager
 import com.github.maskedkunisquat.wulfpak.sync.VCardImporter
@@ -95,6 +97,27 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     val showBirthdayAge = appApp.appDataStore.data
         .map { it[AppPrefsKeys.SHOW_BIRTHDAY_AGE] ?: true }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    var pendingEmbedCount by mutableStateOf<Int?>(null); private set
+
+    init { refreshEmbedCount() }
+
+    fun refreshEmbedCount() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val db = appApp.db
+            pendingEmbedCount = db.noteDao().getUnembedded().size +
+                db.interactionDao().getUnembedded().size +
+                db.activityDao().getUnembedded().size
+        }
+    }
+
+    fun triggerEmbedding() {
+        EmbeddingWorker.enqueue(WorkManager.getInstance(appApp))
+        viewModelScope.launch(Dispatchers.IO) {
+            delay(3_000)
+            refreshEmbedCount()
+        }
+    }
 
     val modelLoadState = appApp.llmProvider.modelLoadState
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ModelLoadState.IDLE)
