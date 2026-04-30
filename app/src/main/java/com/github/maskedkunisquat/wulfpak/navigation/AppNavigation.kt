@@ -319,10 +319,7 @@ fun AppNavHost(
 
             composable(Routes.SEARCH) {
                 SearchScreen(
-                    onOpenPerson      = { id -> navController.navigate(Routes.personDetail(id.toString())) },
-                    onOpenActivity    = { id -> navController.navigate(Routes.activityDetail(id.toString())) },
-                    onOpenInteraction = { id -> navController.navigate(Routes.interactionDetail(id.toString())) },
-                    onOpenSettings    = { navController.navigate(Routes.SETTINGS) },
+                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 )
             }
 

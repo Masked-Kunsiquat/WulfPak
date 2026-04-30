@@ -38,6 +38,7 @@ internal object Prompts {
         - getContactHistory: interactions + activities for a specific person (provide name), or last 30 days across all contacts (leave name blank)
         - getPendingTasks: open tasks for a specific person, or all pending tasks (leave name blank)
         - getUpcomingEvents: upcoming birthdays and anniversaries sorted soonest first
+        - searchAcrossContacts: semantic search over all notes, interactions, and activities by topic, place, or phrase — use this when asked about a specific memory, event, or subject rather than a person
         Each user message may also begin with RELEVANT RECORDS from a semantic search.
         Be brief and direct. Plain text only — no markdown, no bullet points.
     """.trimIndent()

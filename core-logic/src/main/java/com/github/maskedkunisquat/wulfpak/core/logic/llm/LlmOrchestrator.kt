@@ -29,7 +29,7 @@ class LlmOrchestrator(
     private val searchRepository: SearchRepository,
 ) {
     private val contactsToolSet = ContactsToolSet(
-        personDao, interactionDao, noteDao, activityDao, lifeEventDao, giftDao, taskDao,
+        personDao, interactionDao, noteDao, activityDao, lifeEventDao, giftDao, taskDao, searchRepository,
     )
     fun summarize(personId: UUID): Flow<LlmResult> = flow {
         val person = personDao.getById(personId) ?: run {

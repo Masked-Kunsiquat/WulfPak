@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileOpen
@@ -39,6 +40,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -198,6 +200,26 @@ fun SettingsScreen(
                                 checked         = showBirthdayAge,
                                 onCheckedChange = { viewModel.setShowBirthdayAge(it) },
                             )
+                        },
+                    )
+                }
+
+                item {
+                    val count = viewModel.pendingEmbedCount
+                    ListItem(
+                        headlineContent   = { Text("Search index") },
+                        supportingContent = {
+                            Text(when {
+                                count == null -> "Calculating…"
+                                count == 0   -> "Fully indexed"
+                                else         -> "$count item${if (count == 1) "" else "s"} pending indexing"
+                            })
+                        },
+                        leadingContent  = { Icon(Icons.Default.Search, contentDescription = null) },
+                        trailingContent = {
+                            if (count != null && count > 0) {
+                                TextButton(onClick = viewModel::triggerEmbedding) { Text("Index now") }
+                            }
                         },
                     )
                 }
