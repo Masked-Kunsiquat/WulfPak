@@ -12,4 +12,14 @@ interface LlmProvider {
      * Emits [LlmResult.Token] per token, then [LlmResult.Complete] or [LlmResult.Error].
      */
     fun process(prompt: String, systemInstruction: String? = null): Flow<LlmResult>
+
+    /**
+     * Sends [prompt] to a persistent Conversation, creating it with [systemInstruction]
+     * on the first call. Subsequent calls reuse the same Conversation — [systemInstruction]
+     * is ignored once the Conversation exists.
+     */
+    fun chatSend(prompt: String, systemInstruction: String? = null): Flow<LlmResult>
+
+    /** Close and discard the persistent Conversation. */
+    fun resetChat()
 }

@@ -109,16 +109,6 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
         val q = query.trim()
         if (q.isBlank() || isNlQuerying) return
 
-        // Collect completed Q&A pairs as history (last 3 turns)
-        val history = messages.chunked(2)
-            .filter { it.size == 2 }
-            .takeLast(3)
-            .mapNotNull { (u, a) ->
-                val user = u as? ChatMessage.User ?: return@mapNotNull null
-                val asst = a as? ChatMessage.Assistant ?: return@mapNotNull null
-                user.text to asst.text
-            }
-
         query = ""
         messages = messages + listOf(
             ChatMessage.User(q),
@@ -127,7 +117,7 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
 
         viewModelScope.launch {
             try {
-                llmOrchestrator.query(q, history).collect { result ->
+                llmOrchestrator.query(q).collect { result ->
                     val idx  = messages.lastIndex
                     val last = messages.getOrNull(idx) as? ChatMessage.Assistant ?: return@collect
                     messages = when (result) {
@@ -147,5 +137,6 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
     fun clearConversation() {
         messages = emptyList()
         query = ""
+        llmOrchestrator.resetChat()
     }
 }

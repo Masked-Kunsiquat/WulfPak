@@ -46,10 +46,7 @@ class LlmOrchestrator(
         emit(LlmResult.Complete)
     }
 
-    fun query(
-        naturalLanguage: String,
-        history: List<Pair<String, String>> = emptyList(),
-    ): Flow<LlmResult> = flow {
+    fun query(naturalLanguage: String): Flow<LlmResult> = flow {
         val dateFmt = SimpleDateFormat("MMM d", Locale.ENGLISH)
         val persons = personDao.getAllOnce()
         val hits = try { searchRepository.search(naturalLanguage, limit = 5) } catch (_: Exception) { emptyList() }
@@ -77,9 +74,11 @@ class LlmOrchestrator(
                     appendLine()
                 }
             }
-            appendLine()
+        }
+
+        val userMsg = buildString {
             if (hits.isNotEmpty()) {
-                appendLine("RECENT RECORDS MATCHING YOUR QUESTION:")
+                appendLine("RELEVANT RECORDS:")
                 hits.forEach { hit ->
                     when (hit) {
                         is SearchHit.NoteHit -> {
@@ -100,18 +99,13 @@ class LlmOrchestrator(
                 }
                 appendLine()
             }
-            if (history.isNotEmpty()) {
-                appendLine("CONVERSATION HISTORY:")
-                history.forEach { (q, a) ->
-                    appendLine("User: $q")
-                    appendLine("Assistant: $a")
-                    appendLine()
-                }
-            }
-            appendLine("QUESTION: $naturalLanguage")
+            append("QUESTION: $naturalLanguage")
         }
-        emitAll(provider.process(roster, Prompts.QUERY_SYSTEM))
+
+        emitAll(provider.chatSend(userMsg, Prompts.QUERY_SYSTEM + "\n\n" + roster))
     }
+
+    fun resetChat() { provider.resetChat() }
 
     fun suggestFollowUp(personId: UUID, daysSinceContact: Int): Flow<LlmResult> = flow {
         val person = personDao.getById(personId) ?: run {
