@@ -92,6 +92,10 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         .map { it[AppPrefsKeys.BIOMETRIC_ENABLED] ?: true }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
+    val showBirthdayAge = appApp.appDataStore.data
+        .map { it[AppPrefsKeys.SHOW_BIRTHDAY_AGE] ?: true }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
     val modelLoadState = appApp.llmProvider.modelLoadState
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ModelLoadState.IDLE)
 
@@ -103,6 +107,12 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setBiometricEnabled(enabled: Boolean) {
         viewModelScope.launch {
             appApp.appDataStore.edit { it[AppPrefsKeys.BIOMETRIC_ENABLED] = enabled }
+        }
+    }
+
+    fun setShowBirthdayAge(enabled: Boolean) {
+        viewModelScope.launch {
+            appApp.appDataStore.edit { it[AppPrefsKeys.SHOW_BIRTHDAY_AGE] = enabled }
         }
     }
 

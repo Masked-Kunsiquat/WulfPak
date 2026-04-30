@@ -22,3 +22,18 @@ fun Long.toRelativeDisplay(): String {
         else       -> SimpleDateFormat("MMM yyyy", Locale.getDefault()).format(Date(this))
     }
 }
+
+fun calculateAge(birthdayMs: Long, asOfMs: Long = System.currentTimeMillis()): Int {
+    val cal = java.util.Calendar.getInstance()
+    cal.timeInMillis = asOfMs
+    val nowYear  = cal.get(java.util.Calendar.YEAR)
+    val nowMonth = cal.get(java.util.Calendar.MONTH)
+    val nowDay   = cal.get(java.util.Calendar.DAY_OF_MONTH)
+    cal.timeInMillis = birthdayMs
+    val birthYear  = cal.get(java.util.Calendar.YEAR)
+    val birthMonth = cal.get(java.util.Calendar.MONTH)
+    val birthDay   = cal.get(java.util.Calendar.DAY_OF_MONTH)
+    var age = nowYear - birthYear
+    if (nowMonth < birthMonth || (nowMonth == birthMonth && nowDay < birthDay)) age--
+    return age
+}

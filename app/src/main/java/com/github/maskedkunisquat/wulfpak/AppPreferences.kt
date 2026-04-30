@@ -10,4 +10,5 @@ val Context.appDataStore: DataStore<Preferences> by preferencesDataStore(name = 
 
 object AppPrefsKeys {
     val BIOMETRIC_ENABLED = booleanPreferencesKey("biometric_enabled")
+    val SHOW_BIRTHDAY_AGE = booleanPreferencesKey("show_birthday_age")
 }

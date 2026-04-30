@@ -73,13 +73,18 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetail
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetailType
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Gift
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
+import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
+import com.github.maskedkunisquat.wulfpak.appDataStore
 import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEvent
+import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEventType
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Task
 import com.github.maskedkunisquat.wulfpak.ui.common.PersonAvatar
+import com.github.maskedkunisquat.wulfpak.ui.common.calculateAge
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayDate
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
 import java.util.UUID
+import kotlinx.coroutines.flow.map
 
 private val TABS = listOf("Interactions", "Activities", "Notes", "Life Events", "Gifts", "Tasks")
 
@@ -102,8 +107,11 @@ fun PersonDetailScreen(
     onEditGift: (UUID) -> Unit,
     onEditTask: (UUID) -> Unit,
 ) {
-    val context        = LocalContext.current
-    val person         by viewModel.person.collectAsStateWithLifecycle()
+    val context          = LocalContext.current
+    val showBirthdayAge  by context.appDataStore.data
+        .map { prefs -> prefs[AppPrefsKeys.SHOW_BIRTHDAY_AGE] ?: true }
+        .collectAsStateWithLifecycle(initialValue = true)
+    val person           by viewModel.person.collectAsStateWithLifecycle()
     val interactions   by viewModel.interactions.collectAsStateWithLifecycle()
     val activities     by viewModel.activities.collectAsStateWithLifecycle()
     val notes          by viewModel.notes.collectAsStateWithLifecycle()
@@ -210,7 +218,17 @@ fun PersonDetailScreen(
                 ) {
                     PersonAvatar(p, size = 56.dp)
                     Column {
-                        Text(p.relationLabel.toDisplayLabel(), style = MaterialTheme.typography.bodyMedium,
+                        val birthday = lifeEvents.firstOrNull { it.eventType == LifeEventType.BIRTHDAY }
+                        val death    = lifeEvents.firstOrNull { it.eventType == LifeEventType.DEATH }
+                        val ageLabel = if (!showBirthdayAge) "" else when {
+                            birthday != null && death != null ->
+                                " · Passed away at ${calculateAge(birthday.date, death.date)}"
+                            birthday != null ->
+                                " · ${calculateAge(birthday.date)} years old"
+                            else -> ""
+                        }
+                        Text(p.relationLabel.toDisplayLabel() + ageLabel,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary)
                         p.nickname?.let { Text("\"$it\"", style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant) }

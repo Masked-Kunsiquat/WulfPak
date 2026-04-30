@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Download
@@ -75,8 +76,9 @@ fun SettingsScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val biometricEnabled by viewModel.biometricEnabled.collectAsStateWithLifecycle()
-    val modelLoadState   by viewModel.modelLoadState.collectAsStateWithLifecycle()
+    val biometricEnabled  by viewModel.biometricEnabled.collectAsStateWithLifecycle()
+    val showBirthdayAge   by viewModel.showBirthdayAge.collectAsStateWithLifecycle()
+    val modelLoadState    by viewModel.modelLoadState.collectAsStateWithLifecycle()
 
     val contactPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -180,6 +182,21 @@ fun SettingsScreen(
                             Switch(
                                 checked         = biometricEnabled,
                                 onCheckedChange = { viewModel.setBiometricEnabled(it) },
+                            )
+                        },
+                    )
+                }
+
+                item { SectionHeader("Display") }
+                item {
+                    ListItem(
+                        headlineContent   = { Text("Show age on contact") },
+                        supportingContent = { Text("Display birthday age on the person detail header") },
+                        leadingContent    = { Icon(Icons.Default.Cake, contentDescription = null) },
+                        trailingContent   = {
+                            Switch(
+                                checked         = showBirthdayAge,
+                                onCheckedChange = { viewModel.setShowBirthdayAge(it) },
                             )
                         },
                     )
