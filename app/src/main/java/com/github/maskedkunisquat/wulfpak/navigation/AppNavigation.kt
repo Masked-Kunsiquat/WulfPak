@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -145,7 +146,9 @@ fun AppNavHost(
         NavHost(
             navController = navController,
             startDestination = startDestination,
-            modifier = Modifier.padding(bottom = outerPadding.calculateBottomPadding()),
+            modifier = Modifier
+                .padding(bottom = outerPadding.calculateBottomPadding())
+                .consumeWindowInsets(outerPadding),
         ) {
 
             composable(Routes.PEOPLE_LIST) {
