@@ -28,6 +28,9 @@ class LlmOrchestrator(
     private val taskDao: TaskDao,
     private val searchRepository: SearchRepository,
 ) {
+    private val contactsToolSet = ContactsToolSet(
+        personDao, interactionDao, noteDao, activityDao, lifeEventDao, giftDao, taskDao,
+    )
     fun summarize(personId: UUID): Flow<LlmResult> = flow {
         val person = personDao.getById(personId) ?: run {
             emit(LlmResult.Error(IllegalArgumentException("Person $personId not found")))
@@ -102,7 +105,7 @@ class LlmOrchestrator(
             append("QUESTION: $naturalLanguage")
         }
 
-        emitAll(provider.chatSend(userMsg, Prompts.QUERY_SYSTEM + "\n\n" + roster))
+        emitAll(provider.chatSend(userMsg, Prompts.QUERY_SYSTEM + "\n\n" + roster, listOf(contactsToolSet)))
     }
 
     fun resetChat() { provider.resetChat() }

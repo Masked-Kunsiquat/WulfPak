@@ -9,6 +9,8 @@ import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
+import com.google.ai.edge.litertlm.ToolSet
+import com.google.ai.edge.litertlm.tool
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -178,12 +180,13 @@ class LocalFallbackProvider(
         }
     }.flowOn(dispatcher)
 
-    override fun chatSend(prompt: String, systemInstruction: String?): Flow<LlmResult> =
-        chatSendInternal(prompt, systemInstruction, allowOpenClRetry = true)
+    override fun chatSend(prompt: String, systemInstruction: String?, tools: List<Any>): Flow<LlmResult> =
+        chatSendInternal(prompt, systemInstruction, tools, allowOpenClRetry = true)
 
     private fun chatSendInternal(
         prompt: String,
         systemInstruction: String?,
+        tools: List<Any>,
         allowOpenClRetry: Boolean,
     ): Flow<LlmResult> = flow {
         val eng = engineLock.readLock().withLock {
@@ -195,11 +198,11 @@ class LocalFallbackProvider(
         engineLock.readLock().lock()
         try {
             val conv = chatConversation ?: run {
-                val config = if (systemInstruction != null) {
-                    ConversationConfig(systemInstruction = Contents.of(systemInstruction))
-                } else {
-                    ConversationConfig()
-                }
+                val toolConfigs = tools.filterIsInstance<ToolSet>().map { tool(it) }
+                val config = ConversationConfig(
+                    systemInstruction = systemInstruction?.let { Contents.of(it) },
+                    tools = toolConfigs,
+                )
                 eng.createConversation(config).also { chatConversation = it }
             }
             conv.sendMessageAsync(prompt).collect { message ->
@@ -216,7 +219,7 @@ class LocalFallbackProvider(
             Log.w(TAG, "GPU inference failed — OpenCL unavailable, switching to CPU")
             openClFailed = true
             withContext(dispatcher) { switchToCpu() }
-            emitAll(chatSendInternal(prompt, systemInstruction, allowOpenClRetry = false))
+            emitAll(chatSendInternal(prompt, systemInstruction, tools, allowOpenClRetry = false))
         } else {
             emit(LlmResult.Error(e))
         }
