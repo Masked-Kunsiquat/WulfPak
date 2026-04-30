@@ -154,6 +154,13 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(viewModel.carouselMessage) {
+        viewModel.carouselMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearCarouselMessage()
+        }
+    }
+
     LaunchedEffect(viewModel.calendarState) {
         when (val s = viewModel.calendarState) {
             is SettingsViewModel.CalendarState.Done -> {

@@ -141,8 +141,12 @@ class ContactSyncManager(private val db: AppDatabase) {
         val cr = context.contentResolver
         return uris.mapNotNull { uri ->
             try {
+                // lookupContact resolves both lookup URIs (content://contacts/lookup/KEY/ID)
+                // and direct contact URIs reliably across OEMs. Direct query of the picker
+                // URI can silently return null on many devices.
+                val resolved = ContactsContract.Contacts.lookupContact(cr, uri) ?: uri
                 cr.query(
-                    uri,
+                    resolved,
                     arrayOf(ContactsContract.Contacts._ID, ContactsContract.Contacts.DISPLAY_NAME_PRIMARY),
                     null, null, null,
                 )?.use { c ->

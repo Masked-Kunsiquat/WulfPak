@@ -73,8 +73,9 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     var importState    by mutableStateOf<ImportState>(ImportState.Idle)     ; private set
     var calendarState  by mutableStateOf<CalendarState>(CalendarState.Idle) ; private set
     var carouselState  by mutableStateOf<CarouselState>(CarouselState.Idle) ; private set
-    var downloadProgress by mutableStateOf<Int?>(null)  ; private set
-    var downloadError    by mutableStateOf<String?>(null) ; private set
+    var downloadProgress  by mutableStateOf<Int?>(null)     ; private set
+    var downloadError     by mutableStateOf<String?>(null)  ; private set
+    var carouselMessage   by mutableStateOf<String?>(null)  ; private set
 
     val biometricEnabled = appApp.appDataStore.data
         .map { it[AppPrefsKeys.BIOMETRIC_ENABLED] ?: true }
@@ -155,8 +156,10 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
             carouselState = try {
                 val candidates = contactSyncManager.fetchByUris(getApplication(), uris)
                     .filter { !it.alreadyImported }
-                if (candidates.isEmpty()) CarouselState.Idle
-                else CarouselState.Active(candidates.map { CarouselContact(it) }, 0)
+                if (candidates.isEmpty()) {
+                    carouselMessage = "All selected contacts are already in your list"
+                    CarouselState.Idle
+                } else CarouselState.Active(candidates.map { CarouselContact(it) }, 0)
             } catch (e: Exception) {
                 CarouselState.Idle
             }
@@ -234,8 +237,9 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun clearSyncState()     { syncState     = SyncState.Idle }
-    fun clearImportState()   { importState   = ImportState.Idle }
-    fun clearCalendarState() { calendarState = CalendarState.Idle }
-    fun clearDownloadError() { downloadError = null }
+    fun clearSyncState()      { syncState       = SyncState.Idle }
+    fun clearImportState()    { importState     = ImportState.Idle }
+    fun clearCalendarState()  { calendarState   = CalendarState.Idle }
+    fun clearDownloadError()  { downloadError   = null }
+    fun clearCarouselMessage() { carouselMessage = null }
 }

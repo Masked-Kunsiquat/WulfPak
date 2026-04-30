@@ -7,10 +7,14 @@ import com.github.maskedkunisquat.wulfpak.core.data.dao.LifeEventDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.NoteDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.TaskDao
+import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchHit
+import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import java.text.SimpleDateFormat
+import java.util.Locale
 import java.util.UUID
 
 class LlmOrchestrator(
@@ -22,6 +26,7 @@ class LlmOrchestrator(
     private val lifeEventDao: LifeEventDao,
     private val giftDao: GiftDao,
     private val taskDao: TaskDao,
+    private val searchRepository: SearchRepository,
 ) {
     fun summarize(personId: UUID): Flow<LlmResult> = flow {
         val person = personDao.getById(personId) ?: run {
@@ -42,7 +47,10 @@ class LlmOrchestrator(
     }
 
     fun query(naturalLanguage: String): Flow<LlmResult> = flow {
+        val dateFmt = SimpleDateFormat("MMM d", Locale.ENGLISH)
         val persons = personDao.getAllOnce()
+        val hits = try { searchRepository.search(naturalLanguage, limit = 5) } catch (_: Exception) { emptyList() }
+
         val roster = buildString {
             if (persons.isEmpty()) {
                 appendLine("CONTACTS: (none)")
@@ -63,6 +71,28 @@ class LlmOrchestrator(
                 }
             }
             appendLine()
+            if (hits.isNotEmpty()) {
+                appendLine("RECENT RECORDS MATCHING YOUR QUESTION:")
+                hits.forEach { hit ->
+                    when (hit) {
+                        is SearchHit.NoteHit -> {
+                            val date = dateFmt.format(hit.note.timestamp)
+                            val body = hit.note.body.let { if (it.length > 120) it.take(120) + "…" else it }
+                            appendLine("- Note ($date): \"$body\"")
+                        }
+                        is SearchHit.ActivityHit -> {
+                            val date = dateFmt.format(hit.activity.timestamp)
+                            appendLine("- Activity \"${hit.activity.title}\" on $date")
+                        }
+                        is SearchHit.InteractionHit -> {
+                            val date = dateFmt.format(hit.interaction.timestamp)
+                            val type = hit.interaction.type.replace('_', ' ')
+                            appendLine("- Interaction: $type on $date")
+                        }
+                    }
+                }
+                appendLine()
+            }
             appendLine("QUESTION: $naturalLanguage")
         }
         emitAll(provider.process(roster, Prompts.QUERY_SYSTEM))
