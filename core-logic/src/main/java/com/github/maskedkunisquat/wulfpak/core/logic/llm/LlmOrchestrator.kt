@@ -55,7 +55,7 @@ class LlmOrchestrator(
             if (persons.isEmpty()) {
                 appendLine("CONTACTS: (none)")
             } else {
-                appendLine("CONTACTS:")
+                appendLine("CONTACTS: (${persons.size} total)")
                 persons.forEach { p ->
                     val name = buildString {
                         append(p.firstName)
@@ -63,6 +63,8 @@ class LlmOrchestrator(
                     }
                     append("- $name, ${p.relationLabel.replace('_', ' ')}")
                     p.nickname?.let { append(", known as \"$it\"") }
+                    val job = listOfNotNull(p.jobTitle, p.company).joinToString(" at ")
+                    if (job.isNotBlank()) append(", works as $job")
                     p.lastContactedAt?.let {
                         val days = ((System.currentTimeMillis() - it) / 86_400_000L).toInt()
                         append(", last contact $days days ago")
