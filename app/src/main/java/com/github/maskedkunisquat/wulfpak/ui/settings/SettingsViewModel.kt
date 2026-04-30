@@ -21,6 +21,7 @@ import com.github.maskedkunisquat.wulfpak.sync.ContactSyncManager
 import com.github.maskedkunisquat.wulfpak.sync.VCardImporter
 import androidx.work.WorkInfo
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
