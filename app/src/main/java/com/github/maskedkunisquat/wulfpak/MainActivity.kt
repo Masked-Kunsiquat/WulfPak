@@ -36,9 +36,10 @@ class MainActivity : FragmentActivity() {
 private fun AppRoot(activity: FragmentActivity) {
     var isUnlocked by remember { mutableStateOf(false) }
 
+    // null = DataStore not yet loaded; avoid prompting before we know the setting
     val biometricEnabled by activity.application.appDataStore.data
-        .map { it[AppPrefsKeys.BIOMETRIC_ENABLED] ?: true }
-        .collectAsStateWithLifecycle(initialValue = true)
+        .map { it[AppPrefsKeys.BIOMETRIC_ENABLED] }
+        .collectAsStateWithLifecycle(initialValue = null)
 
     val gate = remember {
         BiometricGate(
@@ -58,14 +59,16 @@ private fun AppRoot(activity: FragmentActivity) {
     }
 
     fun tryUnlock() {
-        if (biometricEnabled && gate.canAuthenticate()) {
+        val enabled = biometricEnabled ?: return  // wait for DataStore to emit
+        if (enabled && gate.canAuthenticate()) {
             gate.authenticate(onSuccess = { isUnlocked = true })
         } else {
             isUnlocked = true
         }
     }
 
-    DisposableEffect(isUnlocked) {
+    // Re-run when isUnlocked changes OR when biometricEnabled loads from DataStore
+    DisposableEffect(isUnlocked, biometricEnabled) {
         if (!isUnlocked) tryUnlock()
         onDispose { }
     }
