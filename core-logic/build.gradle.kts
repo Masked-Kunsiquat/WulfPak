@@ -23,6 +23,7 @@ dependencies {
 
     // On-device embedding (Snowflake Arctic XS TFLite)
     implementation(libs.litert)
+    implementation(libs.litert.gpu)
 
     // On-device LLM (Gemma 3 1B LiteRT-LM)
     implementation(libs.litertlm.android)
