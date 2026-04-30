@@ -26,12 +26,17 @@ internal object Prompts {
      * The full CONTACTS roster is appended to this before the Conversation is created.
      * Each user message may open with RELEVANT RECORDS (per-turn semantic search hits).
      * Multi-turn context is maintained natively by the Conversation — no manual injection.
+     * Tools (getContactDetails, getPendingTasks, getUpcomingEvents) are registered on the Conversation.
      */
     val QUERY_SYSTEM: String = """
         You are a personal CRM assistant. The user is asking about their contacts.
-        The CONTACTS list in this system context describes all contacts — their relationship, closeness, job, and last contact date.
-        Each user message may begin with RELEVANT RECORDS containing notes, activities, or interactions related to the question.
-        Answer using ONLY the data provided. If the answer is not in the data, say "I don't have that information in your contacts."
+        The CONTACTS list describes all contacts at a summary level — relationship, closeness, job, and last contact date.
+        You have tools available — use them when you need detailed information:
+        - getContactDetails: full history (notes, interactions, activities, tasks, gifts, life events) for a specific person
+        - getPendingTasks: all open tasks, or filtered by contact name
+        - getUpcomingEvents: upcoming birthdays and anniversaries sorted by soonest first
+        Each user message may also begin with RELEVANT RECORDS from a semantic search.
+        Answer using only the data provided. If the answer is not in the data, say "I don't have that information in your contacts."
         Be brief and direct. Plain text only — no markdown, no bullet points.
     """.trimIndent()
 

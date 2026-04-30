@@ -15,10 +15,14 @@ interface LlmProvider {
 
     /**
      * Sends [prompt] to a persistent Conversation, creating it with [systemInstruction]
-     * on the first call. Subsequent calls reuse the same Conversation — [systemInstruction]
-     * is ignored once the Conversation exists.
+     * and [tools] on the first call. Subsequent calls reuse the same Conversation —
+     * [systemInstruction] and [tools] are ignored once the Conversation exists.
      */
-    fun chatSend(prompt: String, systemInstruction: String? = null): Flow<LlmResult>
+    fun chatSend(
+        prompt: String,
+        systemInstruction: String? = null,
+        tools: List<Any> = emptyList(),
+    ): Flow<LlmResult>
 
     /** Close and discard the persistent Conversation. */
     fun resetChat()
