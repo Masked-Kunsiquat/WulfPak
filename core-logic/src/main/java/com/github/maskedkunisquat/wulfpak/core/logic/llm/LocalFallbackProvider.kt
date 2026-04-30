@@ -216,7 +216,7 @@ class LocalFallbackProvider(
         private const val TAG = "LocalFallbackProvider"
 
         private const val HF_BASE_URL =
-            "https://huggingface.co/google/gemma-3n-E4B-it-litert-lm/resolve/main"
+            "https://huggingface.co/masked-kunsiquat/gemma-3n-E4B-it-litert-lm/resolve/main"
 
         const val MODEL_FILE = "gemma-3n-E4B-it-int4.litertlm"
 
