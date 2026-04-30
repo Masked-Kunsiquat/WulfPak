@@ -24,14 +24,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock
 
 /**
- * LLM provider backed by a locally-stored Gemma 3 1B Instruct LiteRT-LM model.
+ * LLM provider backed by a locally-stored Gemma 3n E4B Instruct LiteRT-LM model.
  * All inference is on-device — no data leaves the device.
  *
- * Model tiers:
- *   - [MODEL_FILE_ELITE] SM8750 (S25 Ultra) — NPU/QNN only
- *   - [MODEL_FILE_ULTRA] SM8650 (S24 Ultra) — NPU/QNN only
- *   - [MODEL_FILE_INT4]  All devices — GPU (OpenCL) with CPU fallback
- *
+ * Single model file for all devices; backend is selected per-chip:
+ *   - SM8750 / SM8650  — NPU (QNN) if libpenguin.so present
+ *   - Qualcomm (other) — GPU (OpenCL) with CPU fallback
+ *   - Everything else  — CPU
  */
 class LocalFallbackProvider(
     private val context: Context,
@@ -39,7 +38,7 @@ class LocalFallbackProvider(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : LocalModelProvider {
 
-    override val id = "gemma3_1b_litertlm"
+    override val id = "gemma3n_e4b_litertlm"
 
     @Volatile private var engine: Engine? = null
     @Volatile private var initAttempted = false
@@ -194,18 +193,16 @@ class LocalFallbackProvider(
         val nativeLibDir = context.applicationInfo.nativeLibraryDir
         val dispatchLibAvailable = File(nativeLibDir, "libpenguin.so").exists()
         if (!dispatchLibAvailable) Log.w(TAG, "libpenguin.so missing — NPU unavailable")
-        return when {
+        val backends = when {
             (board == "sun" || board == "kailua" || board.startsWith("sm8750")) && dispatchLibAvailable ->
-                MODEL_FILE_ELITE to listOf(Backend.NPU(nativeLibraryDir = nativeLibDir))
+                listOf(Backend.NPU(nativeLibraryDir = nativeLibDir))
             (board == "kalama" || board.startsWith("sm8650")) && dispatchLibAvailable ->
-                MODEL_FILE_ULTRA to listOf(Backend.NPU(nativeLibraryDir = nativeLibDir))
-            isQualcommDevice() -> {
-                val backends = if (!openClFailed) listOf(Backend.GPU(), Backend.CPU())
-                               else listOf(Backend.CPU())
-                MODEL_FILE_INT4 to backends
-            }
-            else -> MODEL_FILE_INT4 to listOf(Backend.CPU())
+                listOf(Backend.NPU(nativeLibraryDir = nativeLibDir))
+            isQualcommDevice() ->
+                if (!openClFailed) listOf(Backend.GPU(), Backend.CPU()) else listOf(Backend.CPU())
+            else -> listOf(Backend.CPU())
         }
+        return MODEL_FILE to backends
     }
 
     private fun isQualcommDevice(): Boolean {
@@ -219,16 +216,12 @@ class LocalFallbackProvider(
         private const val TAG = "LocalFallbackProvider"
 
         private const val HF_BASE_URL =
-            "https://huggingface.co/masked-kunsiquat/gemma-3-1b-it-litert/resolve/main"
+            "https://huggingface.co/google/gemma-3n-E4B-it-litert-lm/resolve/main"
 
-        const val MODEL_FILE_ELITE = "gemma3-1b-it-elite.litertlm"
-        const val MODEL_FILE_ULTRA = "gemma3-1b-it-ultra.litertlm"
-        const val MODEL_FILE_INT4  = "gemma3-1b-it-int4.litertlm"
+        const val MODEL_FILE = "gemma-3n-E4B-it-int4.litertlm"
 
         internal val MODEL_SHA256: Map<String, String?> = mapOf(
-            MODEL_FILE_ELITE to "1904ceff9591e7a140df3a672c800e8e7bee8337526484b00f69ccef4fa2d60a",
-            MODEL_FILE_ULTRA to "85d2ea5199802f913818d53897b3a304bcf983abb993393e6b1749fbdb005552",
-            MODEL_FILE_INT4  to "1325ae366d31950f137c9c357b9fa89448b176d76998180c08ceaca78bba98be",
+            MODEL_FILE to null,
         )
     }
 }
