@@ -44,7 +44,7 @@ import net.sqlcipher.database.SupportFactory
         Task::class,
         PersonRelationship::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(AppTypeConverters::class)
@@ -68,6 +68,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE persons ADD COLUMN cachedSummary TEXT")
+                db.execSQL("ALTER TABLE persons ADD COLUMN summaryGeneratedAt INTEGER")
+            }
+        }
+
         fun create(context: Context, key: ByteArray): AppDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
@@ -75,7 +82,7 @@ abstract class AppDatabase : RoomDatabase() {
                 "wulfpak.db"
             )
                 .openHelperFactory(SupportFactory(key))
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
     }
 }

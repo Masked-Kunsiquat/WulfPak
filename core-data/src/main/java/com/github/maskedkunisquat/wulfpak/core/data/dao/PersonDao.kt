@@ -55,4 +55,7 @@ interface PersonDao {
 
     @Query("UPDATE persons SET interactionCount = MAX(0, interactionCount - 1) WHERE id = :personId")
     suspend fun onInteractionDeleted(personId: UUID)
+
+    @Query("UPDATE persons SET cachedSummary = :summary, summaryGeneratedAt = :generatedAt WHERE id = :id")
+    suspend fun updateSummary(id: UUID, summary: String, generatedAt: Long)
 }

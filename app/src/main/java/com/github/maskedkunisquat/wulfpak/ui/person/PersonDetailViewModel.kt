@@ -20,6 +20,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -34,6 +35,8 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
     var summarizeText by mutableStateOf("")
         private set
     var isSummarizing by mutableStateOf(false)
+        private set
+    var summaryGeneratedAt by mutableStateOf<Long?>(null)
         private set
 
     private val _personId = MutableStateFlow<UUID?>(null)
@@ -69,6 +72,16 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
     val contactDetails = _personId.filterNotNull()
         .flatMapLatest { db.contactDetailDao().getForPerson(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList<ContactDetail>())
+
+    init {
+        viewModelScope.launch {
+            val p = person.filterNotNull().first()
+            if (summarizeText.isEmpty()) {
+                summarizeText = p.cachedSummary ?: ""
+                summaryGeneratedAt = p.summaryGeneratedAt
+            }
+        }
+    }
 
     fun load(personId: UUID) { _personId.value = personId }
 
@@ -112,7 +125,13 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
             llmOrchestrator.summarize(id).collect { result ->
                 when (result) {
                     is LlmResult.Token -> summarizeText += result.text
-                    is LlmResult.Complete, is LlmResult.Error -> isSummarizing = false
+                    is LlmResult.Complete -> {
+                        isSummarizing = false
+                        val now = System.currentTimeMillis()
+                        summaryGeneratedAt = now
+                        db.personDao().updateSummary(id, summarizeText, now)
+                    }
+                    is LlmResult.Error -> isSummarizing = false
                 }
             }
         }
