@@ -23,6 +23,10 @@ fun Long.toRelativeDisplay(): String {
     }
 }
 
+fun Long.birthYearIsKnown(): Boolean =
+    java.util.Calendar.getInstance().apply { timeInMillis = this@birthYearIsKnown }
+        .get(java.util.Calendar.YEAR) != 1900
+
 fun calculateAge(birthdayMs: Long, asOfMs: Long = System.currentTimeMillis()): Int {
     val cal = java.util.Calendar.getInstance()
     cal.timeInMillis = asOfMs
