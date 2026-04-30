@@ -75,6 +75,9 @@ class AppApplication : Application(), Configuration.Provider {
         appScope.launch {
             embeddingProvider.initialize(this@AppApplication)
         }
+        appScope.launch(Dispatchers.IO) {
+            if (llmProvider.isModelAvailable()) llmProvider.initialize()
+        }
         ContactReminderWorker.schedule(WorkManager.getInstance(this))
     }
 
