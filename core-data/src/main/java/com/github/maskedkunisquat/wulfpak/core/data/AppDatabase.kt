@@ -26,6 +26,8 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
 import com.github.maskedkunisquat.wulfpak.core.data.entity.PersonRelationship
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Task
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import net.sqlcipher.database.SupportFactory
 
 @Database(
@@ -42,7 +44,7 @@ import net.sqlcipher.database.SupportFactory
         Task::class,
         PersonRelationship::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(AppTypeConverters::class)
@@ -59,6 +61,13 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun personRelationshipDao(): PersonRelationshipDao
 
     companion object {
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE persons ADD COLUMN company TEXT")
+                db.execSQL("ALTER TABLE persons ADD COLUMN jobTitle TEXT")
+            }
+        }
+
         fun create(context: Context, key: ByteArray): AppDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
@@ -66,6 +75,7 @@ abstract class AppDatabase : RoomDatabase() {
                 "wulfpak.db"
             )
                 .openHelperFactory(SupportFactory(key))
+                .addMigrations(MIGRATION_1_2)
                 .build()
     }
 }

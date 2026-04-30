@@ -87,6 +87,9 @@ dependencies {
     // vCard import
     implementation(libs.ez.vcard)
 
+    // Image loading (contact photos)
+    implementation(libs.coil.compose)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

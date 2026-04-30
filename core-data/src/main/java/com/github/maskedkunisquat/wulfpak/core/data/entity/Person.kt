@@ -32,5 +32,7 @@ data class Person(
     val isFavorite: Boolean = false,
     val lastContactedAt: Long? = null,
     val interactionCount: Int = 0,
-    val closenessRating: Int? = null
+    val closenessRating: Int? = null,
+    val company: String? = null,
+    val jobTitle: String? = null,
 )
