@@ -147,6 +147,13 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(viewModel.downloadError) {
+        viewModel.downloadError?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearDownloadError()
+        }
+    }
+
     LaunchedEffect(viewModel.calendarState) {
         when (val s = viewModel.calendarState) {
             is SettingsViewModel.CalendarState.Done -> {
@@ -213,11 +220,11 @@ fun SettingsScreen(
                         supportingContent = {
                             Column {
                                 Text(when {
-                                    modelReady     -> "On-device Gemma 3 1B is loaded and ready"
+                                    modelReady     -> "On-device Gemma 3n E4B is loaded and ready"
                                     modelLoading   -> "Initializing model engine…"
                                     progress != null -> "Download in progress…"
                                     modelAvailable -> "Tap to load into memory"
-                                    else           -> "Gemma 3 1B (~1 GB) — required for AI features"
+                                    else           -> "Gemma 3n E4B (~2.5 GB) — required for AI features"
                                 })
                                 if (progress != null) {
                                     LinearProgressIndicator(

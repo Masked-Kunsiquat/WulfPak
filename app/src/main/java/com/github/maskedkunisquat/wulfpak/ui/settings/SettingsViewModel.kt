@@ -73,7 +73,8 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     var importState    by mutableStateOf<ImportState>(ImportState.Idle)     ; private set
     var calendarState  by mutableStateOf<CalendarState>(CalendarState.Idle) ; private set
     var carouselState  by mutableStateOf<CarouselState>(CarouselState.Idle) ; private set
-    var downloadProgress by mutableStateOf<Int?>(null)                      ; private set
+    var downloadProgress by mutableStateOf<Int?>(null)  ; private set
+    var downloadError    by mutableStateOf<String?>(null) ; private set
 
     val biometricEnabled = appApp.appDataStore.data
         .map { it[AppPrefsKeys.BIOMETRIC_ENABLED] ?: true }
@@ -125,7 +126,10 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
                             appApp.llmProvider.initialize()
                         }
                         DownloadManager.STATUS_FAILED -> {
+                            val reasonCol = c.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON)
+                            val reason = c.getInt(reasonCol)
                             downloadProgress = null
+                            downloadError = "Download failed (code $reason). Check your connection and try again."
                             shouldBreak = true
                         }
                         DownloadManager.STATUS_RUNNING -> {
@@ -233,4 +237,5 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun clearSyncState()     { syncState     = SyncState.Idle }
     fun clearImportState()   { importState   = ImportState.Idle }
     fun clearCalendarState() { calendarState = CalendarState.Idle }
+    fun clearDownloadError() { downloadError = null }
 }
