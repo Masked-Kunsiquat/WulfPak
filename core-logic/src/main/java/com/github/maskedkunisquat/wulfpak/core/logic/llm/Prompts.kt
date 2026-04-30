@@ -22,6 +22,17 @@ internal object Prompts {
     """.trimIndent()
 
     /**
+     * System instruction for the Ask AI search bar.
+     * Input: a CONTACTS roster built by LlmOrchestrator, then the user's question.
+     */
+    val QUERY_SYSTEM: String = """
+        You are a personal CRM assistant. The user is asking about their contacts.
+        Answer using ONLY the data in the CONTACTS section below.
+        If the answer is not in the data, say "I don't have that information in your contacts."
+        Be brief and direct. Plain text only — no markdown, no bullet points.
+    """.trimIndent()
+
+    /**
      * System instruction for follow-up message suggestions (ContactReminderWorker notifications).
      */
     val FOLLOW_UP_SYSTEM: String = """

@@ -41,8 +41,32 @@ class LlmOrchestrator(
         emit(LlmResult.Complete)
     }
 
-    fun query(naturalLanguage: String): Flow<LlmResult> =
-        provider.process(naturalLanguage)
+    fun query(naturalLanguage: String): Flow<LlmResult> = flow {
+        val persons = personDao.getAllOnce()
+        val roster = buildString {
+            if (persons.isEmpty()) {
+                appendLine("CONTACTS: (none)")
+            } else {
+                appendLine("CONTACTS:")
+                persons.forEach { p ->
+                    val name = buildString {
+                        append(p.firstName)
+                        p.lastName?.let { append(" $it") }
+                    }
+                    append("- $name, ${p.relationLabel.replace('_', ' ')}")
+                    p.nickname?.let { append(", known as \"$it\"") }
+                    p.lastContactedAt?.let {
+                        val days = ((System.currentTimeMillis() - it) / 86_400_000L).toInt()
+                        append(", last contact $days days ago")
+                    } ?: append(", no contact logged")
+                    appendLine()
+                }
+            }
+            appendLine()
+            appendLine("QUESTION: $naturalLanguage")
+        }
+        emitAll(provider.process(roster, Prompts.QUERY_SYSTEM))
+    }
 
     fun suggestFollowUp(personId: UUID, daysSinceContact: Int): Flow<LlmResult> = flow {
         val person = personDao.getById(personId) ?: run {
