@@ -1,5 +1,7 @@
 package com.github.maskedkunisquat.wulfpak.ui.search
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -23,8 +26,10 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +39,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchHit
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayDate
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
@@ -108,11 +114,33 @@ fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
             if (isAskAi) {
                 when {
                     viewModel.nlResponse.isEmpty() && !viewModel.isNlQuerying -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        LaunchedEffect(Unit) {
+                            while (true) { delay(8_000); viewModel.rotateSuggestions() }
+                        }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 24.dp, start = 16.dp, end = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            AnimatedContent(targetState = viewModel.suggestions, label = "chips") { chips ->
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                                ) {
+                                    chips.forEach { prompt ->
+                                        SuggestionChip(
+                                            onClick = { viewModel.query = prompt; viewModel.askAi() },
+                                            label = { Text(prompt, maxLines = 1) },
+                                        )
+                                    }
+                                }
+                            }
                             Text(
                                 "Ask anything about your contacts and notes",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(32.dp),
+                                style = MaterialTheme.typography.bodySmall,
                             )
                         }
                     }

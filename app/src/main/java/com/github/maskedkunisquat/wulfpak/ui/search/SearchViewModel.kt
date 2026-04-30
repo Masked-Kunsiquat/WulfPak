@@ -17,6 +17,30 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
     private val searchRepository = getApplication<AppApplication>().searchRepository
     private val llmOrchestrator  = getApplication<AppApplication>().llmOrchestrator
 
+    // ── Ask AI suggestion chips ───────────────────────────────────────────
+
+    private val SUGGESTION_POOL = listOf(
+        "Who is my mother?",
+        "Who haven't I talked to recently?",
+        "Who did I last contact?",
+        "How many contacts do I have?",
+        "Who are my family members?",
+        "Who do I know from work?",
+        "Who are my best friends?",
+        "Who am I closest to?",
+        "Who goes by a nickname?",
+    )
+
+    private var suggestionOffset = 0
+    var suggestions by mutableStateOf(SUGGESTION_POOL.take(3)) ; private set
+
+    fun rotateSuggestions() {
+        suggestionOffset = (suggestionOffset + 3) % SUGGESTION_POOL.size
+        suggestions = (SUGGESTION_POOL.drop(suggestionOffset) + SUGGESTION_POOL).take(3)
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+
     var query by mutableStateOf("")
     var isAskAiMode by mutableStateOf(false)
 
