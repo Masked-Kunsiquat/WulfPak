@@ -16,25 +16,29 @@ class AddEditPersonViewModel(app: Application) : AndroidViewModel(app) {
 
     private val personDao = getApplication<AppApplication>().db.personDao()
 
-    var firstName     by mutableStateOf("")
-    var lastName      by mutableStateOf("")
-    var nickname      by mutableStateOf("")
-    var relationLabel by mutableStateOf(RelationLabel.FRIEND)
+    var firstName       by mutableStateOf("")
+    var lastName        by mutableStateOf("")
+    var nickname        by mutableStateOf("")
+    var jobTitle        by mutableStateOf("")
+    var company         by mutableStateOf("")
+    var relationLabel   by mutableStateOf(RelationLabel.FRIEND)
     var closenessRating by mutableStateOf<Int?>(null)
-    var photoUri      by mutableStateOf<String?>(null)
+    var photoUri        by mutableStateOf<String?>(null)
 
     private var existingId: UUID? = null
 
     fun load(personId: UUID) {
         viewModelScope.launch {
             val p = personDao.getById(personId) ?: return@launch
-            existingId    = p.id
-            firstName     = p.firstName
-            lastName      = p.lastName ?: ""
-            nickname      = p.nickname ?: ""
-            relationLabel = p.relationLabel
+            existingId      = p.id
+            firstName       = p.firstName
+            lastName        = p.lastName ?: ""
+            nickname        = p.nickname ?: ""
+            jobTitle        = p.jobTitle ?: ""
+            company         = p.company ?: ""
+            relationLabel   = p.relationLabel
             closenessRating = p.closenessRating
-            photoUri      = p.photoUri
+            photoUri        = p.photoUri
         }
     }
 
@@ -49,6 +53,8 @@ class AddEditPersonViewModel(app: Application) : AndroidViewModel(app) {
                     firstName       = firstName.trim(),
                     lastName        = lastName.trim().ifEmpty { null },
                     nickname        = nickname.trim().ifEmpty { null },
+                    jobTitle        = jobTitle.trim().ifEmpty { null },
+                    company         = company.trim().ifEmpty { null },
                     relationLabel   = relationLabel,
                     closenessRating = closenessRating,
                     photoUri        = photoUri,
@@ -59,6 +65,8 @@ class AddEditPersonViewModel(app: Application) : AndroidViewModel(app) {
                         firstName       = firstName.trim(),
                         lastName        = lastName.trim().ifEmpty { null },
                         nickname        = nickname.trim().ifEmpty { null },
+                        jobTitle        = jobTitle.trim().ifEmpty { null },
+                        company         = company.trim().ifEmpty { null },
                         relationLabel   = relationLabel,
                         closenessRating = closenessRating,
                         photoUri        = photoUri,

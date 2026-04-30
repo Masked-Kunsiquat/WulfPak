@@ -107,6 +107,20 @@ fun AddEditPersonScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
+            OutlinedTextField(
+                value = viewModel.jobTitle,
+                onValueChange = { viewModel.jobTitle = it },
+                label = { Text("Job title") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = viewModel.company,
+                onValueChange = { viewModel.company = it },
+                label = { Text("Company") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
 
             ExposedDropdownMenuBox(
                 expanded = relationExpanded,
