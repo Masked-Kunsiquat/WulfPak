@@ -6,7 +6,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.gpu.CompatibilityList
 import org.tensorflow.lite.gpu.GpuDelegate
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -43,20 +42,15 @@ open class EmbeddingProvider(
 
             // float16 TFLite models require the GPU delegate; CPU interpreter rejects mixed-precision
             // tensors (FLOAT32 vs FLOAT16 at SUB node 36). Fall back to CPU only if GPU is unavailable.
-            interpreter = if (CompatibilityList().isDelegateSupportedOnThisDevice) {
-                try {
-                    val opts = Interpreter.Options().apply {
-                        numThreads = 4
-                        addDelegate(GpuDelegate(CompatibilityList().bestOptionsForThisDevice))
-                    }
-                    Interpreter(buf, opts).also { Log.i(TAG, "Initialized with GPU delegate") }
-                } catch (e: Exception) {
-                    Log.w(TAG, "GPU delegate init failed, falling back to CPU: ${e.message}")
-                    buf.rewind()
-                    Interpreter(buf, Interpreter.Options().apply { numThreads = 4 })
+            interpreter = try {
+                val opts = Interpreter.Options().apply {
+                    numThreads = 4
+                    addDelegate(GpuDelegate())
                 }
-            } else {
-                Log.w(TAG, "GPU delegate not supported on this device, using CPU")
+                Interpreter(buf, opts).also { Log.i(TAG, "Initialized with GPU delegate") }
+            } catch (e: Exception) {
+                Log.w(TAG, "GPU delegate init failed, falling back to CPU: ${e.message}")
+                buf.rewind()
                 Interpreter(buf, Interpreter.Options().apply { numThreads = 4 })
             }
         } catch (e: Exception) {
