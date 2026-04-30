@@ -431,6 +431,25 @@ private fun ContactDetailRow(
     onEdit: (ContactDetail) -> Unit,
     onDelete: (ContactDetail) -> Unit,
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Remove contact info?") },
+            text = { Text(detail.value) },
+            confirmButton = {
+                TextButton(onClick = { onDelete(detail); showDeleteConfirm = false }) {
+                    Text("Remove", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+            },
+        )
+    }
+
     val icon = when (detail.type) {
         ContactDetailType.PHONE -> Icons.Default.Phone
         ContactDetailType.EMAIL -> Icons.Default.Email
@@ -461,13 +480,27 @@ private fun ContactDetailRow(
             Text(detail.label, style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        IconButton(onClick = { onEdit(detail) }, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Default.Edit, contentDescription = "Edit",
-                modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        IconButton(onClick = { onDelete(detail) }, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Default.Delete, contentDescription = "Delete",
-                modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
+        Box {
+            IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Default.MoreVert, contentDescription = "More",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                DropdownMenuItem(
+                    text = { Text("Edit") },
+                    leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                    onClick = { menuExpanded = false; onEdit(detail) },
+                )
+                DropdownMenuItem(
+                    text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                    leadingIcon = {
+                        Icon(Icons.Default.Delete, contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error)
+                    },
+                    onClick = { menuExpanded = false; showDeleteConfirm = true },
+                )
+            }
         }
     }
 }
