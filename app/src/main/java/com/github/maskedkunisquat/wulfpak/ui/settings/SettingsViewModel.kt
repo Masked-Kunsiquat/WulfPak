@@ -19,8 +19,9 @@ import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
 import com.github.maskedkunisquat.wulfpak.sync.CalendarBridge
 import com.github.maskedkunisquat.wulfpak.sync.ContactSyncManager
 import com.github.maskedkunisquat.wulfpak.sync.VCardImporter
+import androidx.work.WorkInfo
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -98,9 +99,13 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         .map { it[AppPrefsKeys.SHOW_BIRTHDAY_AGE] ?: true }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
-    var pendingEmbedCount by mutableStateOf<Int?>(null); private set
+    var pendingEmbedCount  by mutableStateOf<Int?>(null); private set
+    var isEmbedding        by mutableStateOf(false);      private set
 
-    init { refreshEmbedCount() }
+    init {
+        refreshEmbedCount()
+        observeEmbeddingWork()
+    }
 
     fun refreshEmbedCount() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -111,12 +116,21 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun triggerEmbedding() {
-        EmbeddingWorker.enqueue(WorkManager.getInstance(appApp))
-        viewModelScope.launch(Dispatchers.IO) {
-            delay(3_000)
-            refreshEmbedCount()
+    private fun observeEmbeddingWork() {
+        val wm = WorkManager.getInstance(appApp)
+        viewModelScope.launch {
+            wm.getWorkInfosForUniqueWorkFlow(EmbeddingWorker.WORK_NAME)
+                .distinctUntilChanged()
+                .collect { infos ->
+                    val info = infos.firstOrNull()
+                    isEmbedding = info?.state == WorkInfo.State.RUNNING
+                    if (info?.state?.isFinished == true) refreshEmbedCount()
+                }
         }
+    }
+
+    fun triggerEmbedding() {
+        EmbeddingWorker.enqueueNow(WorkManager.getInstance(appApp))
     }
 
     val modelLoadState = appApp.llmProvider.modelLoadState

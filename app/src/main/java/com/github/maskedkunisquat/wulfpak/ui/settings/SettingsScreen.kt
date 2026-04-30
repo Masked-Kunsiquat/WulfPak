@@ -205,19 +205,24 @@ fun SettingsScreen(
                 }
 
                 item {
-                    val count = viewModel.pendingEmbedCount
+                    val count      = viewModel.pendingEmbedCount
+                    val embedding  = viewModel.isEmbedding
                     ListItem(
                         headlineContent   = { Text("Search index") },
                         supportingContent = {
                             Text(when {
+                                embedding    -> "Indexing…"
                                 count == null -> "Calculating…"
                                 count == 0   -> "Fully indexed"
                                 else         -> "$count item${if (count == 1) "" else "s"} pending indexing"
                             })
                         },
-                        leadingContent  = { Icon(Icons.Default.Search, contentDescription = null) },
+                        leadingContent  = {
+                            if (embedding) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            else Icon(Icons.Default.Search, contentDescription = null)
+                        },
                         trailingContent = {
-                            if (count != null && count > 0) {
+                            if (!embedding && count != null && count > 0) {
                                 TextButton(onClick = viewModel::triggerEmbedding) { Text("Index now") }
                             }
                         },

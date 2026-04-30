@@ -109,5 +109,13 @@ class EmbeddingWorker(
                 OneTimeWorkRequestBuilder<EmbeddingWorker>().build()
             )
         }
+
+        fun enqueueNow(workManager: WorkManager) {
+            workManager.enqueueUniqueWork(
+                WORK_NAME,
+                ExistingWorkPolicy.REPLACE,
+                OneTimeWorkRequestBuilder<EmbeddingWorker>().build()
+            )
+        }
     }
 }
