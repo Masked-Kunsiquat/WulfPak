@@ -6,7 +6,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.gpu.GpuDelegate
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.atomic.AtomicBoolean
@@ -40,18 +39,16 @@ open class EmbeddingProvider(
                 .order(ByteOrder.nativeOrder())
                 .apply { put(modelBytes); rewind() }
 
-            // float16 TFLite models require the GPU delegate; CPU interpreter rejects mixed-precision
-            // tensors (FLOAT32 vs FLOAT16 at SUB node 36). Fall back to CPU only if GPU is unavailable.
+            // NOTE: snowflake-arctic-embed-xs_float16.tflite has mixed-precision tensors
+            // (FLOAT32 vs FLOAT16 at SUB node 36) that the CPU interpreter rejects.
+            // This model must be replaced with the float32 variant (.tflite without _float16).
+            // Until then, interpreter stays null and generateEmbedding returns zero-vectors.
             interpreter = try {
-                val opts = Interpreter.Options().apply {
-                    numThreads = 4
-                    addDelegate(GpuDelegate())
-                }
-                Interpreter(buf, opts).also { Log.i(TAG, "Initialized with GPU delegate") }
-            } catch (e: Exception) {
-                Log.w(TAG, "GPU delegate init failed, falling back to CPU: ${e.message}")
-                buf.rewind()
                 Interpreter(buf, Interpreter.Options().apply { numThreads = 4 })
+                    .also { Log.i(TAG, "Initialized on CPU") }
+            } catch (e: Exception) {
+                Log.e(TAG, "Embedding model failed to initialize: ${e.message}")
+                null
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to initialize embedding model: ${e.message}")
