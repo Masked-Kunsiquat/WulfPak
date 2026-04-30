@@ -39,7 +39,7 @@ class LocalFallbackProvider(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : LocalModelProvider {
 
-    override val id = "gemma3n_e4b_litertlm"
+    override val id = "gemma4_e4b_litertlm"
 
     @Volatile private var engine: Engine? = null
     @Volatile private var chatConversation: Conversation? = null
@@ -273,9 +273,9 @@ class LocalFallbackProvider(
         private const val TAG = "LocalFallbackProvider"
 
         private const val HF_BASE_URL =
-            "https://huggingface.co/masked-kunsiquat/gemma-3n-E4B-it-litert-lm/resolve/main"
+            "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main"
 
-        const val MODEL_FILE = "gemma-3n-E4B-it-int4.litertlm"
+        const val MODEL_FILE = "gemma-4-E4B-it.litertlm"
 
         internal val MODEL_SHA256: Map<String, String?> = mapOf(
             MODEL_FILE to null,
