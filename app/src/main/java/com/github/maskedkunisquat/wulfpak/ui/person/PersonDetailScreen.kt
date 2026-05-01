@@ -638,9 +638,16 @@ private val WORK_LABELS = listOf("Colleague", "Manager", "Direct Report", "Clien
 private val FAMILY_LABELS: List<String> = FamilyRelType.entries
     .flatMap { t -> if (t.displayLabel == t.reverseLabel) listOf(t.displayLabel) else listOf(t.displayLabel, t.reverseLabel) }
     .distinct()
-private val FAMILY_LABEL_TO_REL_TYPE: Map<String, FamilyRelType> = FamilyRelType.entries
-    .flatMap { t -> listOf(t.displayLabel to t, t.reverseLabel to t) }
-    .toMap()
+private val FAMILY_LABEL_TO_REL_TYPE: Map<String, FamilyRelType> = buildMap {
+    FamilyRelType.entries.forEach { t ->
+        require(!contains(t.displayLabel)) { "FAMILY_LABEL_TO_REL_TYPE key collision on \"${t.displayLabel}\"" }
+        put(t.displayLabel, t)
+        if (t.reverseLabel != t.displayLabel) {
+            require(!contains(t.reverseLabel)) { "FAMILY_LABEL_TO_REL_TYPE key collision on \"${t.reverseLabel}\"" }
+            put(t.reverseLabel, t)
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
