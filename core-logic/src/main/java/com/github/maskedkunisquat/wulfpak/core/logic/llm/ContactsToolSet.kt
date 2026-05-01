@@ -2,6 +2,7 @@ package com.github.maskedkunisquat.wulfpak.core.logic.llm
 
 import android.util.Log
 import com.github.maskedkunisquat.wulfpak.core.logic.BuildConfig
+import com.github.maskedkunisquat.wulfpak.core.data.calculateAge
 import com.github.maskedkunisquat.wulfpak.core.data.dao.ActivityDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.GiftDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.InteractionDao
@@ -245,7 +246,7 @@ internal class ContactsToolSet(
                 val birthYear = Calendar.getInstance().apply { timeInMillis = birthday.date }.get(Calendar.YEAR)
                 if (birthYear != 1900) {
                     val asOf = death?.date ?: System.currentTimeMillis()
-                    val age  = calcAge(birthday.date, asOf)
+                    val age  = birthday.date.calculateAge(asOf)
                     appendLine("Birthday: ${fmt.format(Date(birthday.date))}")
                     if (death != null) appendLine("Age at passing: $age")
                     else appendLine("Current age: $age")
@@ -575,16 +576,6 @@ internal class ContactsToolSet(
             s.contains("social") || s.contains("instagram") || s.contains("twitter") -> InteractionType.SOCIAL_MEDIA
             else -> InteractionType.IN_PERSON
         }
-    }
-
-    private fun calcAge(birthdayMs: Long, asOfMs: Long): Int {
-        val cal = Calendar.getInstance()
-        cal.timeInMillis = asOfMs
-        val nowYear = cal.get(Calendar.YEAR); val nowMonth = cal.get(Calendar.MONTH); val nowDay = cal.get(Calendar.DAY_OF_MONTH)
-        cal.timeInMillis = birthdayMs
-        var age = nowYear - cal.get(Calendar.YEAR)
-        if (nowMonth < cal.get(Calendar.MONTH) || (nowMonth == cal.get(Calendar.MONTH) && nowDay < cal.get(Calendar.DAY_OF_MONTH))) age--
-        return age
     }
 
     private suspend fun findPerson(name: String): Person? {
