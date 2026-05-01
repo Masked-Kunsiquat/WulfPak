@@ -17,6 +17,8 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionType
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Task
+import com.github.maskedkunisquat.wulfpak.core.data.entity.RelCategory
+import com.github.maskedkunisquat.wulfpak.core.logic.family.FamilyInferenceEngine
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchHit
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchRepository
 import com.google.ai.edge.litertlm.Tool
@@ -41,6 +43,7 @@ internal class ContactsToolSet(
     private val taskDao: TaskDao,
     private val searchRepository: SearchRepository,
     private val personRelationshipDao: PersonRelationshipDao,
+    private val familyEngine: FamilyInferenceEngine,
 ) : ToolSet {
 
     private companion object {
@@ -397,9 +400,49 @@ internal class ContactsToolSet(
         val person = findPerson(name) ?: return@runBlocking "No contact found matching '$name'."
         val connections = personRelationshipDao.getConnectionsForPersonOnce(person.id)
         if (connections.isEmpty()) return@runBlocking "${person.firstName} has no recorded connections."
-        connections.joinToString("\n") { conn ->
-            val other = "${conn.firstName}${conn.lastName?.let { " $it" } ?: ""}"
-            "${person.firstName} → $other: ${conn.effectiveLabel}"
+        buildString {
+            connections.forEach { conn ->
+                val other = "${conn.firstName}${conn.lastName?.let { " $it" } ?: ""}"
+                appendLine("${person.firstName} → $other: ${conn.effectiveLabel}")
+            }
+            if (connections.any { it.category == RelCategory.FAMILY.name }) {
+                val kin = familyEngine.inferKinOf(person.id)
+                if (kin.isNotEmpty()) {
+                    appendLine("Inferred kin:")
+                    kin.forEach { k -> appendLine("- ${k.name}: ${k.kinLabel}") }
+                }
+            }
+        }.trimEnd()
+    }
+
+    @Tool(description = "List all family relationships inferred for a contact via graph traversal. Use for 'how is X related to me', 'what relation is X', 'is X my cousin'.")
+    fun inferKinship(
+        @ToolParam(description = "First name or nickname of the contact.") name: String,
+    ): String = runBlocking {
+        Log.i(TAG, "inferKinship — name=$name")
+        eventSink?.invoke(LlmResult.ToolCall("inferKinship", mapOf("name" to name)))
+        val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\"."
+        val kin = familyEngine.inferKinOf(person.id)
+        if (kin.isEmpty()) return@runBlocking "${person.firstName} has no inferred kin (no family edges recorded)."
+        kin.joinToString("\n") { "${it.name}: ${it.kinLabel}" }
+    }
+
+    @Tool(description = "Infer how two contacts are related to each other by traversing family edges. Use for 'how are X and Y related', 'what is X to Y', 'are X and Y siblings'.")
+    fun inferRelationBetween(
+        @ToolParam(description = "First name or nickname of the first contact.") nameA: String,
+        @ToolParam(description = "First name or nickname of the second contact.") nameB: String,
+    ): String = runBlocking {
+        Log.i(TAG, "inferRelationBetween — nameA=$nameA nameB=$nameB")
+        eventSink?.invoke(LlmResult.ToolCall("inferRelationBetween", mapOf("nameA" to nameA, "nameB" to nameB)))
+        val personA = findPerson(nameA) ?: return@runBlocking "No contact found named \"$nameA\"."
+        val personB = findPerson(nameB) ?: return@runBlocking "No contact found named \"$nameB\"."
+        val label = familyEngine.inferBetween(personA.id, personB.id)
+        if (label != null) {
+            "${personA.firstName} → ${personB.firstName}: $label"
+        } else {
+            val reverse = familyEngine.inferBetween(personB.id, personA.id)
+            if (reverse != null) "${personB.firstName} → ${personA.firstName}: $reverse"
+            else "${personA.firstName} and ${personB.firstName} have no detectable family relationship."
         }
     }
 
