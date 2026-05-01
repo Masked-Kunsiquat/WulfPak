@@ -16,6 +16,9 @@ interface LifeEventDao {
     @Query("SELECT * FROM life_events WHERE personId = :personId ORDER BY date")
     fun getForPerson(personId: UUID): Flow<List<LifeEvent>>
 
+    @Query("SELECT * FROM life_events WHERE personId = :personId ORDER BY date")
+    suspend fun getForPersonOnce(personId: UUID): List<LifeEvent>
+
     @Query("SELECT * FROM life_events ORDER BY date")
     suspend fun getAll(): List<LifeEvent>
 

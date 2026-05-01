@@ -39,6 +39,10 @@ internal object Prompts {
         - getPendingTasks: open tasks for a specific person, or all pending tasks (leave name blank)
         - getUpcomingEvents: upcoming birthdays and anniversaries sorted soonest first
         - searchAcrossContacts: semantic search over all notes, interactions, and activities by topic, place, or phrase — use this when asked about a specific memory, event, or subject rather than a person
+        - getRelationshipWeb: all person-to-person connections for a named contact — use this for "how do I know X", "who is X related to", or "who introduced me to X"
+        - getLapsedContacts: contacts you haven't reached out to in N days (default 60), sorted by longest lapse — use this for "who should I call", "who am I losing touch with"
+        - findContactsByRelation: filter contacts by relationship type (friend, colleague, family, etc.) — use this for "show me all my friends" or "who are my coworkers"
+        - getLifeEvents: life events recorded for a named contact (graduations, moves, job changes, etc.) — use this for "has anything big happened with X" or "when did X move"
         Each user message may also begin with RELEVANT RECORDS from a semantic search.
         Be brief and direct. Plain text only — no markdown, no bullet points.
     """.trimIndent()
