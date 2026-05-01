@@ -458,14 +458,15 @@ internal class ContactsToolSet(
         if (rating == null)
             return@runBlocking "${person.firstName}'s interaction score is $scoreStr (0–1 scale). No closeness rating has been set."
         val expectedFloor = (rating - 1) / 4f
+        val driftThreshold = expectedFloor - 0.15f
         val ratingDesc = when (rating) {
             1 -> "acquaintance-level"; 2 -> "casual"; 3 -> "moderate"
             4 -> "close"; 5 -> "very close"; else -> "rated $rating/5"
         }
-        val isDrifting = rating >= 4 && score < expectedFloor - 0.15f
+        val isDrifting = rating >= 4 && score < driftThreshold
         if (isDrifting) {
             "${person.firstName} is rated $rating/5 ($ratingDesc) but the interaction score is only $scoreStr" +
-            " — below the expected floor of ${"%.2f".format(expectedFloor)}." +
+            " — below the drift threshold of ${"%.2f".format(driftThreshold)}." +
             " You're not connecting as often as intended. Consider reaching out."
         } else {
             val onTrack = score >= expectedFloor
