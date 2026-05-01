@@ -73,11 +73,12 @@ Tab logic (no schema change):
 
 **Files:** `PersonDetailScreen.kt` (AddConnectionDialog), `AddEditActivityScreen.kt`, `AddEditActivityViewModel.kt`
 
-- [ ] `AddConnectionDialog` — sort `candidates` by `firstName` before rendering
-- [ ] `AddEditActivityViewModel` — sort `allPersons` by `firstName`
-- [ ] `AddEditActivityScreen` — add search `OutlinedTextField` above participant checklist; filter by name (case-insensitive contains)
-- [ ] `AddEditInteractionScreen` — same sort + search filter (from item 1 above)
-- [ ] Check `AddEditTaskScreen` for any person picker; sort if present
+- [x] `AddConnectionDialog` — `allPersons` sorted in `PersonDetailViewModel.loadAllPersons()` via DataStore preference; candidates inherit that order
+- [x] `AddEditActivityViewModel` — `allPersons` is `combine(getAll(), sortByLastName)` so it re-sorts live when preference changes
+- [x] `AddEditActivityScreen` — search `OutlinedTextField` above participant checklist; case-insensitive `contains` filter
+- [x] `AddEditInteractionScreen` — same sort-via-combine applied to `AddEditInteractionViewModel`; search filter already existed from Phase 1
+- [x] `AddEditTaskScreen` — no person picker; nothing to sort
+- [x] **Bonus — Display settings toggle** — `SORT_BY_LAST_NAME` DataStore key; `SettingsViewModel.sortByLastName` + `setSortByLastName()`; "Sort contacts by last name" switch in `DisplaySettingsScreen`
 
 ---
 

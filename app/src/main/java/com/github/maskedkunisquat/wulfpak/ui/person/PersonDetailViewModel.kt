@@ -7,6 +7,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.maskedkunisquat.wulfpak.AppApplication
+import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
+import com.github.maskedkunisquat.wulfpak.appDataStore
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonConnection
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetail
@@ -83,7 +85,14 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
         private set
 
     fun loadAllPersons() {
-        viewModelScope.launch { allPersons = db.personDao().getAllOnce() }
+        viewModelScope.launch {
+            val byLast = getApplication<AppApplication>().appDataStore.data
+                .first()[AppPrefsKeys.SORT_BY_LAST_NAME] ?: false
+            val persons = db.personDao().getAllOnce()
+            allPersons = if (byLast)
+                persons.sortedWith(compareBy({ it.lastName ?: it.firstName }, { it.firstName }))
+            else persons.sortedBy { it.firstName }
+        }
     }
 
     fun addConnection(otherId: UUID, label: String) {

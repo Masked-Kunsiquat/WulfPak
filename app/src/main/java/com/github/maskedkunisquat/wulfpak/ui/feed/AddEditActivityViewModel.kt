@@ -12,7 +12,11 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ActivityParticipant
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
+import com.github.maskedkunisquat.wulfpak.appDataStore
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -25,8 +29,13 @@ class AddEditActivityViewModel(app: Application) : AndroidViewModel(app) {
     var timestampMs by mutableStateOf(System.currentTimeMillis())
     var selectedIds by mutableStateOf(emptySet<UUID>())
 
-    val allPersons = db.personDao().getAll()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    private val sortByLastName = getApplication<AppApplication>().appDataStore.data
+        .map { it[AppPrefsKeys.SORT_BY_LAST_NAME] ?: false }
+
+    val allPersons = combine(db.personDao().getAll(), sortByLastName) { persons, byLast ->
+        if (byLast) persons.sortedWith(compareBy({ it.lastName ?: it.firstName }, { it.firstName }))
+        else persons.sortedBy { it.firstName }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private var existingId: UUID? = null
 
