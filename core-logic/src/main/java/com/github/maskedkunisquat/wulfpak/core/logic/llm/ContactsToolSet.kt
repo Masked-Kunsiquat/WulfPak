@@ -281,6 +281,68 @@ internal class ContactsToolSet(
             .joinToString("\n") { it.third }
     }
 
+    @Tool(description = "Get contacts you haven't been in touch with for a while, sorted by longest lapse first. Use this when asked who to call, who you've lost touch with, or who to reconnect with.")
+    fun getLapsedContacts(
+        @ToolParam(description = "Number of days since last contact to be considered lapsed. Default is 60.") days: Int = 60,
+    ): String = runBlocking {
+        Log.i(TAG, "getLapsedContacts — days=$days")
+        eventSink?.invoke(LlmResult.ToolCall("getLapsedContacts", mapOf("days" to days.toString())))
+        val cutoff = System.currentTimeMillis() - days * 86_400_000L
+        val lapsed = personDao.getAllOnce()
+            .filter { it.lastContactedAt == null || it.lastContactedAt < cutoff }
+            .sortedBy { it.lastContactedAt ?: 0L }
+        if (lapsed.isEmpty()) return@runBlocking "No contacts lapsed beyond $days days."
+        lapsed.joinToString("\n") { p ->
+            val name = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
+            val relation = p.relationLabel.replace("_", " ").lowercase()
+            val lapse = when (val ts = p.lastContactedAt) {
+                null -> "never contacted"
+                else -> "${((System.currentTimeMillis() - ts) / 86_400_000L).toInt()} days ago"
+            }
+            "$name ($relation) — last contact: $lapse"
+        }
+    }
+
+    @Tool(description = "Find contacts by their relationship type — e.g. 'friend', 'colleague', 'family', 'mentor'. Fuzzy match so 'friend' finds both Friend and Best Friend.")
+    fun findContactsByRelation(
+        @ToolParam(description = "Relationship type to search for, e.g. 'friend', 'colleague', 'family', 'mentor'.") relation: String,
+    ): String = runBlocking {
+        Log.i(TAG, "findContactsByRelation — relation=$relation")
+        eventSink?.invoke(LlmResult.ToolCall("findContactsByRelation", mapOf("relation" to relation)))
+        val query = relation.trim().lowercase()
+        val matches = personDao.getAllOnce().filter { p ->
+            p.relationLabel.lowercase().contains(query) ||
+            p.relationLabel.replace("_", " ").lowercase().contains(query)
+        }
+        if (matches.isEmpty()) return@runBlocking "No contacts found with relation matching '$relation'."
+        matches.joinToString("\n") { p ->
+            val name = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
+            val relation = p.relationLabel.replace("_", " ").lowercase()
+            val job = listOfNotNull(p.jobTitle, p.company).joinToString(" at ")
+            val jobStr = if (job.isNotBlank()) " — $job" else ""
+            "$name ($relation)$jobStr"
+        }
+    }
+
+    @Tool(description = "Get all life events recorded for a contact — birthday, anniversaries, job changes, moves, graduations, deaths, etc.")
+    fun getLifeEvents(
+        @ToolParam(description = "First name or nickname of the contact.") name: String,
+    ): String = runBlocking {
+        Log.i(TAG, "getLifeEvents — name=$name")
+        eventSink?.invoke(LlmResult.ToolCall("getLifeEvents", mapOf("name" to name)))
+        val person = findPerson(name) ?: return@runBlocking "No contact found matching '$name'."
+        val events = lifeEventDao.getForPersonOnce(person.id)
+        if (events.isEmpty()) return@runBlocking "${person.firstName} has no recorded life events."
+        events.joinToString("\n") { event ->
+            val type = event.eventType.replace("_", " ").lowercase()
+                .replaceFirstChar { it.uppercase() }
+            val date = fmt.format(Date(event.date))
+            val recurring = if (event.isRecurring) " (recurring)" else ""
+            val note = event.note?.let { " — $it" } ?: ""
+            "$type: $date$recurring$note"
+        }
+    }
+
     @Tool(description = "Get all person-to-person connections for a contact — who introduced them, family members, colleagues, partners, etc.")
     fun getRelationshipWeb(
         @ToolParam(description = "First name or nickname of the contact.") name: String,
