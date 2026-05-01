@@ -289,16 +289,15 @@ internal class ContactsToolSet(
         eventSink?.invoke(LlmResult.ToolCall("getLapsedContacts", mapOf("days" to days.toString())))
         val cutoff = System.currentTimeMillis() - days * 86_400_000L
         val lapsed = personDao.getAllOnce()
-            .filter { it.lastContactedAt == null || it.lastContactedAt < cutoff }
+            .filter { val t = it.lastContactedAt; t == null || t < cutoff }
             .sortedBy { it.lastContactedAt ?: 0L }
         if (lapsed.isEmpty()) return@runBlocking "No contacts lapsed beyond $days days."
         lapsed.joinToString("\n") { p ->
             val name = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
             val relation = p.relationLabel.replace("_", " ").lowercase()
-            val lapse = when (val ts = p.lastContactedAt) {
-                null -> "never contacted"
-                else -> "${((System.currentTimeMillis() - ts) / 86_400_000L).toInt()} days ago"
-            }
+            val ts = p.lastContactedAt
+            val lapse = if (ts == null) "never contacted"
+                        else "${((System.currentTimeMillis() - ts) / 86_400_000L).toInt()} days ago"
             "$name ($relation) — last contact: $lapse"
         }
     }

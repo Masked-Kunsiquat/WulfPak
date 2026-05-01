@@ -83,35 +83,14 @@ Returns: all person-to-person connections for the named contact, formatted as
 
 ---
 
-## Phase 4 — Smart read tools
+## ✅ Phase 4 — Smart read tools
 
-Low implementation cost, high daily-use value.
+**Done.** Four new tools added to `ContactsToolSet` and wired into `Prompts.QUERY_SYSTEM`:
 
-### `getLapsedContacts(days: Int = 60)`
-Queries `Person.lastContactedAt`, returns everyone you haven't contacted in N days,
-sorted by longest lapse first. Optionally filter by `relationLabel`.
-
-**Use cases:**
-- "Who should I call this week?"
-- "Who haven't I talked to in two months?"
-- "Which friends am I losing touch with?"
-
-### `findContactsByRelation(relation: String)`
-Filters `Person` by `relationLabel` (fuzzy match to handle "friend" → "best_friend").
-
-**Use cases:**
-- "Show me all my colleagues"
-- "Who are my family members?"
-- "List everyone from work"
-
-### `getLifeEvents(name: String)`
-Returns all `LifeEvent` rows for a person, not just birthdays — graduations,
-job changes, moves, deaths.
-
-**Use cases:**
-- "Has anything big happened in Jake's life recently?"
-- "When did Maria move?"
-- "What life events have I recorded for my mom?"
+- `getLapsedContacts(days = 60)` — filters `Person.lastContactedAt`, sorts by longest lapse; nulls (never contacted) sort first
+- `findContactsByRelation(relation)` — fuzzy `contains()` match on `relationLabel` + underscore-replaced form
+- `getLifeEvents(name)` — all `LifeEvent` rows for a person (uses `getForPersonOnce` added to `LifeEventDao`)
+- `getRelationshipWeb(name)` — all person-to-person connections via `getConnectionsForPersonOnce`, with `effectiveLabel` for perspective-correct display
 
 ---
 
@@ -225,7 +204,7 @@ Option C only if WulfPak pivots to being a family history tool.
 1. ✅ Fix EmbeddingWorker / float32 model  — semantic search live
 2. ✅ searchAcrossContacts tool            — topic-based recall live
 3. ✅ Person-person relationships          — DAO + UI + getRelationshipWeb tool
-4. Smart read tools                        — getLapsed, findByRelation, getLifeEvents
+4. ✅ Smart read tools                     — getLapsed, findByRelation, getLifeEvents, getRelationshipWeb
 5. Write tools + confirm UI                — logInteraction, addNote, addTask
 6. Family strategy (A, B, or C above)     — decide before building graph view
 7. Graph view                              — when Phase 3 list UI + family model settled
