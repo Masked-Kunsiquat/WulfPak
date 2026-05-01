@@ -314,6 +314,7 @@ fun AppNavHost(
                     interactionId  = UUID.fromString(interactionIdStr),
                     onNavigateBack = { navController.popBackStack() },
                     onOpenPerson   = { id -> navController.navigate(Routes.personDetail(id.toString())) },
+                    onEdit         = { pid, iid -> navController.navigate(Routes.addEditInteraction(pid.toString(), iid.toString())) },
                     viewModel      = vm,
                 )
             }

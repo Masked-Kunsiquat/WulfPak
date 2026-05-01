@@ -138,12 +138,22 @@ internal class ContactsToolSet(
                     .filter { it.timestamp >= cutoff }
                     .forEach { i ->
                         val note = i.note?.let { " — $it" } ?: ""
-                        entries += Entry(i.timestamp, "${fmt.format(Date(i.timestamp))} — $contactName: ${i.type.replace('_', ' ')}$note")
+                        val others = interactionDao.getParticipantIds(i.id)
+                            .filter { it != p.id }
+                            .mapNotNull { pid -> persons.firstOrNull { it.id == pid } }
+                            .map { op -> "${op.firstName}${op.lastName?.let { " $it" } ?: ""}" }
+                        val withStr = if (others.isNotEmpty()) " [with: ${others.joinToString(", ")}]" else ""
+                        entries += Entry(i.timestamp, "${fmt.format(Date(i.timestamp))} — $contactName: ${i.type.replace('_', ' ')}$note$withStr")
                     }
                 activityDao.getForPerson(p.id).first()
                     .filter { it.timestamp >= cutoff }
                     .forEach { a ->
-                        entries += Entry(a.timestamp, "${fmt.format(Date(a.timestamp))} — $contactName: activity \"${a.title}\"")
+                        val others = activityDao.getParticipantIds(a.id)
+                            .filter { it != p.id }
+                            .mapNotNull { pid -> persons.firstOrNull { it.id == pid } }
+                            .map { op -> "${op.firstName}${op.lastName?.let { " $it" } ?: ""}" }
+                        val withStr = if (others.isNotEmpty()) " [with: ${others.joinToString(", ")}]" else ""
+                        entries += Entry(a.timestamp, "${fmt.format(Date(a.timestamp))} — $contactName: activity \"${a.title}\"$withStr")
                     }
             }
             if (entries.isEmpty()) return@runBlocking "No interactions or activities logged in the last 30 days."
@@ -154,19 +164,30 @@ internal class ContactsToolSet(
             val activities   = activityDao.getForPerson(person.id).first()
             if (interactions.isEmpty() && activities.isEmpty())
                 return@runBlocking "No interaction history found for ${person.firstName}."
+            val persons = personDao.getAllOnce()
             buildString {
                 if (interactions.isNotEmpty()) {
                     appendLine("Interactions with ${person.firstName}:")
                     interactions.forEach { i ->
                         val note = i.note?.let { " — $it" } ?: ""
-                        appendLine("- ${fmt.format(Date(i.timestamp))}: ${i.type.replace('_', ' ')}$note")
+                        val others = interactionDao.getParticipantIds(i.id)
+                            .filter { it != person.id }
+                            .mapNotNull { pid -> persons.firstOrNull { it.id == pid } }
+                            .map { p -> "${p.firstName}${p.lastName?.let { " $it" } ?: ""}" }
+                        val withStr = if (others.isNotEmpty()) " [with: ${others.joinToString(", ")}]" else ""
+                        appendLine("- ${fmt.format(Date(i.timestamp))}: ${i.type.replace('_', ' ')}$note$withStr")
                     }
                 }
                 if (activities.isNotEmpty()) {
                     appendLine("Activities with ${person.firstName}:")
                     activities.forEach { a ->
                         val body = a.body?.let { " — $it" } ?: ""
-                        appendLine("- ${fmt.format(Date(a.timestamp))}: ${a.title}$body")
+                        val others = activityDao.getParticipantIds(a.id)
+                            .filter { it != person.id }
+                            .mapNotNull { pid -> persons.firstOrNull { it.id == pid } }
+                            .map { p -> "${p.firstName}${p.lastName?.let { " $it" } ?: ""}" }
+                        val withStr = if (others.isNotEmpty()) " [with: ${others.joinToString(", ")}]" else ""
+                        appendLine("- ${fmt.format(Date(a.timestamp))}: ${a.title}$body$withStr")
                     }
                 }
             }.trimEnd()
@@ -255,14 +276,22 @@ internal class ContactsToolSet(
                             val s = if (b.length > 150) b.take(150) + "…" else b
                             ": $s"
                         } ?: ""
-                        appendLine("Activity \"${hit.activity.title}\" on ${fmt.format(Date(hit.activity.timestamp))}$body")
+                        val participantNames = activityDao.getParticipantIds(hit.activity.id)
+                            .mapNotNull { pid -> persons.firstOrNull { it.id == pid } }
+                            .map { p -> "${p.firstName}${p.lastName?.let { " $it" } ?: ""}" }
+                        val withStr = if (participantNames.isNotEmpty()) " [with: ${participantNames.joinToString(", ")}]" else ""
+                        appendLine("Activity \"${hit.activity.title}\" on ${fmt.format(Date(hit.activity.timestamp))}$body$withStr")
                     }
                     is SearchHit.InteractionHit -> {
                         val note = hit.interaction.note?.let { n ->
                             val s = if (n.length > 120) n.take(120) + "…" else n
                             ": \"$s\""
                         } ?: ""
-                        appendLine("${hit.interaction.type.replace('_', ' ')} on ${fmt.format(Date(hit.interaction.timestamp))}$note")
+                        val participantNames = interactionDao.getParticipantIds(hit.interaction.id)
+                            .mapNotNull { pid -> persons.firstOrNull { it.id == pid } }
+                            .map { p -> "${p.firstName}${p.lastName?.let { " $it" } ?: ""}" }
+                        val withStr = if (participantNames.isNotEmpty()) " [with: ${participantNames.joinToString(", ")}]" else ""
+                        appendLine("${hit.interaction.type.replace('_', ' ')} on ${fmt.format(Date(hit.interaction.timestamp))}$note$withStr")
                     }
                 }
             }
