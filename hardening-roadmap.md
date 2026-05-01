@@ -38,20 +38,10 @@ Eliminated the double-lock in `processInternal` and `chatSendInternal`: removed 
 
 ## P2 — Privacy / Security
 
-### 5. PII logged at `Log.i` in production
-**File:** `core-logic/…/llm/ContactsToolSet.kt` ~lines 72, 97, 131, 204, 223, 261, 379, 398, 420, 433, 451, 486, 508, 527, 545
+### 5. ~~PII logged at `Log.i` in production~~ FIXED 2026-05-01
+**File:** `core-logic/…/llm/ContactsToolSet.kt`
 
-Contact names, nicknames, search queries, and task titles are logged at `Log.i` on every tool call. These logs are readable by ADB and by apps with `READ_LOGS` on rooted devices — directly contradicts the encrypted DB + biometric lock security posture.
-
-```kotlin
-// before
-Log.i(TAG, "getContactNotes: ${person.firstName}")
-
-// after
-if (BuildConfig.DEBUG) Log.d(TAG, "getContactNotes: ${person.firstName}")
-```
-
-Apply to all PII-bearing log lines. Confirm R8 strips `Log.d` calls in release via `android.util.Log` optimization rules.
+All 18 `Log.i(TAG, ...)` calls converted to `if (BuildConfig.DEBUG) Log.d(TAG, ...)`. Enabled `buildConfig = true` in `core-logic/build.gradle.kts` to generate `BuildConfig.DEBUG`. R8 strips `Log.d` in release builds via its default `android.util.Log` optimization rules.
 
 ---
 
