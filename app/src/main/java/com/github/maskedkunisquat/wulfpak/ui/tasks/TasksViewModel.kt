@@ -35,8 +35,7 @@ class TasksViewModel(app: Application) : AndroidViewModel(app) {
     fun setTab(i: Int) { _selectedTab.value = i }
 
     val openTasks = allItems.map { all ->
-        val eot = endOfTomorrow()
-        all.filter { val due = it.task.dueAt; !it.task.isDone && (due == null || due > eot) }
+        all.filter { !it.task.isDone }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val dueSoonTasks = allItems.map { all ->
