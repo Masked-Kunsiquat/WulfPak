@@ -44,7 +44,7 @@ import net.sqlcipher.database.SupportFactory
         Task::class,
         PersonRelationship::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(AppTypeConverters::class)
@@ -75,6 +75,39 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE person_relationships ADD COLUMN category TEXT NOT NULL DEFAULT 'OTHER'")
+                db.execSQL("ALTER TABLE person_relationships ADD COLUMN relType TEXT")
+
+                // Backfill category and relType from existing label strings (best-effort)
+                db.execSQL("UPDATE person_relationships SET category = 'FRIEND' WHERE label = 'Friend'")
+                db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'SPOUSE_OF' WHERE label = 'Spouse'")
+                db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'SIBLING_OF' WHERE label = 'Sibling'")
+                db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'PARENT_OF' WHERE label = 'Parent'")
+                db.execSQL("UPDATE person_relationships SET category = 'WORK' WHERE label = 'Colleague'")
+                db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'HALF_SIBLING_OF' WHERE label = 'Half-sibling'")
+                db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'STEP_PARENT_OF' WHERE label = 'Step-parent'")
+                db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'STEP_PARENT_OF' WHERE label = 'Step-child'")
+                db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'GRANDPARENT_OF' WHERE label = 'Grandparent'")
+                db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'GRANDPARENT_OF' WHERE label = 'Grandchild'")
+
+                // Normalize legacy 'Child' rows: re-insert in canonical UUID order so the
+                // parent is personA when the parent holds the lower UUID, child otherwise.
+                db.execSQL("""
+                    INSERT OR IGNORE INTO person_relationships (personAId, personBId, label, category, relType)
+                    SELECT
+                        CASE WHEN personBId < personAId THEN personBId ELSE personAId END,
+                        CASE WHEN personBId < personAId THEN personAId ELSE personBId END,
+                        CASE WHEN personBId < personAId THEN 'Parent' ELSE 'Child' END,
+                        'FAMILY',
+                        'PARENT_OF'
+                    FROM person_relationships WHERE label = 'Child'
+                """)
+                db.execSQL("DELETE FROM person_relationships WHERE label = 'Child'")
+            }
+        }
+
         fun create(context: Context, key: ByteArray): AppDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
@@ -82,7 +115,7 @@ abstract class AppDatabase : RoomDatabase() {
                 "wulfpak.db"
             )
                 .openHelperFactory(SupportFactory(key))
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
     }
 }

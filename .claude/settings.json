@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Hugging_Face__hub_repo_details"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(uv run python -c \"import json,sys; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('file_path',''))\"); case \"$f\" in *AppDatabase.kt*|*/core-data/schemas/*) echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"Room migration file — confirm a new migration block is written and schema export is planned.\"}}' ;; esac",
+            "shell": "bash"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./gradlew :app:compileDebugKotlin -q 2>&1 | tail -8",
+            "shell": "bash",
+            "timeout": 120,
+            "statusMessage": "Compile checking Kotlin..."
+          }
+        ]
+      }
+    ]
+  }
+}
