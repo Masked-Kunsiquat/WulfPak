@@ -415,7 +415,7 @@ internal class ContactsToolSet(
         }.trimEnd()
     }
 
-    @Tool(description = "List all family relationships inferred for a contact via graph traversal. Use for 'how is X related to me', 'what relation is X', 'is X my cousin'.")
+    @Tool(description = "List all family relationships inferred for a contact via graph traversal. Use for 'who are X's relatives', 'what family does X have', 'how is X related to Y'.")
     fun inferKinship(
         @ToolParam(description = "First name or nickname of the contact.") name: String,
     ): String = runBlocking {
