@@ -179,6 +179,43 @@ proves out.
   Simple FTS4 Room query across `Note.body`, `Interaction.note`, `Activity.title`.
 - **`logActivity(participants[], title, body?)`** — multi-person write tool;
   more complex confirmation UI (participant picker).
+- **Smart connection suggestions** — after saving an edge (e.g. Uncle ↔ Dad:
+  Sibling), prompt: "Connect Uncle's spouse to Dad too?" Stays pair-wise under
+  the hood; just reduces the tedium of dense groups.
+
+---
+
+## Family / large-group problem
+
+The pair-wise connection model gets tedious fast for families. Three realistic
+paths forward, in order of scope:
+
+### A — Rich person notes (zero schema cost)
+Add a free-text "family context" field to each Person (or just use Notes).
+"Dad: my father, married to Mom, brother of Uncle Bob." The AI reads and
+reasons over it naturally. Zero new schema, zero inference logic. Loses
+queryability but covers the AI use-case well.
+
+### B — Groups with roles (moderate, no GEDCOM creep)
+New `Group` entity with a `GroupMembership(personId, groupId, role: String)`.
+Example: Group "Paternal Family"; Dad=Father, Mom=Mother, Uncle=Uncle, Cousin=Cousin.
+- Everyone's role is relative to **you**, not to each other — avoids the full graph.
+- AI tool: `getGroupMembers(groupName)` returns roles.
+- UI: group list screen + add-member flow on PersonDetail.
+- Schema: 2 new tables, 1 migration, no inference engine.
+
+### C — Transitive inference engine (full-send, GEDCOM-adjacent)
+After recording Dad→Uncle: Sibling, infer Uncle's children are Cousins, Uncle's
+spouse is Aunt-by-marriage, etc. Requires:
+- Graph traversal (BFS/DFS) at query time or materialized at write time.
+- A relationship-type ontology (what does "sibling of sibling's spouse" equal?).
+- Edge cases: half-siblings, step-relationships, divorce, remarriage.
+- This IS genealogy software. Only worth it if family mapping is a core value
+  prop, not a side feature.
+
+**Recommendation:** Option A if the AI use-case is the priority (quick win).
+Option B if you want the app to feel family-aware without building a family tree.
+Option C only if WulfPak pivots to being a family history tool.
 
 ---
 
@@ -187,8 +224,9 @@ proves out.
 ```
 1. ✅ Fix EmbeddingWorker / float32 model  — semantic search live
 2. ✅ searchAcrossContacts tool            — topic-based recall live
-3. Person-person relationships             — DAO + UI + getRelationshipWeb tool
+3. ✅ Person-person relationships          — DAO + UI + getRelationshipWeb tool
 4. Smart read tools                        — getLapsed, findByRelation, getLifeEvents
 5. Write tools + confirm UI                — logInteraction, addNote, addTask
-6. Graph view                              — when Phase 3 list UI is settled
+6. Family strategy (A, B, or C above)     — decide before building graph view
+7. Graph view                              — when Phase 3 list UI + family model settled
 ```
