@@ -4,7 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
@@ -107,7 +107,7 @@ private data class TopLevelDest(val route: String, val icon: ImageVector, val la
 private val TOP_LEVEL_DESTS = listOf(
     TopLevelDest(Routes.PEOPLE_LIST,   Icons.Default.People,      "People"),
     TopLevelDest(Routes.ACTIVITY_FEED, Icons.Default.DynamicFeed, "Feed"),
-    TopLevelDest(Routes.SEARCH,        Icons.Default.Search,       "Search"),
+    TopLevelDest(Routes.SEARCH,        Icons.Default.Chat,         "Chat"),
     TopLevelDest(Routes.TASKS,         Icons.Default.Assignment,   "Tasks"),
 )
 

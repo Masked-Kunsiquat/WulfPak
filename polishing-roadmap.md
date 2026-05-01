@@ -50,8 +50,8 @@ Tab logic (no schema change):
 
 **File:** `AppNavigation.kt`
 
-- [ ] Change `SEARCH` `BottomNavItem` label `"Search"` → `"Chat"`
-- [ ] Change icon `Icons.Default.Search` → `Icons.Default.Chat`
+- [x] Change `SEARCH` `BottomNavItem` label `"Search"` → `"Chat"`
+- [x] Change icon `Icons.Default.Search` → `Icons.Default.Chat`
 
 ---
 
