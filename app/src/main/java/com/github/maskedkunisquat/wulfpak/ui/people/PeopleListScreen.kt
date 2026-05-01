@@ -261,7 +261,7 @@ private fun PersonRow(
                     IconButton(onClick = { onToggleFavorite(person) }) {
                         Icon(
                             imageVector = if (person.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                            contentDescription = null,
+                            contentDescription = if (person.isFavorite) "Remove from favorites" else "Add to favorites",
                             tint = if (person.isFavorite) MaterialTheme.colorScheme.primary
                                    else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
