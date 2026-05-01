@@ -161,34 +161,36 @@ data class InferredKin(val personId: UUID, val name: String, val kinLabel: Strin
 
 ---
 
-## Phase 3 — UI: SegmentedPicker + inferred kin section
+## Phase 3 — UI: SegmentedPicker + inferred kin section ✓
 
 **Goal:** Category-aware Add Connection dialog; inferred kin visible on PersonDetail.
 
 ### AddConnectionDialog changes
 
-- `SingleChoiceSegmentedButtonRow`: **Friends | Family | Work** (above the label dropdown)
-- Selecting a category repopulates the label dropdown with that bucket's options
-- Family → typed FamilyRelType display labels; no custom field (types are fixed)
-- Friends/Work → curated list + "Custom…" option with free-text field
-- Save passes `(otherId, label, category, relType?)` — relType only set for Family
+- [x] `SingleChoiceSegmentedButtonRow`: **Friends | Family | Work** (above the label dropdown)
+- [x] Selecting a category repopulates the label dropdown with that bucket's options
+- [x] Family → typed FamilyRelType display labels; no custom field (types are fixed)
+- [x] Friends/Work → curated list + "Custom…" option with free-text field
+- [x] Save passes `(otherId, label, category, relType?)` — relType only set for Family
 
 ### ConnectionsTab changes
 
-- Each connection row shows a small category chip (tonal, low-emphasis)
-- New "Inferred family" subsection below explicit connections, populated by `FamilyInferenceEngine`
+- [x] Each connection row shows a small category chip (tonal, low-emphasis)
+- [x] New "Inferred family" subsection below explicit connections, populated by `FamilyInferenceEngine`
   - Shown only when the person has ≥1 family-typed edge
   - Italic text, secondaryContainer chip, non-navigable (inferred, not recorded)
-- Empty state unchanged when no connections
+- [x] Empty state unchanged when no connections
 
 ### ViewModel changes
 
-- `addConnection(otherId, label, category, relType?)` — updated signature
-- `inferredKin: StateFlow<List<InferredKin>>` — loaded when Connections tab opens
+- [x] `addConnection(otherId, label, category, relType?)` — updated signature; normalises asymmetric labels to personA perspective before inserting
+- [x] `inferredKin: StateFlow<List<InferredKin>>` — re-runs BFS whenever connections update and a family edge exists
+- [x] `FAMILY_REVERSE` companion map for label normalisation; `familyInferenceEngine` lazy singleton in `AppApplication`
 
 **Files:**
-- `app/.../person/PersonDetailScreen.kt`
-- `app/.../person/PersonDetailViewModel.kt`
+- [x] `app/.../person/PersonDetailScreen.kt`
+- [x] `app/.../person/PersonDetailViewModel.kt`
+- [x] `app/.../AppApplication.kt`
 
 ---
 

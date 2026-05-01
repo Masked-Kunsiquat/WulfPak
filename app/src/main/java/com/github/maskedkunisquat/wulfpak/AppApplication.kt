@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import com.github.maskedkunisquat.wulfpak.core.data.AppDatabase
 import com.github.maskedkunisquat.wulfpak.core.data.db.KeyProvider
 import com.github.maskedkunisquat.wulfpak.core.logic.embedding.EmbeddingProvider
+import com.github.maskedkunisquat.wulfpak.core.logic.family.FamilyInferenceEngine
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.LocalFallbackProvider
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.LlmOrchestrator
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchRepository
@@ -28,6 +29,8 @@ class AppApplication : Application(), Configuration.Provider {
     val db: AppDatabase by lazy {
         AppDatabase.create(this, KeyProvider.getOrCreateKey(this))
     }
+
+    val familyInferenceEngine: FamilyInferenceEngine by lazy { FamilyInferenceEngine(db) }
 
     val embeddingProvider: EmbeddingProvider by lazy { EmbeddingProvider() }
 

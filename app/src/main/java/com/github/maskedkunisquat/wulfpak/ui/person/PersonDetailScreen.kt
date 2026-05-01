@@ -50,6 +50,11 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -63,6 +68,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,6 +78,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonConnection
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetail
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetailType
+import com.github.maskedkunisquat.wulfpak.core.data.entity.FamilyRelType
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Gift
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
@@ -80,7 +87,9 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEvent
 import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEventType
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
+import com.github.maskedkunisquat.wulfpak.core.data.entity.RelCategory
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Task
+import com.github.maskedkunisquat.wulfpak.core.logic.family.InferredKin
 import com.github.maskedkunisquat.wulfpak.ui.common.PersonAvatar
 import com.github.maskedkunisquat.wulfpak.ui.common.birthYearIsKnown
 import com.github.maskedkunisquat.wulfpak.ui.common.calculateAge
@@ -124,6 +133,7 @@ fun PersonDetailScreen(
     val tasks          by viewModel.tasks.collectAsStateWithLifecycle()
     val contactDetails  by viewModel.contactDetails.collectAsStateWithLifecycle()
     val connections     by viewModel.connections.collectAsStateWithLifecycle()
+    val inferredKin     by viewModel.inferredKin.collectAsStateWithLifecycle()
 
     var selectedTab        by remember { mutableIntStateOf(0) }
     var showOverflow       by remember { mutableStateOf(false) }
@@ -179,7 +189,10 @@ fun PersonDetailScreen(
             AddConnectionDialog(
                 allPersons      = viewModel.allPersons,
                 currentPersonId = p.id,
-                onSave          = { otherId, label -> viewModel.addConnection(otherId, label); showAddConnection = false },
+                onSave          = { otherId, label, category, relType ->
+                    viewModel.addConnection(otherId, label, category, relType)
+                    showAddConnection = false
+                },
                 onDismiss       = { showAddConnection = false },
             )
         }
@@ -330,8 +343,8 @@ fun PersonDetailScreen(
                     4 -> GiftsTab(gifts, onEdit = onEditGift, onDelete = viewModel::deleteGift)
                     5 -> TasksTab(tasks, onToggleDone = viewModel::toggleTaskDone,
                         onEdit = onEditTask, onDelete = viewModel::deleteTask)
-                    6 -> ConnectionsTab(connections, onNavigateToPerson = onNavigateToPerson,
-                        onDelete = viewModel::removeConnection)
+                    6 -> ConnectionsTab(connections, inferredKin = inferredKin,
+                        onNavigateToPerson = onNavigateToPerson, onDelete = viewModel::removeConnection)
                 }
             }
         }
@@ -561,6 +574,7 @@ private fun EmptyTab(message: String) {
 @Composable
 private fun ConnectionsTab(
     items: List<PersonConnection>,
+    inferredKin: List<InferredKin>,
     onNavigateToPerson: (UUID) -> Unit,
     onDelete: (UUID) -> Unit,
 ) {
@@ -568,9 +582,18 @@ private fun ConnectionsTab(
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(items, key = { it.otherId }) { conn ->
             val name = "${conn.firstName}${conn.lastName?.let { " $it" } ?: ""}"
+            val chipLabel = when (conn.category) {
+                RelCategory.FAMILY.name -> "Family"
+                RelCategory.FRIEND.name -> "Friend"
+                RelCategory.WORK.name -> "Work"
+                else -> null
+            }
             ListItem(
                 modifier = Modifier.clickable { onNavigateToPerson(conn.otherId) },
                 headlineContent = { Text("$name · ${conn.effectiveLabel}") },
+                supportingContent = if (chipLabel != null) {
+                    { SuggestionChip(onClick = {}, label = { Text(chipLabel, style = MaterialTheme.typography.labelSmall) }) }
+                } else null,
                 trailingContent = {
                     IconButton(onClick = { onDelete(conn.otherId) }) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete",
@@ -579,27 +602,68 @@ private fun ConnectionsTab(
                 },
             )
         }
+        if (inferredKin.isNotEmpty()) {
+            item {
+                Text(
+                    "Inferred family",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp),
+                )
+            }
+            items(inferredKin, key = { "inferred_${it.personId}" }) { kin ->
+                ListItem(
+                    headlineContent = {
+                        Text("${kin.name} · ${kin.kinLabel}", fontStyle = FontStyle.Italic)
+                    },
+                    trailingContent = {
+                        SuggestionChip(
+                            onClick = {},
+                            label = { Text("inferred", style = MaterialTheme.typography.labelSmall) },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            ),
+                            border = null,
+                        )
+                    },
+                )
+            }
+        }
     }
 }
 
-private val CONNECTION_LABELS = listOf(
-    "Friend", "Spouse", "Sibling", "Parent", "Child", "Colleague", "Introduced me",
-)
+private val FRIEND_LABELS = listOf("Friend", "Best Friend", "Family Friend", "Introduced me")
+private val WORK_LABELS = listOf("Colleague", "Manager", "Direct Report", "Client", "Mentor")
+private val FAMILY_LABELS: List<String> = FamilyRelType.entries
+    .flatMap { t -> if (t.displayLabel == t.reverseLabel) listOf(t.displayLabel) else listOf(t.displayLabel, t.reverseLabel) }
+    .distinct()
+private val FAMILY_LABEL_TO_REL_TYPE: Map<String, FamilyRelType> = FamilyRelType.entries
+    .flatMap { t -> listOf(t.displayLabel to t, t.reverseLabel to t) }
+    .toMap()
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddConnectionDialog(
     allPersons: List<Person>,
     currentPersonId: UUID,
-    onSave: (otherId: UUID, label: String) -> Unit,
+    onSave: (otherId: UUID, label: String, category: String, relType: String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val candidates = allPersons.filter { it.id != currentPersonId }
-    var selectedPerson  by remember { mutableStateOf<Person?>(null) }
-    var personExpanded  by remember { mutableStateOf(false) }
-    var selectedLabel   by remember { mutableStateOf(CONNECTION_LABELS[0]) }
-    var labelExpanded   by remember { mutableStateOf(false) }
-    var customLabel     by remember { mutableStateOf("") }
+    var selectedPerson   by remember { mutableStateOf<Person?>(null) }
+    var personExpanded   by remember { mutableStateOf(false) }
+    var selectedCategory by remember { mutableIntStateOf(0) } // 0=Friends, 1=Family, 2=Work
+    var selectedLabel    by remember { mutableStateOf(FRIEND_LABELS[0]) }
+    var labelExpanded    by remember { mutableStateOf(false) }
+    var customLabel      by remember { mutableStateOf("") }
+
+    val currentLabels = when (selectedCategory) {
+        1    -> FAMILY_LABELS
+        2    -> WORK_LABELS
+        else -> FRIEND_LABELS
+    }
+    val showCustom = selectedCategory != 1 && selectedLabel == "Custom…"
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -623,6 +687,27 @@ private fun AddConnectionDialog(
                         }
                     }
                 }
+                val categoryLabels = listOf("Friends", "Family", "Work")
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    categoryLabels.forEachIndexed { index, label ->
+                        SegmentedButton(
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = categoryLabels.size),
+                            onClick = {
+                                if (selectedCategory != index) {
+                                    selectedCategory = index
+                                    selectedLabel = when (index) {
+                                        1    -> FAMILY_LABELS[0]
+                                        2    -> WORK_LABELS[0]
+                                        else -> FRIEND_LABELS[0]
+                                    }
+                                    customLabel = ""
+                                    labelExpanded = false
+                                }
+                            },
+                            selected = selectedCategory == index,
+                        ) { Text(label) }
+                    }
+                }
                 ExposedDropdownMenuBox(expanded = labelExpanded, onExpandedChange = { labelExpanded = it }) {
                     OutlinedTextField(
                         value = selectedLabel,
@@ -633,15 +718,17 @@ private fun AddConnectionDialog(
                         modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
                     )
                     ExposedDropdownMenu(expanded = labelExpanded, onDismissRequest = { labelExpanded = false }) {
-                        CONNECTION_LABELS.forEach { lbl ->
+                        currentLabels.forEach { lbl ->
                             DropdownMenuItem(text = { Text(lbl) },
                                 onClick = { selectedLabel = lbl; labelExpanded = false })
                         }
-                        DropdownMenuItem(text = { Text("custom…") },
-                            onClick = { selectedLabel = "custom…"; labelExpanded = false })
+                        if (selectedCategory != 1) {
+                            DropdownMenuItem(text = { Text("Custom…") },
+                                onClick = { selectedLabel = "Custom…"; labelExpanded = false })
+                        }
                     }
                 }
-                if (selectedLabel == "custom…") {
+                if (showCustom) {
                     OutlinedTextField(
                         value = customLabel,
                         onValueChange = { customLabel = it },
@@ -653,10 +740,16 @@ private fun AddConnectionDialog(
             }
         },
         confirmButton = {
-            val finalLabel = if (selectedLabel == "custom…") customLabel else selectedLabel
+            val finalLabel = if (showCustom) customLabel else selectedLabel
+            val category = when (selectedCategory) {
+                1    -> RelCategory.FAMILY.name
+                2    -> RelCategory.WORK.name
+                else -> RelCategory.FRIEND.name
+            }
+            val relType = if (selectedCategory == 1) FAMILY_LABEL_TO_REL_TYPE[selectedLabel]?.name else null
             TextButton(
-                onClick = { selectedPerson?.let { onSave(it.id, finalLabel) } },
-                enabled = selectedPerson != null && (selectedLabel != "custom…" || customLabel.isNotBlank()),
+                onClick = { selectedPerson?.let { onSave(it.id, finalLabel, category, relType) } },
+                enabled = selectedPerson != null && (selectedCategory == 1 || selectedLabel != "Custom…" || customLabel.isNotBlank()),
             ) { Text("Add") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },

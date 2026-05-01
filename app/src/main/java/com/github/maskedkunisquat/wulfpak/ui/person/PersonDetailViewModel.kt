@@ -17,15 +17,21 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEvent
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
+import com.github.maskedkunisquat.wulfpak.core.data.entity.FamilyRelType
 import com.github.maskedkunisquat.wulfpak.core.data.entity.PersonRelationship
+import com.github.maskedkunisquat.wulfpak.core.data.entity.RelCategory
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Task
+import com.github.maskedkunisquat.wulfpak.core.logic.family.InferredKin
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.LlmResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -35,6 +41,7 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
 
     private val db = getApplication<AppApplication>().db
     private val llmOrchestrator = getApplication<AppApplication>().llmOrchestrator
+    private val familyEngine = getApplication<AppApplication>().familyInferenceEngine
 
     var summarizeText by mutableStateOf("")
         private set
@@ -81,6 +88,18 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
         .flatMapLatest { db.personRelationshipDao().getConnectionsForPerson(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList<PersonConnection>())
 
+    val inferredKin: StateFlow<List<InferredKin>> = _personId.filterNotNull()
+        .flatMapLatest { id ->
+            db.personRelationshipDao().getConnectionsForPerson(id).flatMapLatest { conns ->
+                if (conns.none { it.category == RelCategory.FAMILY.name }) {
+                    flowOf(emptyList())
+                } else {
+                    flow { emit(familyEngine.inferKinOf(id)) }
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     var allPersons by mutableStateOf<List<Person>>(emptyList())
         private set
 
@@ -95,11 +114,15 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun addConnection(otherId: UUID, label: String) {
+    fun addConnection(otherId: UUID, label: String, category: String, relType: String?) {
         val id = _personId.value ?: return
-        val (a, b) = if (id.toString() < otherId.toString()) id to otherId else otherId to id
+        val iAmPersonA = id.toString() < otherId.toString()
+        val (a, b) = if (iAmPersonA) id to otherId else otherId to id
+        val storedLabel = if (!iAmPersonA) FAMILY_REVERSE.getOrDefault(label, label) else label
         viewModelScope.launch {
-            db.personRelationshipDao().insert(PersonRelationship(personAId = a, personBId = b, label = label))
+            db.personRelationshipDao().insert(
+                PersonRelationship(personAId = a, personBId = b, label = storedLabel, category = category, relType = relType)
+            )
         }
     }
 
@@ -192,5 +215,11 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
             person.value?.let { db.personDao().delete(it) }
             onDone()
         }
+    }
+
+    companion object {
+        private val FAMILY_REVERSE: Map<String, String> = FamilyRelType.entries
+            .flatMap { t -> listOf(t.displayLabel to t.reverseLabel, t.reverseLabel to t.displayLabel) }
+            .toMap()
     }
 }
