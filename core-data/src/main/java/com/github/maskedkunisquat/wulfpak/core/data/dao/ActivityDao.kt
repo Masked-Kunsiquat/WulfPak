@@ -40,6 +40,9 @@ interface ActivityDao {
     """)
     fun getParticipants(activityId: UUID): Flow<List<Person>>
 
+    @Query("SELECT * FROM activities ORDER BY timestamp DESC")
+    suspend fun getAllOnce(): List<Activity>
+
     @Query("SELECT * FROM activities WHERE embedding IS NULL")
     suspend fun getUnembedded(): List<Activity>
 

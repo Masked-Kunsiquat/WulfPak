@@ -74,13 +74,14 @@ internal class ContactsToolSet(
         eventSink?.invoke(LlmResult.ToolCall("getContactNotes", if (name.isBlank()) emptyMap() else mapOf("name" to name)))
         if (name.isBlank()) {
             val persons = personDao.getAllOnce()
+            val personById = persons.associateBy { it.id }
             data class NoteEntry(val contactName: String, val timestamp: Long, val body: String)
-            val allNotes = persons.flatMap { p ->
-                val contactName = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
-                noteDao.getForPerson(p.id).first().map { n ->
-                    NoteEntry(contactName, n.timestamp, n.body)
+            val allNotes = noteDao.getAllOnce()
+                .mapNotNull { n ->
+                    val p = n.personId?.let { personById[it] } ?: return@mapNotNull null
+                    NoteEntry("${p.firstName}${p.lastName?.let { " $it" } ?: ""}", n.timestamp, n.body)
                 }
-            }.sortedByDescending { it.timestamp }.take(15)
+                .sortedByDescending { it.timestamp }.take(15)
             if (allNotes.isEmpty()) return@runBlocking "No notes found."
             allNotes.joinToString("\n") { "${it.contactName} (${fmt.format(Date(it.timestamp))}): \"${it.body}\"" }
         } else {
@@ -99,18 +100,16 @@ internal class ContactsToolSet(
         eventSink?.invoke(LlmResult.ToolCall("getContactGifts", if (name.isBlank()) emptyMap() else mapOf("name" to name)))
         if (name.isBlank()) {
             val persons = personDao.getAllOnce()
-            val lines = mutableListOf<String>()
-            persons.forEach { p ->
-                val gifts = giftDao.getForPerson(p.id).first().filter { it.status != GiftStatus.GIVEN }
-                if (gifts.isNotEmpty()) {
+            val personById = persons.associateBy { it.id }
+            val lines = giftDao.getAllOnce()
+                .filter { it.status != GiftStatus.GIVEN }
+                .mapNotNull { g ->
+                    val p = personById[g.personId] ?: return@mapNotNull null
                     val contactName = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
-                    gifts.forEach { g ->
-                        val occasion = g.occasion?.let { " for $it" } ?: ""
-                        val note = g.note?.let { " — $it" } ?: ""
-                        lines += "$contactName: ${g.name} [${g.status.lowercase()}]$occasion$note"
-                    }
+                    val occasion = g.occasion?.let { " for $it" } ?: ""
+                    val note = g.note?.let { " — $it" } ?: ""
+                    "$contactName: ${g.name} [${g.status.lowercase()}]$occasion$note"
                 }
-            }
             if (lines.isEmpty()) return@runBlocking "No pending gift ideas found."
             lines.joinToString("\n")
         } else {
@@ -134,32 +133,40 @@ internal class ContactsToolSet(
         if (name.isBlank()) {
             val cutoff = System.currentTimeMillis() - 30L * 86_400_000L
             val persons = personDao.getAllOnce()
+            val personById = persons.associateBy { it.id }
             data class Entry(val timestamp: Long, val line: String)
             val entries = mutableListOf<Entry>()
-            persons.forEach { p ->
-                val contactName = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
-                interactionDao.getForPerson(p.id).first()
-                    .filter { it.timestamp >= cutoff }
-                    .forEach { i ->
-                        val note = i.note?.let { " — $it" } ?: ""
-                        val others = interactionDao.getParticipantIds(i.id)
-                            .filter { it != p.id }
-                            .mapNotNull { pid -> persons.firstOrNull { it.id == pid } }
+            interactionDao.getAllOnce()
+                .filter { it.timestamp >= cutoff }
+                .forEach { i ->
+                    val participantIds = interactionDao.getParticipantIds(i.id)
+                    val note = i.note?.let { " — $it" } ?: ""
+                    participantIds.forEach { pid ->
+                        val p = personById[pid] ?: return@forEach
+                        val contactName = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
+                        val others = participantIds
+                            .filter { it != pid }
+                            .mapNotNull { personById[it] }
                             .map { op -> "${op.firstName}${op.lastName?.let { " $it" } ?: ""}" }
                         val withStr = if (others.isNotEmpty()) " [with: ${others.joinToString(", ")}]" else ""
                         entries += Entry(i.timestamp, "${fmt.format(Date(i.timestamp))} — $contactName: ${i.type.replace('_', ' ')}$note$withStr")
                     }
-                activityDao.getForPerson(p.id).first()
-                    .filter { it.timestamp >= cutoff }
-                    .forEach { a ->
-                        val others = activityDao.getParticipantIds(a.id)
-                            .filter { it != p.id }
-                            .mapNotNull { pid -> persons.firstOrNull { it.id == pid } }
+                }
+            activityDao.getAllOnce()
+                .filter { it.timestamp >= cutoff }
+                .forEach { a ->
+                    val participantIds = activityDao.getParticipantIds(a.id)
+                    participantIds.forEach { pid ->
+                        val p = personById[pid] ?: return@forEach
+                        val contactName = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
+                        val others = participantIds
+                            .filter { it != pid }
+                            .mapNotNull { personById[it] }
                             .map { op -> "${op.firstName}${op.lastName?.let { " $it" } ?: ""}" }
                         val withStr = if (others.isNotEmpty()) " [with: ${others.joinToString(", ")}]" else ""
                         entries += Entry(a.timestamp, "${fmt.format(Date(a.timestamp))} — $contactName: activity \"${a.title}\"$withStr")
                     }
-            }
+                }
             if (entries.isEmpty()) return@runBlocking "No interactions or activities logged in the last 30 days."
             entries.sortedByDescending { it.timestamp }.joinToString("\n") { it.line }
         } else {
