@@ -21,9 +21,9 @@ Pre-feature coherence pass. Six concrete work areas, roughly ordered by dependen
 
 **File:** `ContactsToolSet.kt`
 
-- [ ] Rewrite `getContactHistory` `@Tool` description → e.g. `"Get recent history with a specific person — use for 'how has X been', 'recent events with X', 'what have I done with X'. Blank = last 30 days all contacts."` (keep ≤ 180 chars)
-- [ ] Rewrite `searchAcrossContacts` description to clarify it's keyword/topic search, not person-centric history
-- [ ] Spot-check all other `@Tool` descriptions for length (< 180 chars each) and clarity
+- [x] Rewrite `getContactHistory` `@Tool` description → e.g. `"Get recent history with a specific person — use for 'how has X been', 'recent events with X', 'what have I done with X'. Blank = last 30 days all contacts."` (keep ≤ 180 chars)
+- [x] Rewrite `searchAcrossContacts` description to clarify it's keyword/topic search, not person-centric history
+- [x] Spot-check all other `@Tool` descriptions for length (< 180 chars each) and clarity
 
 ---
 
