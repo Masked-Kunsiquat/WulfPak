@@ -40,6 +40,14 @@ interface InteractionDao {
     """)
     fun getParticipants(interactionId: UUID): Flow<List<Person>>
 
+    @Query("""
+        SELECT i.* FROM interactions i
+        INNER JOIN interaction_participants ip ON i.id = ip.interactionId
+        WHERE ip.personId = :personId
+        ORDER BY i.timestamp DESC
+    """)
+    suspend fun getForPersonOnce(personId: UUID): List<Interaction>
+
     @Query("SELECT * FROM interactions WHERE embedding IS NULL")
     suspend fun getUnembedded(): List<Interaction>
 
