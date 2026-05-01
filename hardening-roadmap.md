@@ -29,12 +29,10 @@ Edit path now captures old participant IDs, computes the removed/added delta, an
 
 ---
 
-### 4. Dead read-lock in `LocalFallbackProvider` (deadlock on exception path)
-**File:** `core-logic/…/llm/LocalFallbackProvider.kt` ~lines 148–154, 192–198
+### 4. ~~Dead read-lock in `LocalFallbackProvider` (deadlock on exception path)~~ FIXED 2026-05-01
+**File:** `core-logic/…/llm/LocalFallbackProvider.kt`
 
-Both `processInternal` and `chatSendInternal` acquire the read lock twice: once via `withLock {}` and once via a raw `lock()`/`finally { unlock() }`. On the happy path reentrancy saves you. On the exception path (`.catch` → `switchToCpu()`) the unlock count is off by one, leaving the read lock permanently held — any subsequent write-lock (`resetChat`, `switchToCpu`) blocks forever.
-
-Fix: remove the raw `lock()`/`unlock()` pair and use a single `withLock {}` block for the entire critical section.
+Eliminated the double-lock in `processInternal` and `chatSendInternal`: removed the first `withLock {}` (which acquired and immediately released the read lock just to read `engine`), and moved the null-check inside the single existing `lock()`/`finally { unlock() }` block. Now each function holds the read lock exactly once for its entire critical section.
 
 ---
 
