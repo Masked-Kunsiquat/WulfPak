@@ -99,7 +99,7 @@ with how all directional edges are stored (lower UUID = personA, direction track
 
 ---
 
-## Phase 2 — FamilyInferenceEngine
+## Phase 2 — FamilyInferenceEngine ✓
 
 **Goal:** BFS graph traversal that derives kinship labels from typed edges.
 
@@ -156,8 +156,8 @@ data class InferredKin(val personId: UUID, val name: String, val kinLabel: Strin
 ```
 
 **Files:**
-- `core-logic/.../FamilyInferenceEngine.kt` *(new)*
-- `core-logic/.../InferredKin.kt` *(new)*
+- [x] `core-logic/.../family/FamilyInferenceEngine.kt`
+- [x] `core-logic/.../family/InferredKin.kt`
 
 ---
 
