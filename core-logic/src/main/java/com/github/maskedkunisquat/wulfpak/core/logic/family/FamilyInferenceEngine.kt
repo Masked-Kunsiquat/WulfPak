@@ -14,8 +14,10 @@ class FamilyInferenceEngine(private val db: AppDatabase) {
 
     suspend fun inferKinOf(personId: UUID): List<InferredKin> {
         val adjacency = buildAdjacency()
+        val direct = adjacency[personId]?.map { it.neighborId }?.toSet() ?: emptySet()
         val persons = db.personDao().getAllOnce().associateBy { it.id }
         return bfs(personId, adjacency).mapNotNull { (id, label) ->
+            if (id == personId || id in direct) return@mapNotNull null
             val p = persons[id] ?: return@mapNotNull null
             val name = buildString {
                 append(p.firstName)
@@ -119,6 +121,7 @@ class FamilyInferenceEngine(private val db: AppDatabase) {
 
         // Step-relations derived from traversal
         listOf(Step.PARENT, Step.STEP_PARENT) -> "step-grandparent"
+        listOf(Step.CHILD,  Step.STEP_CHILD)  -> "step-grandchild"
         // parent's spouse who isn't already the seed's own parent (handled by global visited set)
         listOf(Step.PARENT, Step.SPOUSE)      -> "step-parent"
 

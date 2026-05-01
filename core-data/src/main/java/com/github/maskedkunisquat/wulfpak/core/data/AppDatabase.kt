@@ -86,11 +86,22 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'SIBLING_OF' WHERE label = 'Sibling'")
                 db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'PARENT_OF' WHERE label = 'Parent'")
                 db.execSQL("UPDATE person_relationships SET category = 'WORK' WHERE label = 'Colleague'")
+                db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'HALF_SIBLING_OF' WHERE label = 'Half-sibling'")
+                db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'STEP_PARENT_OF' WHERE label = 'Step-parent'")
+                db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'STEP_PARENT_OF' WHERE label = 'Step-child'")
+                db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'GRANDPARENT_OF' WHERE label = 'Grandparent'")
+                db.execSQL("UPDATE person_relationships SET category = 'FAMILY', relType = 'GRANDPARENT_OF' WHERE label = 'Grandchild'")
 
-                // Normalize legacy 'Child' rows: swap direction so parent is always personA
+                // Normalize legacy 'Child' rows: re-insert in canonical UUID order so the
+                // parent is personA when the parent holds the lower UUID, child otherwise.
                 db.execSQL("""
                     INSERT OR IGNORE INTO person_relationships (personAId, personBId, label, category, relType)
-                    SELECT personBId, personAId, 'Parent', 'FAMILY', 'PARENT_OF'
+                    SELECT
+                        CASE WHEN personBId < personAId THEN personBId ELSE personAId END,
+                        CASE WHEN personBId < personAId THEN personAId ELSE personBId END,
+                        CASE WHEN personBId < personAId THEN 'Parent' ELSE 'Child' END,
+                        'FAMILY',
+                        'PARENT_OF'
                     FROM person_relationships WHERE label = 'Child'
                 """)
                 db.execSQL("DELETE FROM person_relationships WHERE label = 'Child'")

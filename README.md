@@ -35,7 +35,7 @@ A personal relationship manager for Android. WulfPak helps you stay close to the
 
 ## Module Layout
 
-```
+```text
 :app          Compose UI, navigation, BiometricGate, sync/download workers
 :core-data    Room entities + DAOs, AppDatabase (v4), KeyProvider, type converters
 :core-logic   LlmOrchestrator, FamilyInferenceEngine, ContactsToolSet (17 LLM tools),

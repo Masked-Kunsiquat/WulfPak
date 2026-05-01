@@ -653,7 +653,7 @@ private fun AddConnectionDialog(
     val candidates = allPersons.filter { it.id != currentPersonId }
     var selectedPerson   by remember { mutableStateOf<Person?>(null) }
     var personExpanded   by remember { mutableStateOf(false) }
-    var selectedCategory by remember { mutableIntStateOf(0) } // 0=Friends, 1=Family, 2=Work
+    var selectedCategory by remember { mutableIntStateOf(0) } // 0=Friends, 1=Family, 2=Work, 3=Other
     var selectedLabel    by remember { mutableStateOf(FRIEND_LABELS[0]) }
     var labelExpanded    by remember { mutableStateOf(false) }
     var customLabel      by remember { mutableStateOf("") }
@@ -661,9 +661,10 @@ private fun AddConnectionDialog(
     val currentLabels = when (selectedCategory) {
         1    -> FAMILY_LABELS
         2    -> WORK_LABELS
+        3    -> emptyList()
         else -> FRIEND_LABELS
     }
-    val showCustom = selectedCategory != 1 && selectedLabel == "Custom…"
+    val showCustom = selectedCategory == 3 || (selectedCategory != 1 && selectedLabel == "Custom…")
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -687,7 +688,7 @@ private fun AddConnectionDialog(
                         }
                     }
                 }
-                val categoryLabels = listOf("Friends", "Family", "Work")
+                val categoryLabels = listOf("Friends", "Family", "Work", "Other")
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                     categoryLabels.forEachIndexed { index, label ->
                         SegmentedButton(
@@ -698,6 +699,7 @@ private fun AddConnectionDialog(
                                     selectedLabel = when (index) {
                                         1    -> FAMILY_LABELS[0]
                                         2    -> WORK_LABELS[0]
+                                        3    -> ""
                                         else -> FRIEND_LABELS[0]
                                     }
                                     customLabel = ""
@@ -708,23 +710,25 @@ private fun AddConnectionDialog(
                         ) { Text(label) }
                     }
                 }
-                ExposedDropdownMenuBox(expanded = labelExpanded, onExpandedChange = { labelExpanded = it }) {
-                    OutlinedTextField(
-                        value = selectedLabel,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Relationship") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = labelExpanded) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
-                    )
-                    ExposedDropdownMenu(expanded = labelExpanded, onDismissRequest = { labelExpanded = false }) {
-                        currentLabels.forEach { lbl ->
-                            DropdownMenuItem(text = { Text(lbl) },
-                                onClick = { selectedLabel = lbl; labelExpanded = false })
-                        }
-                        if (selectedCategory != 1) {
-                            DropdownMenuItem(text = { Text("Custom…") },
-                                onClick = { selectedLabel = "Custom…"; labelExpanded = false })
+                if (selectedCategory != 3) {
+                    ExposedDropdownMenuBox(expanded = labelExpanded, onExpandedChange = { labelExpanded = it }) {
+                        OutlinedTextField(
+                            value = selectedLabel,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Relationship") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = labelExpanded) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                        )
+                        ExposedDropdownMenu(expanded = labelExpanded, onDismissRequest = { labelExpanded = false }) {
+                            currentLabels.forEach { lbl ->
+                                DropdownMenuItem(text = { Text(lbl) },
+                                    onClick = { selectedLabel = lbl; labelExpanded = false })
+                            }
+                            if (selectedCategory != 1) {
+                                DropdownMenuItem(text = { Text("Custom…") },
+                                    onClick = { selectedLabel = "Custom…"; labelExpanded = false })
+                            }
                         }
                     }
                 }
@@ -744,12 +748,13 @@ private fun AddConnectionDialog(
             val category = when (selectedCategory) {
                 1    -> RelCategory.FAMILY.name
                 2    -> RelCategory.WORK.name
+                3    -> RelCategory.OTHER.name
                 else -> RelCategory.FRIEND.name
             }
             val relType = if (selectedCategory == 1) FAMILY_LABEL_TO_REL_TYPE[selectedLabel]?.name else null
             TextButton(
                 onClick = { selectedPerson?.let { onSave(it.id, finalLabel, category, relType) } },
-                enabled = selectedPerson != null && (selectedCategory == 1 || selectedLabel != "Custom…" || customLabel.isNotBlank()),
+                enabled = selectedPerson != null && (selectedCategory == 1 || selectedCategory != 3 && selectedLabel != "Custom…" || customLabel.isNotBlank()),
             ) { Text("Add") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
