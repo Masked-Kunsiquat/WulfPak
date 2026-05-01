@@ -335,7 +335,15 @@ fun AppNavHost(
 
             composable(Routes.TASKS) {
                 TasksScreen(
-                    onAddTask = { navController.navigate(Routes.addEditTask()) },
+                    onAddTask  = { navController.navigate(Routes.addEditTask()) },
+                    onEditTask = { task ->
+                        navController.navigate(
+                            Routes.addEditTask(
+                                personId = task.personId?.toString(),
+                                taskId   = task.id.toString(),
+                            )
+                        )
+                    },
                 )
             }
 
