@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cake
+import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,6 +26,7 @@ fun DisplaySettingsScreen(
     viewModel: SettingsViewModel,
 ) {
     val showBirthdayAge by viewModel.showBirthdayAge.collectAsStateWithLifecycle()
+    val sortByLastName  by viewModel.sortByLastName.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -47,6 +49,17 @@ fun DisplaySettingsScreen(
                     Switch(
                         checked         = showBirthdayAge,
                         onCheckedChange = { viewModel.setShowBirthdayAge(it) },
+                    )
+                },
+            )
+            ListItem(
+                headlineContent   = { Text("Sort contacts by last name") },
+                supportingContent = { Text("Lists and pickers sort A–Z by last name instead of first") },
+                leadingContent    = { Icon(Icons.Default.SortByAlpha, contentDescription = null) },
+                trailingContent   = {
+                    Switch(
+                        checked         = sortByLastName,
+                        onCheckedChange = { viewModel.setSortByLastName(it) },
                     )
                 },
             )

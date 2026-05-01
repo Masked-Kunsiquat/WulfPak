@@ -56,9 +56,10 @@ fun AddEditActivityScreen(
         }
     }
 
-    var showDatePicker  by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = viewModel.timestampMs)
-    val allPersons      by viewModel.allPersons.collectAsStateWithLifecycle()
+    var showDatePicker    by remember { mutableStateOf(false) }
+    var participantSearch by remember { mutableStateOf("") }
+    val datePickerState  = rememberDatePickerState(initialSelectedDateMillis = viewModel.timestampMs)
+    val allPersons       by viewModel.allPersons.collectAsStateWithLifecycle()
 
     if (showDatePicker) {
         DatePickerDialog(
@@ -134,7 +135,18 @@ fun AddEditActivityScreen(
                     color    = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 4.dp),
                 )
-                allPersons.forEach { person ->
+                OutlinedTextField(
+                    value         = participantSearch,
+                    onValueChange = { participantSearch = it },
+                    label         = { Text("Search") },
+                    modifier      = Modifier.fillMaxWidth(),
+                    singleLine    = true,
+                )
+                val filtered = allPersons.filter { p ->
+                    participantSearch.isBlank() ||
+                    "${p.firstName} ${p.lastName ?: ""}".contains(participantSearch, ignoreCase = true)
+                }
+                filtered.forEach { person ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

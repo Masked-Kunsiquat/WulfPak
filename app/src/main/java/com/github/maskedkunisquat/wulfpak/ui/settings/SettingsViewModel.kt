@@ -100,6 +100,10 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         .map { it[AppPrefsKeys.SHOW_BIRTHDAY_AGE] ?: true }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
+    val sortByLastName = appApp.appDataStore.data
+        .map { it[AppPrefsKeys.SORT_BY_LAST_NAME] ?: false }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     var pendingEmbedCount  by mutableStateOf<Int?>(null); private set
     var isEmbedding        by mutableStateOf(false);      private set
 
@@ -151,6 +155,12 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun setShowBirthdayAge(enabled: Boolean) {
         viewModelScope.launch {
             appApp.appDataStore.edit { it[AppPrefsKeys.SHOW_BIRTHDAY_AGE] = enabled }
+        }
+    }
+
+    fun setSortByLastName(enabled: Boolean) {
+        viewModelScope.launch {
+            appApp.appDataStore.edit { it[AppPrefsKeys.SORT_BY_LAST_NAME] = enabled }
         }
     }
 
