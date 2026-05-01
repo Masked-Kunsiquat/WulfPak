@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.github.maskedkunisquat.wulfpak.core.data.entity.EmbeddingRow
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionParticipant
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
@@ -53,6 +54,9 @@ interface InteractionDao {
 
     @Query("SELECT * FROM interactions WHERE embedding IS NULL")
     suspend fun getUnembedded(): List<Interaction>
+
+    @Query("SELECT id, embedding FROM interactions WHERE embedding IS NOT NULL")
+    suspend fun getEmbedded(): List<EmbeddingRow>
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(interaction: Interaction)

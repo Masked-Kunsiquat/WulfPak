@@ -4,10 +4,11 @@ import com.github.maskedkunisquat.wulfpak.core.data.dao.ActivityDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.InteractionDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.NoteDao
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
+import com.github.maskedkunisquat.wulfpak.core.data.entity.EmbeddingRow
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.core.logic.embedding.EmbeddingProvider
-import kotlinx.coroutines.flow.first
+import java.util.UUID
 
 sealed class SearchHit {
     abstract val score: Float
@@ -26,29 +27,30 @@ class SearchRepository(
         val queryVec = embeddingProvider.generateEmbedding(query)
         if (!queryVec.any { it != 0f }) return emptyList()
 
-        val hits = mutableListOf<SearchHit>()
+        data class Candidate(val id: UUID, val score: Float, val kind: Int)
+        val candidates = mutableListOf<Candidate>()
 
-        noteDao.getAll().first().forEach { note ->
-            val emb = note.embedding ?: return@forEach
-            if (!emb.any { it != 0f }) return@forEach
-            val score = CosineSimilarity.compute(queryVec, emb)
-            if (score > 0f && score.isFinite()) hits += SearchHit.NoteHit(note, score)
+        fun collect(rows: List<EmbeddingRow>, kind: Int) {
+            for (row in rows) {
+                if (!row.embedding.any { it != 0f }) continue
+                val s = CosineSimilarity.compute(queryVec, row.embedding)
+                if (s > 0f && s.isFinite()) candidates += Candidate(row.id, s, kind)
+            }
         }
 
-        interactionDao.getAll().first().forEach { interaction ->
-            val emb = interaction.embedding ?: return@forEach
-            if (!emb.any { it != 0f }) return@forEach
-            val score = CosineSimilarity.compute(queryVec, emb)
-            if (score > 0f && score.isFinite()) hits += SearchHit.InteractionHit(interaction, score)
-        }
+        collect(noteDao.getEmbedded(), 0)
+        collect(interactionDao.getEmbedded(), 1)
+        collect(activityDao.getEmbedded(), 2)
 
-        activityDao.getAll().first().forEach { activity ->
-            val emb = activity.embedding ?: return@forEach
-            if (!emb.any { it != 0f }) return@forEach
-            val score = CosineSimilarity.compute(queryVec, emb)
-            if (score > 0f && score.isFinite()) hits += SearchHit.ActivityHit(activity, score)
-        }
-
-        return hits.sortedByDescending { it.score }.take(limit)
+        return candidates
+            .sortedByDescending { it.score }
+            .take(limit)
+            .mapNotNull { (id, score, kind) ->
+                when (kind) {
+                    0 -> noteDao.getById(id)?.let { SearchHit.NoteHit(it, score) }
+                    1 -> interactionDao.getById(id)?.let { SearchHit.InteractionHit(it, score) }
+                    else -> activityDao.getById(id)?.let { SearchHit.ActivityHit(it, score) }
+                }
+            }
     }
 }

@@ -54,12 +54,10 @@ Added `getAllOnce()` to `InteractionDao`, `ActivityDao`, `NoteDao`, and `GiftDao
 
 ---
 
-### 7. `SearchRepository` loads all embedding BLOBs on every semantic search
-**File:** `core-logic/…/search/SearchRepository.kt` ~lines 31–51
+### 7. ~~`SearchRepository` loads all embedding BLOBs on every semantic search~~ FIXED 2026-05-01
+**Files:** `core-logic/…/search/SearchRepository.kt`, `core-data/…/entity/EmbeddingRow.kt`, `core-data/…/dao/{Note,Interaction,Activity}Dao.kt`
 
-`noteDao.getAll().first()`, `interactionDao.getAll().first()`, `activityDao.getAll().first()` pull the full entity (including a ~1.5 KB `FloatArray` embedding per row) regardless of whether the row has an embedding. At 500 interactions this is 750 KB of allocations per search.
-
-Fix: add DAO queries that filter `WHERE embedding IS NOT NULL` and return a lightweight projection (id + embedding), not the full entity.
+Added `EmbeddingRow(id, embedding)` projection type. Each DAO now has `getEmbedded()` (`SELECT id, embedding … WHERE embedding IS NOT NULL`). `SearchRepository.search()` scores only the lightweight rows, sorts and takes top `limit`, then fetches full entities by ID only for the winners (at most 20 DB round-trips instead of loading every row).
 
 ---
 

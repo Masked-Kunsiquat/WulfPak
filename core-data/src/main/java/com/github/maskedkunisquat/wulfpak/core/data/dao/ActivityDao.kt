@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ActivityParticipant
+import com.github.maskedkunisquat.wulfpak.core.data.entity.EmbeddingRow
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
@@ -45,6 +46,9 @@ interface ActivityDao {
 
     @Query("SELECT * FROM activities WHERE embedding IS NULL")
     suspend fun getUnembedded(): List<Activity>
+
+    @Query("SELECT id, embedding FROM activities WHERE embedding IS NOT NULL")
+    suspend fun getEmbedded(): List<EmbeddingRow>
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(activity: Activity)
