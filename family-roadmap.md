@@ -42,7 +42,7 @@ and participate in kinship inference.
 
 The `person_relationships` table gains two columns:
 
-```
+```text
 category  TEXT  NOT NULL  DEFAULT 'OTHER'   -- FAMILY | FRIEND | WORK | OTHER
 relType   TEXT  NULL                        -- FamilyRelType name, null for non-FAMILY rows
 ```
@@ -111,7 +111,7 @@ Algorithm:
 
 ### Kinship composition rules (GEDCOM-derived)
 
-```
+```text
 parent's parent                     → grandparent
 parent's parent's parent            → great-grandparent
 parent's sibling                    → aunt/uncle
@@ -236,7 +236,7 @@ Planned: Obsidian-style canvas in `:app`, nodes = persons, edges = connections
 
 ## Suggested order
 
-```
+```text
 1. Phase 1 — Schema + FamilyRelType enum + migration 3→4
 2. Phase 2 — FamilyInferenceEngine + kinship rules
 3. Phase 3 — SegmentedPicker UI + inferred kin section

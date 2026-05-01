@@ -22,7 +22,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd 'C:/Users/blain/AndroidStudioProjects/WulfPak' && ./gradlew :app:compileDebugKotlin -q 2>&1 | tail -8",
+            "command": "./gradlew :app:compileDebugKotlin -q 2>&1 | tail -8",
             "shell": "bash",
             "timeout": 120,
             "statusMessage": "Compile checking Kotlin..."
