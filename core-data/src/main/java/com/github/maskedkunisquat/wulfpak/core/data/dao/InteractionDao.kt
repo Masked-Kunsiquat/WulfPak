@@ -48,6 +48,9 @@ interface InteractionDao {
     """)
     suspend fun getForPersonOnce(personId: UUID): List<Interaction>
 
+    @Query("SELECT * FROM interactions ORDER BY timestamp DESC")
+    suspend fun getAllOnce(): List<Interaction>
+
     @Query("SELECT * FROM interactions WHERE embedding IS NULL")
     suspend fun getUnembedded(): List<Interaction>
 

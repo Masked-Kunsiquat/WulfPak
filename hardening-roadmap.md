@@ -47,12 +47,10 @@ All 18 `Log.i(TAG, ...)` calls converted to `if (BuildConfig.DEBUG) Log.d(TAG, .
 
 ## P3 — Performance
 
-### 6. N×M DAO round-trips per LLM tool call
-**File:** `core-logic/…/llm/ContactsToolSet.kt`
+### 6. ~~N×M DAO round-trips per LLM tool call~~ FIXED 2026-05-01
+**Files:** `core-logic/…/llm/ContactsToolSet.kt`, `core-data/…/dao/{Interaction,Activity,Note,Gift}Dao.kt`
 
-`getContactHistory`, `getContactNotes`, and `getContactGifts` iterate every person and issue 2–4 DAO queries per person inside `runBlocking`. 50 contacts = 200-500 sequential queries per tool invocation.
-
-Fix: add `getAllOnce()` methods (no filter) to `InteractionDao`, `ActivityDao`, `NoteDao`, and `GiftDao`, load the full table in one query, then filter in memory. This mirrors how `personDao.getAllOnce()` is already used elsewhere.
+Added `getAllOnce()` to `InteractionDao`, `ActivityDao`, `NoteDao`, and `GiftDao`. The three all-contacts paths in `getContactNotes`, `getContactGifts`, and `getContactHistory` now issue 1–2 bulk queries and filter in memory (was N queries per person). `getContactHistory` also builds a `personById` map to replace O(N) `firstOrNull` lookups.
 
 ---
 

@@ -25,6 +25,9 @@ interface NoteDao {
     @Query("SELECT * FROM notes WHERE id = :id")
     suspend fun getById(id: UUID): Note?
 
+    @Query("SELECT * FROM notes ORDER BY timestamp DESC")
+    suspend fun getAllOnce(): List<Note>
+
     @Query("SELECT * FROM notes WHERE embedding IS NULL")
     suspend fun getUnembedded(): List<Note>
 
