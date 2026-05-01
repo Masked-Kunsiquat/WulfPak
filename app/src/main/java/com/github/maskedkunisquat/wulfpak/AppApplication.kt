@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import com.github.maskedkunisquat.wulfpak.core.data.AppDatabase
 import com.github.maskedkunisquat.wulfpak.core.data.db.KeyProvider
 import com.github.maskedkunisquat.wulfpak.core.logic.embedding.EmbeddingProvider
+import com.github.maskedkunisquat.wulfpak.core.logic.family.FamilyInferenceEngine
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.LocalFallbackProvider
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.LlmOrchestrator
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchRepository
@@ -28,6 +29,8 @@ class AppApplication : Application(), Configuration.Provider {
     val db: AppDatabase by lazy {
         AppDatabase.create(this, KeyProvider.getOrCreateKey(this))
     }
+
+    val familyInferenceEngine: FamilyInferenceEngine by lazy { FamilyInferenceEngine(db) }
 
     val embeddingProvider: EmbeddingProvider by lazy { EmbeddingProvider() }
 
@@ -49,16 +52,17 @@ class AppApplication : Application(), Configuration.Provider {
 
     val llmOrchestrator: LlmOrchestrator by lazy {
         LlmOrchestrator(
-            provider          = llmProvider,
-            personDao         = db.personDao(),
-            interactionDao    = db.interactionDao(),
-            noteDao           = db.noteDao(),
-            activityDao       = db.activityDao(),
-            lifeEventDao      = db.lifeEventDao(),
-            giftDao           = db.giftDao(),
-            taskDao           = db.taskDao(),
+            provider                = llmProvider,
+            personDao               = db.personDao(),
+            interactionDao          = db.interactionDao(),
+            noteDao                 = db.noteDao(),
+            activityDao             = db.activityDao(),
+            lifeEventDao            = db.lifeEventDao(),
+            giftDao                 = db.giftDao(),
+            taskDao                 = db.taskDao(),
             searchRepository        = searchRepository,
             personRelationshipDao   = db.personRelationshipDao(),
+            familyInferenceEngine   = familyInferenceEngine,
         )
     }
 
