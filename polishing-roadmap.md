@@ -132,8 +132,8 @@ Algorithm: decay-weighted interaction sum `Σ { typeWeight × durationBonus × 2
 
 Drift condition: `closenessRating >= 4 && closenessScore != null && closenessScore < (closenessRating - 1) / 4f - 0.15f` (score is materially below the rating's expected band).
 
-- [ ] Expose `isDrifting: Boolean` as an extension on `Person` (or compute inline in the composable)
-- [ ] In `PeopleListScreen` `ListItem`, add a small `Text("⚠ Drifting", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)` in the `trailingContent` when `isDrifting` (alongside existing star/favourite icon)
+- [x] Expose `isDrifting: Boolean` as an extension on `Person` (or compute inline in the composable)
+- [x] In `PeopleListScreen` `ListItem`, add a small `Text("⚠ Drifting", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)` in the `trailingContent` when `isDrifting` (alongside existing star/favourite icon)
 
 ---
 
