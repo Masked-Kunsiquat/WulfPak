@@ -24,6 +24,10 @@ data class PersonConnection(
 
     private companion object {
         val REVERSE_LABELS = mapOf(
+            "Parent"        to "Child",
+            "Child"         to "Parent",
+            "Introduced me" to "Introduced by",
+            // legacy labels from before the noun-form change
             "parent of"        to "child of",
             "child of"         to "parent of",
             "introduced me to" to "was introduced by",
