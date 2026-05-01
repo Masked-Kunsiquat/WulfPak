@@ -181,8 +181,9 @@ fun AppNavHost(
                     onEditActivity    = { id -> navController.navigate(Routes.addEditActivity(activityId = id.toString())) },
                     onEditNote        = { id -> navController.navigate(Routes.addEditNote(personIdStr, id.toString())) },
                     onEditLifeEvent   = { id -> navController.navigate(Routes.addEditLifeEvent(personIdStr, id.toString())) },
-                    onEditGift        = { id -> navController.navigate(Routes.addEditGift(personIdStr, id.toString())) },
-                    onEditTask        = { id -> navController.navigate(Routes.addEditTask(personId = personIdStr, taskId = id.toString())) },
+                    onEditGift          = { id -> navController.navigate(Routes.addEditGift(personIdStr, id.toString())) },
+                    onEditTask          = { id -> navController.navigate(Routes.addEditTask(personId = personIdStr, taskId = id.toString())) },
+                    onNavigateToPerson  = { id -> navController.navigate(Routes.personDetail(id.toString())) },
                 )
             }
 

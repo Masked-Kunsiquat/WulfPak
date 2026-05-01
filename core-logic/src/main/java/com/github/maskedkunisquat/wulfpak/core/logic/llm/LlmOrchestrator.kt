@@ -6,6 +6,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.dao.InteractionDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.LifeEventDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.NoteDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonDao
+import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonRelationshipDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.TaskDao
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchHit
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchRepository
@@ -27,9 +28,11 @@ class LlmOrchestrator(
     private val giftDao: GiftDao,
     private val taskDao: TaskDao,
     private val searchRepository: SearchRepository,
+    private val personRelationshipDao: PersonRelationshipDao,
 ) {
     private val contactsToolSet = ContactsToolSet(
-        personDao, interactionDao, noteDao, activityDao, lifeEventDao, giftDao, taskDao, searchRepository,
+        personDao, interactionDao, noteDao, activityDao, lifeEventDao, giftDao, taskDao,
+        searchRepository, personRelationshipDao,
     )
     fun summarize(personId: UUID): Flow<LlmResult> = flow {
         val person = personDao.getById(personId) ?: run {

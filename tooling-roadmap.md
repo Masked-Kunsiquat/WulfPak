@@ -1,6 +1,6 @@
 # AI Tooling & Feature Roadmap
 
-Personal relationship manager — offline-first, on-device LLM (Gemma 3n E4B), vector search (Snowflake Arctic XS).
+Personal relationship manager — offline-first, on-device LLM (Gemma 4 E4B), vector search (Snowflake Arctic XS).
 
 ---
 
@@ -14,51 +14,25 @@ Personal relationship manager — offline-first, on-device LLM (Gemma 3n E4B), v
 | `getContactHistory` | Interactions + activities for one person or last 30 days |
 | `getPendingTasks` | Open tasks for one person or all |
 | `getUpcomingEvents` | Recurring birthdays/anniversaries sorted soonest first |
+| `searchAcrossContacts` | Semantic search across notes, interactions, and activities by topic |
 
 ---
 
-## Phase 1 — Fix semantic search (blocker, ~5 lines)
+## ✅ Phase 1 — Fix semantic search
 
-**What's broken:** The entire embedding pipeline is architecturally complete but
-functionally dead. `EmbeddingWorker` exists and is registered in `WorkerFactory`,
-but `EmbeddingWorker.enqueue(workManager)` is never called after a write. Every
-`Note`, `Interaction`, and `Activity` embedding column is NULL. `SearchRepository`
-correctly skips zero-vectors, so every search returns nothing.
-
-**Fix:** Call `EmbeddingWorker.enqueue(workManager)` from the ViewModels that save
-notes, interactions, and activities. One call per save — the worker deduplicates
-by only processing unembedded rows.
-
-**Why this unlocks everything:** The LLM already injects "RELEVANT RECORDS" (top-5
-semantic hits) into every chat turn. Once embeddings are live, the AI immediately
-gets per-turn context it has never had. No prompt changes needed.
+**Done.** Full embedding pipeline now working end-to-end:
+- Float32 TFLite model (Snowflake Arctic XS, 86 MB) replaced broken float16 asset
+- `EmbeddingWorker` enqueues after every write; "Index now" button forces re-index
+- Fixed `@Query` FloatArray bug (Room was generating 384 `?` placeholders) — now pre-serializes to BLOB
+- Verified: semantic search surfaces "House of Brews" and "second round of drinks" for "alcohol" query
 
 ---
 
-## Phase 2 — `searchAcrossContacts` tool
+## ✅ Phase 2 — `searchAcrossContacts` tool
 
-Once embeddings work, expose them as a first-class tool so the AI can search on
-demand rather than only at the start of each turn.
-
-```
-Tool: searchAcrossContacts(query: String)
-Returns: top semantic hits across Notes, Interactions, and Activities with
-         contact name, date, and the matched snippet.
-```
-
-**Use cases the user can ask:**
-- "Who mentioned the camping trip?"
-- "Find everyone I talked to about job hunting"
-- "What did Sarah say about her sister?"
-
-**System prompt addition:**
-```
-- searchAcrossContacts: full-text semantic search across all notes, interactions,
-  and activities — use this when the user asks about a topic or memory, not a person
-```
-
-The current per-turn injection covers the most recent context; this tool handles
-deliberate recall of older content.
+**Done.** Implemented in `ContactsToolSet`. Uses `SearchRepository` cosine similarity
+across Notes, Interactions, and Activities. Returns contact name, date, and matched snippet.
+Wired into system prompt so the AI uses it when the user asks about a topic, not a person.
 
 ---
 
@@ -211,10 +185,10 @@ proves out.
 ## Suggested order
 
 ```
-1. Fix EmbeddingWorker.enqueue() — 5 lines, unlocks everything semantic
-2. searchAcrossContacts tool     — immediately useful once embeddings work
-3. Person-person relationships   — DAO + UI + getRelationshipWeb tool together
-4. Smart read tools              — getLapsed, findByRelation, getLifeEvents
-5. Write tools + confirm UI      — logInteraction, addNote, addTask
-6. Graph view                    — when Phase 3 list UI is settled
+1. ✅ Fix EmbeddingWorker / float32 model  — semantic search live
+2. ✅ searchAcrossContacts tool            — topic-based recall live
+3. Person-person relationships             — DAO + UI + getRelationshipWeb tool
+4. Smart read tools                        — getLapsed, findByRelation, getLifeEvents
+5. Write tools + confirm UI                — logInteraction, addNote, addTask
+6. Graph view                              — when Phase 3 list UI is settled
 ```

@@ -7,6 +7,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.dao.InteractionDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.LifeEventDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.NoteDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonDao
+import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonRelationshipDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.TaskDao
 import com.github.maskedkunisquat.wulfpak.core.data.entity.GiftStatus
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
@@ -31,6 +32,7 @@ internal class ContactsToolSet(
     private val giftDao: GiftDao,
     private val taskDao: TaskDao,
     private val searchRepository: SearchRepository,
+    private val personRelationshipDao: PersonRelationshipDao,
 ) : ToolSet {
 
     private companion object {
@@ -277,6 +279,21 @@ internal class ContactsToolSet(
             .sortedBy { it.first }
             .take(10)
             .joinToString("\n") { it.third }
+    }
+
+    @Tool(description = "Get all person-to-person connections for a contact — who introduced them, family members, colleagues, partners, etc.")
+    fun getRelationshipWeb(
+        @ToolParam(description = "First name or nickname of the contact.") name: String,
+    ): String = runBlocking {
+        Log.i(TAG, "getRelationshipWeb — name=$name")
+        eventSink?.invoke(LlmResult.ToolCall("getRelationshipWeb", mapOf("name" to name)))
+        val person = findPerson(name) ?: return@runBlocking "No contact found matching '$name'."
+        val connections = personRelationshipDao.getConnectionsForPersonOnce(person.id)
+        if (connections.isEmpty()) return@runBlocking "${person.firstName} has no recorded connections."
+        connections.joinToString("\n") { conn ->
+            val other = "${conn.firstName}${conn.lastName?.let { " $it" } ?: ""}"
+            "${person.firstName} → $other: ${conn.label}"
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

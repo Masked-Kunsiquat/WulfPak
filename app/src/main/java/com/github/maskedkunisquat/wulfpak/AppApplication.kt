@@ -57,7 +57,8 @@ class AppApplication : Application(), Configuration.Provider {
             lifeEventDao      = db.lifeEventDao(),
             giftDao           = db.giftDao(),
             taskDao           = db.taskDao(),
-            searchRepository  = searchRepository,
+            searchRepository        = searchRepository,
+            personRelationshipDao   = db.personRelationshipDao(),
         )
     }
 
