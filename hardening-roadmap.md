@@ -63,15 +63,13 @@ Added `EmbeddingRow(id, embedding)` projection type. Each DAO now has `getEmbedd
 
 ## P4 — Code Health
 
-### 8. `calculateAge` duplicated in three places
+### 8. ~~`calculateAge` duplicated in three places~~ FIXED 2026-05-01
 **Files:**
 - `app/…/ui/common/FormatUtils.kt`
 - `core-logic/…/llm/FactExtractor.kt`
 - `core-logic/…/llm/ContactsToolSet.kt`
 
-Identical birthday-before-today logic copied three times. A leap-year or timezone fix must be applied in all three or they diverge silently.
-
-Fix: move the canonical implementation to `core-data` as an extension function on `Long` (the birthday field type); the other two sites delegate to it.
+Canonical `Long.calculateAge(asOfMs)` moved to `core-data/…/DateExtensions.kt`. All three sites now delegate to it; private `calculateAge`/`calcAge` copies deleted.
 
 ---
 
@@ -111,7 +109,7 @@ Fix: use `buildMap { }` with an explicit `require(!contains(key))` check, or `gr
 | 5 | P2 | `ContactsToolSet.kt` | Privacy |
 | 6 | P3 | `ContactsToolSet.kt` | Performance |
 | 7 | P3 | `SearchRepository.kt` | Performance |
-| 8 | P4 | `FormatUtils.kt` / `FactExtractor.kt` / `ContactsToolSet.kt` | Duplication |
+| 8 | P4 ✓ | `DateExtensions.kt` (canonical) | Duplication |
 | 9 | P4 | `FactExtractor.kt` | Dead code |
 | 10 | P4 | `CLAUDE.md` | Docs |
 | 11 | P4 | `PersonDetailScreen.kt` | Brittleness |

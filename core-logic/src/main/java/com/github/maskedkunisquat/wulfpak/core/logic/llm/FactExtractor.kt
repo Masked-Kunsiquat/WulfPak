@@ -1,5 +1,6 @@
 package com.github.maskedkunisquat.wulfpak.core.logic.llm
 
+import com.github.maskedkunisquat.wulfpak.core.data.calculateAge
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Gift
 import com.github.maskedkunisquat.wulfpak.core.data.entity.GiftStatus
@@ -91,7 +92,7 @@ internal object FactExtractor {
         val deathDate = lifeEvents.firstOrNull { it.eventType == LifeEventType.DEATH }?.date
         if (birthday != null) {
             val daysUntil  = daysUntilNextOccurrence(birthday.date)
-            val currentAge = if (birthYearIsKnown(birthday.date)) calculateAge(birthday.date) else null
+            val currentAge = if (birthYearIsKnown(birthday.date)) birthday.date.calculateAge() else null
             sentences += when {
                 daysUntil == 0  -> "$firstName's birthday is today${currentAge?.let { " — turning $it" } ?: ""}!"
                 daysUntil <= 30 -> "$firstName's birthday is coming up in $daysUntil days${currentAge?.let { " — turning ${it + 1}" } ?: ""}."
@@ -168,7 +169,7 @@ internal object FactExtractor {
         // Skip if birth year is the 1900 sentinel (year-less import from contacts)
         if (birthdayEvent != null && birthYearIsKnown(birthdayEvent.date)) {
             val asOf = deathEvent?.date ?: System.currentTimeMillis()
-            val age  = calculateAge(birthdayEvent.date, asOf)
+            val age  = birthdayEvent.date.calculateAge(asOf)
             if (deathEvent != null) {
                 facts += "$name was $age years old when they passed away."
             } else {
@@ -221,21 +222,6 @@ internal object FactExtractor {
 
     private fun birthYearIsKnown(ms: Long): Boolean =
         Calendar.getInstance().apply { timeInMillis = ms }.get(Calendar.YEAR) != 1900
-
-    private fun calculateAge(birthdayMs: Long, asOfMs: Long = System.currentTimeMillis()): Int {
-        val cal = Calendar.getInstance()
-        cal.timeInMillis = asOfMs
-        val nowYear  = cal.get(Calendar.YEAR)
-        val nowMonth = cal.get(Calendar.MONTH)
-        val nowDay   = cal.get(Calendar.DAY_OF_MONTH)
-        cal.timeInMillis = birthdayMs
-        val birthYear  = cal.get(Calendar.YEAR)
-        val birthMonth = cal.get(Calendar.MONTH)
-        val birthDay   = cal.get(Calendar.DAY_OF_MONTH)
-        var age = nowYear - birthYear
-        if (nowMonth < birthMonth || (nowMonth == birthMonth && nowDay < birthDay)) age--
-        return age
-    }
 
     private fun daysUntilNextOccurrence(birthdayMs: Long): Int {
         val bday = Calendar.getInstance().apply { timeInMillis = birthdayMs }
