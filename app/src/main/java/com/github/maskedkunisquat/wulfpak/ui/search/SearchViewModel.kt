@@ -95,11 +95,14 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
                     val idx  = messages.lastIndex
                     val last = messages.getOrNull(idx) as? ChatMessage.Assistant ?: return@collect
                     messages = when (result) {
-                        is LlmResult.Token    -> messages.toMutableList().also { it[idx] = last.copy(text = last.text + result.text) }
-                        is LlmResult.Complete -> messages.toMutableList().also { it[idx] = last.copy(isStreaming = false) }
-                        is LlmResult.Error    -> messages.toMutableList().also { it[idx] = last.copy(isStreaming = false) }
-                        is LlmResult.ToolCall -> messages.toMutableList().also {
+                        is LlmResult.Token        -> messages.toMutableList().also { it[idx] = last.copy(text = last.text + result.text) }
+                        is LlmResult.Complete     -> messages.toMutableList().also { it[idx] = last.copy(isStreaming = false) }
+                        is LlmResult.Error        -> messages.toMutableList().also { it[idx] = last.copy(isStreaming = false) }
+                        is LlmResult.ToolCall     -> messages.toMutableList().also {
                             it.add(idx, ChatMessage.ToolCall(result.name, result.args))
+                        }
+                        is LlmResult.PendingWrite -> messages.toMutableList().also {
+                            it.add(idx, ChatMessage.PendingWrite(result.id, result.description))
                         }
                     }
                 }
@@ -109,6 +112,26 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
                 messages = messages.toMutableList().also { it[idx] = last.copy(isStreaming = false) }
             }
         }
+    }
+
+    fun confirmPendingWrite(id: String) {
+        val idx = messages.indexOfFirst { it is ChatMessage.PendingWrite && it.id == id }
+        if (idx < 0) return
+        messages = messages.toMutableList().also {
+            it[idx] = (it[idx] as ChatMessage.PendingWrite).copy(state = WriteState.CONFIRMED)
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            llmOrchestrator.executePendingWrite(id)
+        }
+    }
+
+    fun cancelPendingWrite(id: String) {
+        val idx = messages.indexOfFirst { it is ChatMessage.PendingWrite && it.id == id }
+        if (idx < 0) return
+        messages = messages.toMutableList().also {
+            it[idx] = (it[idx] as ChatMessage.PendingWrite).copy(state = WriteState.CANCELLED)
+        }
+        llmOrchestrator.cancelPendingWrite(id)
     }
 
     fun toggleToolCall(index: Int) {

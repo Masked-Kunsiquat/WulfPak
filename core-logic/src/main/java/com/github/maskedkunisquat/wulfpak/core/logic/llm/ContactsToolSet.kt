@@ -10,7 +10,12 @@ import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonRelationshipDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.TaskDao
 import com.github.maskedkunisquat.wulfpak.core.data.entity.GiftStatus
+import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
+import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionParticipant
+import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionType
+import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
+import com.github.maskedkunisquat.wulfpak.core.data.entity.Task
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchHit
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchRepository
 import com.google.ai.edge.litertlm.Tool
@@ -22,6 +27,8 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 internal class ContactsToolSet(
     private val personDao: PersonDao,
@@ -42,6 +49,15 @@ internal class ContactsToolSet(
 
     // Called by LlmOrchestrator to receive tool invocation events.
     @Volatile var eventSink: ((LlmResult.ToolCall) -> Unit)? = null
+
+    // Called by LlmOrchestrator to receive pending-write events.
+    @Volatile var writeSink: ((LlmResult.PendingWrite) -> Unit)? = null
+
+    private val stagedWrites = ConcurrentHashMap<String, suspend () -> Unit>()
+
+    suspend fun executePendingWrite(id: String) { stagedWrites.remove(id)?.invoke() }
+    fun cancelPendingWrite(id: String) { stagedWrites.remove(id) }
+    fun clearStagedWrites() { stagedWrites.clear() }
 
     // ── Tools ─────────────────────────────────────────────────────────────────
 
@@ -357,7 +373,81 @@ internal class ContactsToolSet(
         }
     }
 
+    // ── Write tools ───────────────────────────────────────────────────────────
+
+    @Tool(description = "Log an interaction (call, text, email, video call, in-person meeting, or social media) with a contact.")
+    fun logInteraction(
+        @ToolParam(description = "First name or nickname of the contact.") name: String,
+        @ToolParam(description = "Interaction type: call, text, email, video_call, in_person, or social_media.") type: String,
+        @ToolParam(description = "Optional short note about the interaction. Leave blank if none.") note: String = "",
+    ): String = runBlocking {
+        Log.i(TAG, "logInteraction — name=$name type=$type")
+        val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\". Ask the user to clarify."
+        val normalizedType = normalizeInteractionType(type)
+        val writeId = UUID.randomUUID().toString()
+        val description = "Log ${normalizedType.replace('_', ' ')} with ${person.firstName}"
+        val ts = System.currentTimeMillis()
+        stagedWrites[writeId] = {
+            val interaction = Interaction(timestamp = ts, type = normalizedType, note = note.ifBlank { null })
+            interactionDao.insert(interaction)
+            interactionDao.insertParticipant(InteractionParticipant(interaction.id, person.id))
+            personDao.onInteractionAdded(person.id, ts)
+        }
+        eventSink?.invoke(LlmResult.ToolCall("logInteraction", mapOf("name" to name, "type" to normalizedType)))
+        writeSink?.invoke(LlmResult.PendingWrite(writeId, description))
+        "Queued. Tell the user: \"$description\" is ready to confirm using the button that will appear."
+    }
+
+    @Tool(description = "Add a note about a contact.")
+    fun addNote(
+        @ToolParam(description = "First name or nickname of the contact.") name: String,
+        @ToolParam(description = "The note text.") body: String,
+    ): String = runBlocking {
+        Log.i(TAG, "addNote — name=$name")
+        val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\". Ask the user to clarify."
+        val writeId = UUID.randomUUID().toString()
+        val description = "Add note to ${person.firstName}"
+        val ts = System.currentTimeMillis()
+        stagedWrites[writeId] = {
+            noteDao.insert(Note(personId = person.id, timestamp = ts, body = body))
+        }
+        eventSink?.invoke(LlmResult.ToolCall("addNote", mapOf("name" to name, "body" to body)))
+        writeSink?.invoke(LlmResult.PendingWrite(writeId, description))
+        "Queued. Tell the user: \"$description\" is ready to confirm using the button that will appear."
+    }
+
+    @Tool(description = "Add a task related to a contact.")
+    fun addTask(
+        @ToolParam(description = "First name or nickname of the contact.") name: String,
+        @ToolParam(description = "Task title.") title: String,
+        @ToolParam(description = "Due in how many days. Leave blank for no due date.") dueInDays: String = "",
+    ): String = runBlocking {
+        Log.i(TAG, "addTask — name=$name title=$title dueInDays=$dueInDays")
+        val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\". Ask the user to clarify."
+        val writeId = UUID.randomUUID().toString()
+        val description = "Add task for ${person.firstName}: $title"
+        val dueAt = dueInDays.trim().toIntOrNull()?.let { System.currentTimeMillis() + it * 86_400_000L }
+        stagedWrites[writeId] = {
+            taskDao.insert(Task(personId = person.id, title = title, dueAt = dueAt))
+        }
+        eventSink?.invoke(LlmResult.ToolCall("addTask", mapOf("name" to name, "title" to title)))
+        writeSink?.invoke(LlmResult.PendingWrite(writeId, description))
+        "Queued. Tell the user: \"$description\" is ready to confirm using the button that will appear."
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private fun normalizeInteractionType(raw: String): String {
+        val s = raw.lowercase()
+        return when {
+            s.contains("call") || s.contains("phone") -> InteractionType.CALL
+            s.contains("text") || s.contains("sms") || s.contains("message") -> InteractionType.TEXT
+            s.contains("email") -> InteractionType.EMAIL
+            s.contains("video") || s.contains("zoom") || s.contains("facetime") -> InteractionType.VIDEO_CALL
+            s.contains("social") || s.contains("instagram") || s.contains("twitter") -> InteractionType.SOCIAL_MEDIA
+            else -> InteractionType.IN_PERSON
+        }
+    }
 
     private fun calcAge(birthdayMs: Long, asOfMs: Long): Int {
         val cal = Calendar.getInstance()

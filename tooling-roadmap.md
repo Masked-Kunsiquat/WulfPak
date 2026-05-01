@@ -94,57 +94,15 @@ Returns: all person-to-person connections for the named contact, formatted as
 
 ---
 
-## Phase 5 — Write tools with confirmation UI
+## ✅ Phase 5 — Write tools with confirmation UI
 
-### Tools
-```
-logInteraction(name, type, note?)  — creates Interaction row
-addNote(name, body)                — creates Note row
-addTask(name, title, dueInDays?)   — creates Task row
-```
+**Done.** Three write tools added. Flow: tool validates name, stages the DB write (keyed by UUID in `ContactsToolSet.stagedWrites`), emits `LlmResult.PendingWrite` via `writeSink`, returns a "queued" string to the model. Model's response tells the user to confirm. UI renders a `PendingWriteBubble` card; Confirm executes the staged write, Cancel discards it.
 
-### Architecture
-Write tools must NOT execute immediately like read tools do. The flow:
+- `logInteraction(name, type, note?)` — creates Interaction + participant + updates `lastContactedAt`
+- `addNote(name, body)` — creates Note linked to person
+- `addTask(name, title, dueInDays?)` — creates Task with optional due date
 
-1. LLM decides to call a write tool
-2. Tool emits `LlmResult.PendingWrite(toolName, humanDescription, executeFn)`
-   instead of running immediately
-3. UI renders a confirmation card (see below) — execution is suspended
-4. User approves → `executeFn()` runs → result fed back to LLM → LLM confirms
-5. User denies → "user declined" fed back to LLM → LLM acknowledges
-
-### Confirmation card UI
-
-Sits below the AI's text response, separated by a `HorizontalDivider`:
-
-```
-AI: "Got it, I'll add that note for Sarah."
-─────────────────────────────────────────
-  ✏️  Add note · Sarah Mitchell
-      "Mentioned she's moving to Austin"
-      [✓ Confirm]  [✗ Cancel]
-```
-
-After confirm:
-```
-  ✓  Note added to Sarah Mitchell
-```
-
-After cancel:
-```
-  ✗  Cancelled
-```
-
-**Reuse the existing tool-call bubble component** — add a `pending: Boolean`
-flag. Pending write bubbles stay expanded and non-collapsible until resolved.
-Resolved bubbles collapse to a single status line (same as current read-tool
-bubbles but with ✓/✗ prefix).
-
-**Modify/correct in v1:** Don't build inline editing. If the user wants to change
-something, they deny and re-ask ("actually make the note say X instead"). The
-multi-turn chat history means the AI carries the correction forward naturally.
-Inline field editing can be a v2 enhancement once the confirmation pattern
-proves out.
+**Key files:** `LlmResult.kt` (PendingWrite), `ContactsToolSet.kt` (write tools + staged-write map), `LlmOrchestrator.kt` (writeSink wiring + executePendingWrite/cancelPendingWrite), `Prompts.kt` (write tool descriptions), `ChatMessage.kt` (PendingWrite + WriteState), `SearchViewModel.kt` (confirm/cancel methods), `SearchScreen.kt` (PendingWriteBubble)
 
 ---
 
@@ -205,7 +163,7 @@ Option C only if WulfPak pivots to being a family history tool.
 2. ✅ searchAcrossContacts tool            — topic-based recall live
 3. ✅ Person-person relationships          — DAO + UI + getRelationshipWeb tool
 4. ✅ Smart read tools                     — getLapsed, findByRelation, getLifeEvents, getRelationshipWeb
-5. Write tools + confirm UI                — logInteraction, addNote, addTask
+5. ✅ Write tools + confirm UI             — logInteraction, addNote, addTask
 6. Family strategy (A, B, or C above)     — decide before building graph view
 7. Graph view                              — when Phase 3 list UI + family model settled
 ```

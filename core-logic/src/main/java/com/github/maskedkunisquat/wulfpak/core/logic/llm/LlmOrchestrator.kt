@@ -108,25 +108,33 @@ class LlmOrchestrator(
             append("QUESTION: $naturalLanguage")
         }
 
-        // Buffer tool call events (emitted from LiteRT's thread inside @Tool methods).
+        // Buffer tool/write events (emitted from LiteRT's thread inside @Tool methods).
         // Flushed just before the first token so they appear inline in the chat above the response.
-        val toolBuffer = ArrayList<LlmResult.ToolCall>()
-        contactsToolSet.eventSink = { toolBuffer.add(it) }
+        val pendingBuffer = ArrayList<LlmResult>()
+        contactsToolSet.eventSink = { pendingBuffer.add(it) }
+        contactsToolSet.writeSink  = { pendingBuffer.add(it) }
         try {
             provider.chatSend(userMsg, Prompts.QUERY_SYSTEM + "\n\n" + roster, listOf(contactsToolSet))
                 .collect { result ->
-                    if (toolBuffer.isNotEmpty()) {
-                        toolBuffer.forEach { emit(it) }
-                        toolBuffer.clear()
+                    if (pendingBuffer.isNotEmpty()) {
+                        pendingBuffer.forEach { emit(it) }
+                        pendingBuffer.clear()
                     }
                     emit(result)
                 }
         } finally {
             contactsToolSet.eventSink = null
+            contactsToolSet.writeSink  = null
         }
     }
 
-    fun resetChat() { provider.resetChat() }
+    suspend fun executePendingWrite(id: String) = contactsToolSet.executePendingWrite(id)
+    fun cancelPendingWrite(id: String) = contactsToolSet.cancelPendingWrite(id)
+
+    fun resetChat() {
+        contactsToolSet.clearStagedWrites()
+        provider.resetChat()
+    }
 
     fun suggestFollowUp(personId: UUID, daysSinceContact: Int): Flow<LlmResult> = flow {
         val person = personDao.getById(personId) ?: run {
