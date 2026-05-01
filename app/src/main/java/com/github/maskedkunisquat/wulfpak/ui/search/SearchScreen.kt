@@ -197,7 +197,8 @@ fun SearchScreen(
 @Composable
 private fun ChatBubble(message: ChatMessage) {
     when (message) {
-        is ChatMessage.ToolCall -> Unit
+        is ChatMessage.ToolCall     -> Unit
+        is ChatMessage.PendingWrite -> Unit
         is ChatMessage.User -> Box(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
             contentAlignment = Alignment.CenterEnd,
