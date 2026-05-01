@@ -9,6 +9,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.dao.NoteDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonRelationshipDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.TaskDao
+import com.github.maskedkunisquat.wulfpak.core.data.entity.Gift
 import com.github.maskedkunisquat.wulfpak.core.data.entity.GiftStatus
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionParticipant
@@ -412,6 +413,24 @@ internal class ContactsToolSet(
             noteDao.insert(Note(personId = person.id, timestamp = ts, body = body))
         }
         eventSink?.invoke(LlmResult.ToolCall("addNote", mapOf("name" to name, "body" to body)))
+        writeSink?.invoke(LlmResult.PendingWrite(writeId, description))
+        "Queued. Tell the user: \"$description\" is ready to confirm using the button that will appear."
+    }
+
+    @Tool(description = "Add a gift idea for a contact.")
+    fun addGiftIdea(
+        @ToolParam(description = "First name or nickname of the contact.") name: String,
+        @ToolParam(description = "Name or description of the gift idea.") giftName: String,
+        @ToolParam(description = "Occasion this gift is for (e.g. birthday, Christmas). Leave blank if none.") occasion: String = "",
+    ): String = runBlocking {
+        Log.i(TAG, "addGiftIdea — name=$name giftName=$giftName")
+        val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\". Ask the user to clarify."
+        val writeId = UUID.randomUUID().toString()
+        val description = "Add gift idea for ${person.firstName}: $giftName"
+        stagedWrites[writeId] = {
+            giftDao.insert(Gift(personId = person.id, name = giftName, occasion = occasion.ifBlank { null }))
+        }
+        eventSink?.invoke(LlmResult.ToolCall("addGiftIdea", mapOf("name" to name, "gift" to giftName)))
         writeSink?.invoke(LlmResult.PendingWrite(writeId, description))
         "Queued. Tell the user: \"$description\" is ready to confirm using the button that will appear."
     }

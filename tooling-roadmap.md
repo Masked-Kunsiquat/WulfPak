@@ -101,6 +101,7 @@ Returns: all person-to-person connections for the named contact, formatted as
 - `logInteraction(name, type, note?)` — creates Interaction + participant + updates `lastContactedAt`
 - `addNote(name, body)` — creates Note linked to person
 - `addTask(name, title, dueInDays?)` — creates Task with optional due date
+- `addGiftIdea(name, giftName, occasion?)` — creates Gift with status IDEA
 
 **Key files:** `LlmResult.kt` (PendingWrite), `ContactsToolSet.kt` (write tools + staged-write map), `LlmOrchestrator.kt` (writeSink wiring + executePendingWrite/cancelPendingWrite), `Prompts.kt` (write tool descriptions), `ChatMessage.kt` (PendingWrite + WriteState), `SearchViewModel.kt` (confirm/cancel methods), `SearchScreen.kt` (PendingWriteBubble)
 
