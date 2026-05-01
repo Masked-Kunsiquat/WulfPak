@@ -87,12 +87,10 @@ Both the key-files entry and the architecture note updated to "Room v5". Fixed 2
 
 ---
 
-### 11. `FAMILY_LABEL_TO_REL_TYPE` built with silent key collision
-**File:** `app/…/ui/person/PersonDetailScreen.kt` ~lines 641–643
+### 11. ~~`FAMILY_LABEL_TO_REL_TYPE` built with silent key collision~~ FIXED 2026-05-01
+**File:** `app/…/ui/person/PersonDetailScreen.kt` ~lines 641–648
 
-`FamilyRelType.entries.flatMap { … }.toMap()` silently overwrites duplicate keys (`"Sibling"` appears twice). Harmless for current symmetric labels, but any future asymmetric entry with a shared label would silently lose one direction.
-
-Fix: use `buildMap { }` with an explicit `require(!contains(key))` check, or `groupBy` + assert-single.
+Replaced `.flatMap { … }.toMap()` with `buildMap { … }`. Symmetric entries (Sibling, Spouse, Half-sibling) now insert only one key each; `require(!contains(label))` guards every insertion so any future label clash crashes at startup with a clear message instead of silently dropping an entry.
 
 ---
 
@@ -110,4 +108,4 @@ Fix: use `buildMap { }` with an explicit `require(!contains(key))` check, or `gr
 | 8 | P4 ✓ | `DateExtensions.kt` (canonical) | Duplication |
 | 9 | P4 ✓ | `FactExtractor.kt` | Dead code |
 | 10 | P4 ✓ | `CLAUDE.md` | Docs |
-| 11 | P4 | `PersonDetailScreen.kt` | Brittleness |
+| 11 | P4 ✓ | `PersonDetailScreen.kt` | Brittleness |
