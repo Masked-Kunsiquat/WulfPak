@@ -54,6 +54,9 @@ import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
 import com.github.maskedkunisquat.wulfpak.ui.common.toRelativeDisplay
 import java.util.UUID
 
+// High intended closeness but unexpectedly low behavioral score.
+// threshold = (rating-1)/4f - 0.15f  →  rating 4 → 0.60, rating 5 → 0.85.
+// The -0.15f margin avoids false positives when contact cadence is slightly off.
 private val Person.isDrifting: Boolean
     get() {
         val rating = closenessRating ?: return false
