@@ -4,12 +4,16 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.maskedkunisquat.wulfpak.AppApplication
+import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
+import com.github.maskedkunisquat.wulfpak.appDataStore
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -21,12 +25,19 @@ class PeopleListViewModel(app: Application) : AndroidViewModel(app) {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
+    private val sortByLastName = getApplication<AppApplication>().appDataStore.data
+        .map { it[AppPrefsKeys.SORT_BY_LAST_NAME] ?: false }
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    val people = _searchQuery
-        .flatMapLatest { q ->
+    val people = combine(
+        _searchQuery.flatMapLatest { q ->
             if (q.isBlank()) personDao.getAll() else personDao.search(q)
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        },
+        sortByLastName,
+    ) { persons, byLast ->
+        if (byLast) persons.sortedWith(compareBy({ it.lastName ?: it.firstName }, { it.firstName }))
+        else persons.sortedBy { it.firstName }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _selectedIds = MutableStateFlow(emptySet<UUID>())
     val selectedIds = _selectedIds.asStateFlow()
