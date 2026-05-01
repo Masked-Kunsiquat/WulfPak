@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.maskedkunisquat.wulfpak.AppApplication
+import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonConnection
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetail
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Gift
@@ -14,6 +15,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEvent
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
+import com.github.maskedkunisquat.wulfpak.core.data.entity.PersonRelationship
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Task
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.LlmResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -72,6 +74,31 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
     val contactDetails = _personId.filterNotNull()
         .flatMapLatest { db.contactDetailDao().getForPerson(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList<ContactDetail>())
+
+    val connections = _personId.filterNotNull()
+        .flatMapLatest { db.personRelationshipDao().getConnectionsForPerson(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList<PersonConnection>())
+
+    var allPersons by mutableStateOf<List<Person>>(emptyList())
+        private set
+
+    fun loadAllPersons() {
+        viewModelScope.launch { allPersons = db.personDao().getAllOnce() }
+    }
+
+    fun addConnection(otherId: UUID, label: String) {
+        val id = _personId.value ?: return
+        val (a, b) = if (id.toString() < otherId.toString()) id to otherId else otherId to id
+        viewModelScope.launch {
+            db.personRelationshipDao().insert(PersonRelationship(personAId = a, personBId = b, label = label))
+        }
+    }
+
+    fun removeConnection(otherId: UUID) {
+        val id = _personId.value ?: return
+        val (a, b) = if (id.toString() < otherId.toString()) id to otherId else otherId to id
+        viewModelScope.launch { db.personRelationshipDao().deletePair(a, b) }
+    }
 
     init {
         viewModelScope.launch {

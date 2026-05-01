@@ -68,6 +68,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonConnection
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetail
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetailType
@@ -78,6 +79,7 @@ import com.github.maskedkunisquat.wulfpak.appDataStore
 import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEvent
 import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEventType
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
+import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Task
 import com.github.maskedkunisquat.wulfpak.ui.common.PersonAvatar
 import com.github.maskedkunisquat.wulfpak.ui.common.birthYearIsKnown
@@ -87,7 +89,7 @@ import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
 import java.util.UUID
 import kotlinx.coroutines.flow.map
 
-private val TABS = listOf("Interactions", "Activities", "Notes", "Life Events", "Gifts", "Tasks")
+private val TABS = listOf("Interactions", "Activities", "Notes", "Life Events", "Gifts", "Tasks", "Connections")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,6 +109,7 @@ fun PersonDetailScreen(
     onEditLifeEvent: (UUID) -> Unit,
     onEditGift: (UUID) -> Unit,
     onEditTask: (UUID) -> Unit,
+    onNavigateToPerson: (UUID) -> Unit,
 ) {
     val context          = LocalContext.current
     val showBirthdayAge  by context.appDataStore.data
@@ -119,7 +122,8 @@ fun PersonDetailScreen(
     val lifeEvents     by viewModel.lifeEvents.collectAsStateWithLifecycle()
     val gifts          by viewModel.gifts.collectAsStateWithLifecycle()
     val tasks          by viewModel.tasks.collectAsStateWithLifecycle()
-    val contactDetails by viewModel.contactDetails.collectAsStateWithLifecycle()
+    val contactDetails  by viewModel.contactDetails.collectAsStateWithLifecycle()
+    val connections     by viewModel.connections.collectAsStateWithLifecycle()
 
     var selectedTab        by remember { mutableIntStateOf(0) }
     var showOverflow       by remember { mutableStateOf(false) }
@@ -127,6 +131,7 @@ fun PersonDetailScreen(
     var contactsExpanded   by remember { mutableStateOf(true) }
     var showAddDetail      by remember { mutableStateOf(false) }
     var editingDetail      by remember { mutableStateOf<ContactDetail?>(null) }
+    var showAddConnection  by remember { mutableStateOf(false) }
 
     val fabAction: (() -> Unit)? = when (selectedTab) {
         0 -> onAddInteraction
@@ -135,6 +140,7 @@ fun PersonDetailScreen(
         3 -> onAddLifeEvent
         4 -> onAddGift
         5 -> onAddTask
+        6 -> { { viewModel.loadAllPersons(); showAddConnection = true } }
         else -> null
     }
 
@@ -167,6 +173,14 @@ fun PersonDetailScreen(
                 personId  = editing.personId,
                 onSave    = { detail -> viewModel.updateContactDetail(detail); editingDetail = null },
                 onDismiss = { editingDetail = null },
+            )
+        }
+        if (showAddConnection) {
+            AddConnectionDialog(
+                allPersons      = viewModel.allPersons,
+                currentPersonId = p.id,
+                onSave          = { otherId, label -> viewModel.addConnection(otherId, label); showAddConnection = false },
+                onDismiss       = { showAddConnection = false },
             )
         }
     }
@@ -316,6 +330,8 @@ fun PersonDetailScreen(
                     4 -> GiftsTab(gifts, onEdit = onEditGift, onDelete = viewModel::deleteGift)
                     5 -> TasksTab(tasks, onToggleDone = viewModel::toggleTaskDone,
                         onEdit = onEditTask, onDelete = viewModel::deleteTask)
+                    6 -> ConnectionsTab(connections, onNavigateToPerson = onNavigateToPerson,
+                        onDelete = viewModel::removeConnection)
                 }
             }
         }
@@ -540,6 +556,112 @@ private fun EmptyTab(message: String) {
     Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
         Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+@Composable
+private fun ConnectionsTab(
+    items: List<PersonConnection>,
+    onNavigateToPerson: (UUID) -> Unit,
+    onDelete: (UUID) -> Unit,
+) {
+    if (items.isEmpty()) { EmptyTab("No connections — tap + to add one"); return }
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        items(items, key = { it.otherId }) { conn ->
+            val name = "${conn.firstName}${conn.lastName?.let { " $it" } ?: ""}"
+            ListItem(
+                modifier = Modifier.clickable { onNavigateToPerson(conn.otherId) },
+                headlineContent = { Text(name) },
+                supportingContent = { Text(conn.label) },
+                trailingContent = {
+                    IconButton(onClick = { onDelete(conn.otherId) }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error)
+                    }
+                },
+            )
+        }
+    }
+}
+
+private val CONNECTION_LABELS = listOf(
+    "friend of", "married to", "sibling", "parent of", "child of", "works with", "introduced me to",
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddConnectionDialog(
+    allPersons: List<Person>,
+    currentPersonId: UUID,
+    onSave: (otherId: UUID, label: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val candidates = allPersons.filter { it.id != currentPersonId }
+    var selectedPerson  by remember { mutableStateOf<Person?>(null) }
+    var personExpanded  by remember { mutableStateOf(false) }
+    var selectedLabel   by remember { mutableStateOf(CONNECTION_LABELS[0]) }
+    var labelExpanded   by remember { mutableStateOf(false) }
+    var customLabel     by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Connection") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ExposedDropdownMenuBox(expanded = personExpanded, onExpandedChange = { personExpanded = it }) {
+                    OutlinedTextField(
+                        value = selectedPerson?.let { "${it.firstName}${it.lastName?.let { n -> " $n" } ?: ""}" } ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Person") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = personExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                    )
+                    ExposedDropdownMenu(expanded = personExpanded, onDismissRequest = { personExpanded = false }) {
+                        candidates.forEach { person ->
+                            val name = "${person.firstName}${person.lastName?.let { " $it" } ?: ""}"
+                            DropdownMenuItem(text = { Text(name) },
+                                onClick = { selectedPerson = person; personExpanded = false })
+                        }
+                    }
+                }
+                ExposedDropdownMenuBox(expanded = labelExpanded, onExpandedChange = { labelExpanded = it }) {
+                    OutlinedTextField(
+                        value = selectedLabel,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Relationship") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = labelExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                    )
+                    ExposedDropdownMenu(expanded = labelExpanded, onDismissRequest = { labelExpanded = false }) {
+                        CONNECTION_LABELS.forEach { lbl ->
+                            DropdownMenuItem(text = { Text(lbl) },
+                                onClick = { selectedLabel = lbl; labelExpanded = false })
+                        }
+                        DropdownMenuItem(text = { Text("custom…") },
+                            onClick = { selectedLabel = "custom…"; labelExpanded = false })
+                    }
+                }
+                if (selectedLabel == "custom…") {
+                    OutlinedTextField(
+                        value = customLabel,
+                        onValueChange = { customLabel = it },
+                        label = { Text("Custom label") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            val finalLabel = if (selectedLabel == "custom…") customLabel else selectedLabel
+            TextButton(
+                onClick = { selectedPerson?.let { onSave(it.id, finalLabel) } },
+                enabled = selectedPerson != null && (selectedLabel != "custom…" || customLabel.isNotBlank()),
+            ) { Text("Add") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 @Composable
