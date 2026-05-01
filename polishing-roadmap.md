@@ -40,9 +40,9 @@ Tab logic (no schema change):
 | Overdue | `!isDone && dueAt != null && dueAt < now` |
 | Done | `isDone` |
 
-- [ ] `TasksViewModel` — expose `selectedTab: Int`, `setTab(i)`, and 4 derived filtered lists
-- [ ] `TasksScreen` — replace flat `LazyColumn` with `TabRow` (4 tabs) + tab-switched `LazyColumn`
-- [ ] Add per-tab empty states ("No open tasks", "Nothing due soon", "Nothing overdue", "No completed tasks")
+- [x] `TasksViewModel` — expose `selectedTab: Int`, `setTab(i)`, and 4 derived filtered lists
+- [x] `TasksScreen` — replace flat `LazyColumn` with `TabRow` (4 tabs) + tab-switched `LazyColumn`
+- [x] Add per-tab empty states ("No open tasks", "Nothing due soon", "Nothing overdue", "No completed tasks")
 
 ---
 
