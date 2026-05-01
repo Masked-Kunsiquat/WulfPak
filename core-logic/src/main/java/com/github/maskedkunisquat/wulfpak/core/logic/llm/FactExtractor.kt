@@ -17,7 +17,6 @@ import java.util.Locale
 
 internal object FactExtractor {
 
-    private val longFmt  = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH)
     private val shortFmt = SimpleDateFormat("MMM d", Locale.ENGLISH)
 
     // -------------------------------------------------------------------------
@@ -114,103 +113,6 @@ internal object FactExtractor {
         }
 
         return sentences.joinToString(" ")
-    }
-
-    // -------------------------------------------------------------------------
-    // Structured fact list — reserved for future LLM tool-calling / chat use.
-    // When the user asks "tell me more about that Cancer Walk event," the LLM
-    // can request specific records and receive a clean fact block like this.
-    // -------------------------------------------------------------------------
-
-    fun extract(
-        person: Person,
-        interactions: List<Interaction>,
-        notes: List<Note>,
-        activities: List<Activity>,
-        lifeEvents: List<LifeEvent>,
-        gifts: List<Gift>,
-        tasks: List<Task>,
-    ): String {
-        val name = buildString {
-            append(person.firstName)
-            person.lastName?.let { append(" $it") }
-        }
-
-        val facts = mutableListOf<String>()
-
-        facts += "$name is the user's ${person.relationLabel.replace('_', ' ')}."
-        person.nickname?.let { facts += "$name goes by \"$it\"." }
-        person.closenessRating?.let { facts += "Closeness rating: $it out of 5." }
-
-        val lastContactMs = person.lastContactedAt
-        if (lastContactMs != null) {
-            val days = ((System.currentTimeMillis() - lastContactMs) / 86_400_000L).toInt()
-            facts += when (days) {
-                0    -> "The user last had contact with $name today."
-                1    -> "The user last had contact with $name yesterday."
-                else -> "The user last had contact with $name $days days ago (${longFmt.format(Date(lastContactMs))})."
-            }
-        } else {
-            facts += "No contact has been logged yet."
-        }
-
-        val birthdayEvent = lifeEvents.firstOrNull { it.eventType == LifeEventType.BIRTHDAY }
-        val deathEvent    = lifeEvents.firstOrNull { it.eventType == LifeEventType.DEATH }
-
-        lifeEvents.forEach { e ->
-            val type       = e.eventType.replace('_', ' ')
-            val dateStr    = longFmt.format(Date(e.date))
-            val recur      = if (e.isRecurring) " (annual)" else ""
-            val annotation = e.note?.let { " — \"$it\"" } ?: ""
-            facts += "$name has a $type on $dateStr$recur$annotation."
-        }
-
-        // Explicit age fact so the LLM doesn't have to do arithmetic
-        // Skip if birth year is the 1900 sentinel (year-less import from contacts)
-        if (birthdayEvent != null && birthYearIsKnown(birthdayEvent.date)) {
-            val asOf = deathEvent?.date ?: System.currentTimeMillis()
-            val age  = birthdayEvent.date.calculateAge(asOf)
-            if (deathEvent != null) {
-                facts += "$name was $age years old when they passed away."
-            } else {
-                facts += "$name is currently $age years old."
-            }
-        }
-
-        if (interactions.isNotEmpty()) {
-            facts += "The user has logged ${interactions.size} ${pl(interactions.size, "interaction")} with $name."
-            interactions.take(5).forEach { i ->
-                facts += "On ${longFmt.format(Date(i.timestamp))}, the user had a ${i.type.replace('_', ' ')} with $name."
-            }
-        }
-
-        if (activities.isNotEmpty()) {
-            facts += "The user has shared ${activities.size} ${pl(activities.size, "activity", "activities")} with $name."
-            activities.take(5).forEach { a ->
-                facts += "On ${longFmt.format(Date(a.timestamp))}, the user and $name took part in: ${a.title}."
-            }
-        }
-
-        if (notes.isNotEmpty()) {
-            notes.take(10).forEach { n ->
-                facts += "User observation about $name (${longFmt.format(Date(n.timestamp))}): \"${n.body}\""
-            }
-        }
-
-        tasks.filter { !it.isDone }.forEach { t ->
-            val due = t.dueAt?.let { " (due ${longFmt.format(Date(it))})" } ?: ""
-            facts += "Open task for $name: \"${t.title}\"$due."
-        }
-
-        gifts.filter { it.status != GiftStatus.GIVEN }.forEach { g ->
-            val occasion = g.occasion?.let { " for $it" } ?: ""
-            facts += "Gift idea for $name: \"${g.name}\" (${g.status.lowercase()})$occasion."
-        }
-
-        return buildString {
-            appendLine("FACTS ABOUT $name:")
-            facts.forEach { appendLine("- $it") }
-        }
     }
 
     // -------------------------------------------------------------------------

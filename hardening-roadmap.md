@@ -73,12 +73,10 @@ Canonical `Long.calculateAge(asOfMs)` moved to `core-data/…/DateExtensions.kt`
 
 ---
 
-### 9. `FactExtractor.extract()` is dead code
-**File:** `core-logic/…/llm/FactExtractor.kt` ~lines 124–213
+### 9. ~~`FactExtractor.extract()` is dead code~~ FIXED 2026-05-01
+**File:** `core-logic/…/llm/FactExtractor.kt`
 
-`extract()` is never called. Only `buildSummary()` is used (from `LlmOrchestrator`). `extract()` duplicates ~90 lines of `buildSummary()` logic (age calc, last-contact formatting, gift/task enumeration) and will drift silently.
-
-Fix: delete `extract()`. If a structured-extraction path is needed later, build it from `buildSummary()` rather than maintaining a parallel copy.
+`extract()` and `longFmt` (only used by it) deleted. `buildSummary()` is the sole entry point; if a structured-extraction path is needed later it can be built from `buildSummary()` rather than a diverging parallel copy.
 
 ---
 
@@ -110,6 +108,6 @@ Fix: use `buildMap { }` with an explicit `require(!contains(key))` check, or `gr
 | 6 | P3 | `ContactsToolSet.kt` | Performance |
 | 7 | P3 | `SearchRepository.kt` | Performance |
 | 8 | P4 ✓ | `DateExtensions.kt` (canonical) | Duplication |
-| 9 | P4 | `FactExtractor.kt` | Dead code |
+| 9 | P4 ✓ | `FactExtractor.kt` | Dead code |
 | 10 | P4 | `CLAUDE.md` | Docs |
 | 11 | P4 | `PersonDetailScreen.kt` | Brittleness |
