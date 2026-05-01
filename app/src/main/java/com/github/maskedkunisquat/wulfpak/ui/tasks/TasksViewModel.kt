@@ -40,14 +40,14 @@ class TasksViewModel(app: Application) : AndroidViewModel(app) {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val dueSoonTasks = allItems.map { all ->
-        val now = System.currentTimeMillis()
+        val sot = startOfToday()
         val eot = endOfTomorrow()
-        all.filter { val due = it.task.dueAt; !it.task.isDone && due != null && due in now..eot }
+        all.filter { val due = it.task.dueAt; !it.task.isDone && due != null && due in sot..eot }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val overdueTasks = allItems.map { all ->
-        val now = System.currentTimeMillis()
-        all.filter { val due = it.task.dueAt; !it.task.isDone && due != null && due < now }
+        val sot = startOfToday()
+        all.filter { val due = it.task.dueAt; !it.task.isDone && due != null && due < sot }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val doneTasks = allItems.map { all ->
@@ -61,6 +61,13 @@ class TasksViewModel(app: Application) : AndroidViewModel(app) {
     fun delete(task: Task) {
         viewModelScope.launch { db.taskDao().delete(task) }
     }
+
+    private fun startOfToday(): Long = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
 
     private fun endOfTomorrow(): Long = Calendar.getInstance().apply {
         add(Calendar.DAY_OF_YEAR, 1)

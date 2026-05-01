@@ -1,5 +1,6 @@
 package com.github.maskedkunisquat.wulfpak.ui.tasks
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,12 +30,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.github.maskedkunisquat.wulfpak.core.data.entity.Task
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TasksScreen(
     onAddTask: () -> Unit,
+    onEditTask: (Task) -> Unit = {},
     viewModel: TasksViewModel = viewModel(),
 ) {
     val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
@@ -80,6 +83,7 @@ fun TasksScreen(
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(visibleItems, key = { it.task.id }) { (task, person) ->
                         ListItem(
+                            modifier = Modifier.clickable { onEditTask(task) },
                             leadingContent = {
                                 IconButton(onClick = { viewModel.toggleDone(task) }) {
                                     Icon(
