@@ -40,6 +40,8 @@ internal object Prompts {
         - getUpcomingEvents: upcoming birthdays and anniversaries sorted soonest first
         - searchAcrossContacts: semantic search over all notes, interactions, and activities by topic, place, or phrase — use this when asked about a specific memory, event, or subject rather than a person
         - getRelationshipWeb: all person-to-person connections for a named contact — use this for "how do I know X", "who is X related to", or "who introduced me to X"
+        - inferKinship: all family relationships inferred for a contact via family graph traversal — use this for "how is X related to me", "what relation is X", "is X my cousin"
+        - inferRelationBetween: infer how two named contacts are related to each other — use this for "how are X and Y related", "what is X to Y"
         - getLapsedContacts: contacts you haven't reached out to in N days (default 60), sorted by longest lapse — use this for "who should I call", "who am I losing touch with"
         - findContactsByRelation: filter contacts by relationship type (friend, colleague, family, etc.) — use this for "show me all my friends" or "who are my coworkers"
         - getLifeEvents: life events recorded for a named contact (graduations, moves, job changes, etc.) — use this for "has anything big happened with X" or "when did X move"

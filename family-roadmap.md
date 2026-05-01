@@ -194,42 +194,32 @@ data class InferredKin(val personId: UUID, val name: String, val kinLabel: Strin
 
 ---
 
-## Phase 4 — LLM tools
+## Phase 4 — LLM tools ✓
 
 **Goal:** Expose family inference to the AI so it can answer kinship questions.
 
 ### New tools in ContactsToolSet
 
-```
-inferKinship(name)
-  → "Jane is your cousin via Bob (your uncle). Sam is your parent-in-law."
-  → Calls FamilyInferenceEngine.inferKinOf()
-  → Description ≤ 180 chars
-
-inferRelationBetween(nameA, nameB)
-  → "Jane and Bob are siblings (both children of your parent Dave)."
-  → Calls FamilyInferenceEngine.inferBetween()
-  → Description ≤ 180 chars
-```
+- [x] `inferKinship(name)` — calls `FamilyInferenceEngine.inferKinOf()`; returns "Name: kinLabel" per inferred kin; description ≤ 180 chars
+- [x] `inferRelationBetween(nameA, nameB)` — calls `inferBetween()` A→B then B→A as fallback; returns directional arrow string or "no detectable relationship"; description ≤ 180 chars
 
 ### getRelationshipWeb update
 
-When the person has family edges, append an "Inferred kin:" section to the output.
+- [x] When person has ≥1 family edge, appends "Inferred kin:" section via `familyEngine.inferKinOf()`
 
 ### System prompt update (Prompts.kt)
 
-Add both new tools to `QUERY_SYSTEM` with usage guidance:
-- `inferKinship`: "how is X related to me", "what relation is X", "is X my cousin"
-- `inferRelationBetween`: "how are X and Y related", "what is X to Y"
+- [x] `inferKinship` + `inferRelationBetween` added to `QUERY_SYSTEM` after `getRelationshipWeb`, with matching trigger phrases
 
-### Wiring (AppApplication.kt)
+### Wiring
 
-`FamilyInferenceEngine(db)` instantiated as lazy singleton, passed into `LlmOrchestrator` → `ContactsToolSet`.
+- [x] `familyInferenceEngine` (lazy singleton from Phase 3) passed into `LlmOrchestrator` constructor → `ContactsToolSet` constructor
 
 **Files:**
-- `core-logic/.../llm/ContactsToolSet.kt`
-- `core-logic/.../llm/Prompts.kt`
-- `app/.../AppApplication.kt`
+- [x] `core-logic/.../llm/ContactsToolSet.kt`
+- [x] `core-logic/.../llm/Prompts.kt`
+- [x] `core-logic/.../llm/LlmOrchestrator.kt`
+- [x] `app/.../AppApplication.kt`
 
 ---
 

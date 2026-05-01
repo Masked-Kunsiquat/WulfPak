@@ -8,6 +8,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.dao.NoteDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonRelationshipDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.TaskDao
+import com.github.maskedkunisquat.wulfpak.core.logic.family.FamilyInferenceEngine
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchHit
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchRepository
 import kotlinx.coroutines.flow.Flow
@@ -29,10 +30,11 @@ class LlmOrchestrator(
     private val taskDao: TaskDao,
     private val searchRepository: SearchRepository,
     private val personRelationshipDao: PersonRelationshipDao,
+    private val familyInferenceEngine: FamilyInferenceEngine,
 ) {
     private val contactsToolSet = ContactsToolSet(
         personDao, interactionDao, noteDao, activityDao, lifeEventDao, giftDao, taskDao,
-        searchRepository, personRelationshipDao,
+        searchRepository, personRelationshipDao, familyInferenceEngine,
     )
     fun summarize(personId: UUID): Flow<LlmResult> = flow {
         val person = personDao.getById(personId) ?: run {
