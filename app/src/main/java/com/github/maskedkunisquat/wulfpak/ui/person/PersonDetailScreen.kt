@@ -571,7 +571,7 @@ private fun ConnectionsTab(
             ListItem(
                 modifier = Modifier.clickable { onNavigateToPerson(conn.otherId) },
                 headlineContent = { Text(name) },
-                supportingContent = { Text(conn.label) },
+                supportingContent = { Text(conn.effectiveLabel) },
                 trailingContent = {
                     IconButton(onClick = { onDelete(conn.otherId) }) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete",
