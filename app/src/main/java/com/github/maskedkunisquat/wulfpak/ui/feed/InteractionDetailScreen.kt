@@ -21,6 +21,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +42,7 @@ fun InteractionDetailScreen(
     interactionId: UUID,
     onNavigateBack: () -> Unit,
     onOpenPerson: (UUID) -> Unit,
+    onEdit: (firstParticipantId: UUID, interactionId: UUID) -> Unit,
     viewModel: InteractionDetailViewModel = viewModel(),
 ) {
     LaunchedEffect(interactionId) { viewModel.load(interactionId) }
@@ -55,6 +57,12 @@ fun InteractionDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    val first = participants.firstOrNull()
+                    if (first != null) {
+                        TextButton(onClick = { onEdit(first.id, interactionId) }) { Text("Edit") }
                     }
                 },
             )

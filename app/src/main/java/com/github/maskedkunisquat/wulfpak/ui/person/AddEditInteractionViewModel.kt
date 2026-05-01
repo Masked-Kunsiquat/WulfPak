@@ -12,6 +12,8 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionParticipant
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionType
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -23,13 +25,25 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
     var timestampMs  by mutableStateOf(System.currentTimeMillis())
     var durationMins by mutableStateOf("")
     var note         by mutableStateOf("")
+    var selectedIds  by mutableStateOf(emptySet<UUID>())
+
+    val allPersons = db.personDao().getAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private var existingId: UUID? = null
     private var personId:   UUID? = null
 
+    fun togglePerson(personId: UUID) {
+        selectedIds = if (personId in selectedIds) selectedIds - personId else selectedIds + personId
+    }
+
     fun load(personIdStr: String, interactionId: UUID?) {
-        personId = UUID.fromString(personIdStr)
-        interactionId ?: return
+        val pid = UUID.fromString(personIdStr)
+        personId = pid
+        if (interactionId == null) {
+            selectedIds = setOf(pid)
+            return
+        }
         viewModelScope.launch {
             val i = db.interactionDao().getById(interactionId) ?: return@launch
             existingId   = i.id
@@ -37,14 +51,15 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
             timestampMs  = i.timestamp
             durationMins = i.durationSeconds?.let { (it / 60).toString() } ?: ""
             note         = i.note ?: ""
+            selectedIds  = db.interactionDao().getParticipantIds(interactionId).toSet()
         }
     }
 
     fun save(onDone: () -> Unit) {
-        val pid = personId ?: return
         viewModelScope.launch {
             val durationSec = durationMins.trim().toIntOrNull()?.times(60)
             val id = existingId
+            val interactionId: UUID
             if (id == null) {
                 val interaction = Interaction(
                     timestamp       = timestampMs,
@@ -53,8 +68,8 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
                     note            = note.trim().ifEmpty { null },
                 )
                 db.interactionDao().insert(interaction)
-                db.interactionDao().insertParticipant(InteractionParticipant(interaction.id, pid))
-                db.personDao().onInteractionAdded(pid, timestampMs)
+                interactionId = interaction.id
+                selectedIds.forEach { sid -> db.personDao().onInteractionAdded(sid, timestampMs) }
             } else {
                 db.interactionDao().getById(id)?.let { existing ->
                     db.interactionDao().update(existing.copy(
@@ -64,6 +79,13 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
                         note            = note.trim().ifEmpty { null },
                     ))
                 }
+                interactionId = id
+                db.interactionDao().getParticipantIds(interactionId).forEach { pid ->
+                    db.interactionDao().deleteParticipant(InteractionParticipant(interactionId, pid))
+                }
+            }
+            selectedIds.forEach { sid ->
+                db.interactionDao().insertParticipant(InteractionParticipant(interactionId, sid))
             }
             EmbeddingWorker.enqueue(WorkManager.getInstance(getApplication()))
             onDone()
