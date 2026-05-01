@@ -25,7 +25,7 @@ uv run python script.py
 ## Key files
 
 - `app/AppApplication.kt` — all lazy singletons (`db`, `familyInferenceEngine`, `llmOrchestrator`, etc.)
-- `core-data/AppDatabase.kt` — Room v4, migration history, schema exported to `core-data/schemas/`
+- `core-data/AppDatabase.kt` — Room v5, migration history, schema exported to `core-data/schemas/`
 - `app/navigation/AppNavigation.kt` — all routes and Compose NavHost
 - `core-logic/llm/ContactsToolSet.kt` — all 17 LLM tools
 - `core-logic/llm/Prompts.kt` — all system prompt strings
@@ -33,7 +33,7 @@ uv run python script.py
 ## Architecture
 
 - **No Hilt.** DI is manual: `AppApplication` holds lazy singletons; ViewModels access them via `getApplication<AppApplication>()`.
-- **Room DB is at version 4.** Migrations live in `AppDatabase.kt`; schema JSON files in `core-data/schemas/`.
+- **Room DB is at version 5.** Migrations live in `AppDatabase.kt`; schema JSON files in `core-data/schemas/`.
 - **LLM model:** Gemma 4 E4B via LiteRT-LM (`litertlm 0.10.0`). Tool descriptions must be ≤ 180 chars — longer strings silently break all tools.
 - **Encryption:** SQLCipher 4.5.4 via `SupportFactory`; key in Android Keystore via `EncryptedSharedPreferences`.
 
