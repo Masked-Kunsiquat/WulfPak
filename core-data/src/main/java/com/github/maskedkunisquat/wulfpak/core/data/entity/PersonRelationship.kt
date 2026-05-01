@@ -27,5 +27,7 @@ import java.util.UUID
 data class PersonRelationship(
     val personAId: UUID,
     val personBId: UUID,
-    val label: String
+    val label: String,
+    val category: String = RelCategory.OTHER.name,
+    val relType: String? = null,
 )

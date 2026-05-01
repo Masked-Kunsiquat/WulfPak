@@ -16,16 +16,24 @@ data class PersonConnection(
     val nickname: String?,
     val label: String,
     val isPersonA: Boolean,
+    val category: String,
+    val relType: String?,
 ) {
     // Label as it should read from the current person's perspective.
-    // Symmetric labels ("married to", "sibling") read the same both ways.
-    // Asymmetric labels ("parent of") need their reverse when viewed from personB's side.
+    // Symmetric labels ("Spouse", "Sibling") read the same both ways.
+    // Asymmetric labels ("Parent", "Step-parent") need their reverse when viewed from personB's side.
     val effectiveLabel: String get() = if (isPersonA) label else REVERSE_LABELS.getOrDefault(label, label)
 
     private companion object {
         val REVERSE_LABELS = mapOf(
             "Parent"        to "Child",
             "Child"         to "Parent",
+            "Step-parent"   to "Step-child",
+            "Step-child"    to "Step-parent",
+            "Grandparent"   to "Grandchild",
+            "Grandchild"    to "Grandparent",
+            "Aunt/Uncle"    to "Niece/Nephew",
+            "Niece/Nephew"  to "Aunt/Uncle",
             "Introduced me" to "Introduced by",
             // legacy labels from before the noun-form change
             "parent of"        to "child of",
@@ -39,22 +47,22 @@ data class PersonConnection(
 interface PersonRelationshipDao {
 
     @Query("""
-        SELECT pr.personBId AS otherId, p.firstName, p.lastName, p.nickname, pr.label, 1 AS isPersonA
+        SELECT pr.personBId AS otherId, p.firstName, p.lastName, p.nickname, pr.label, 1 AS isPersonA, pr.category, pr.relType
         FROM person_relationships pr JOIN persons p ON p.id = pr.personBId
         WHERE pr.personAId = :personId
         UNION ALL
-        SELECT pr.personAId AS otherId, p.firstName, p.lastName, p.nickname, pr.label, 0 AS isPersonA
+        SELECT pr.personAId AS otherId, p.firstName, p.lastName, p.nickname, pr.label, 0 AS isPersonA, pr.category, pr.relType
         FROM person_relationships pr JOIN persons p ON p.id = pr.personAId
         WHERE pr.personBId = :personId
     """)
     fun getConnectionsForPerson(personId: UUID): Flow<List<PersonConnection>>
 
     @Query("""
-        SELECT pr.personBId AS otherId, p.firstName, p.lastName, p.nickname, pr.label, 1 AS isPersonA
+        SELECT pr.personBId AS otherId, p.firstName, p.lastName, p.nickname, pr.label, 1 AS isPersonA, pr.category, pr.relType
         FROM person_relationships pr JOIN persons p ON p.id = pr.personBId
         WHERE pr.personAId = :personId
         UNION ALL
-        SELECT pr.personAId AS otherId, p.firstName, p.lastName, p.nickname, pr.label, 0 AS isPersonA
+        SELECT pr.personAId AS otherId, p.firstName, p.lastName, p.nickname, pr.label, 0 AS isPersonA, pr.category, pr.relType
         FROM person_relationships pr JOIN persons p ON p.id = pr.personAId
         WHERE pr.personBId = :personId
     """)
@@ -65,6 +73,9 @@ interface PersonRelationshipDao {
 
     @Query("SELECT * FROM person_relationships WHERE personAId = :personId OR personBId = :personId")
     suspend fun getForPersonOnce(personId: UUID): List<PersonRelationship>
+
+    @Query("SELECT * FROM person_relationships WHERE relType IS NOT NULL")
+    suspend fun getAllFamilyRelationshipsOnce(): List<PersonRelationship>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(relationship: PersonRelationship)
