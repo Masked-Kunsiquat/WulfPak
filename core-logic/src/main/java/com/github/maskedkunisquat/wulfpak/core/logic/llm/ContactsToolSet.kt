@@ -292,7 +292,7 @@ internal class ContactsToolSet(
         if (connections.isEmpty()) return@runBlocking "${person.firstName} has no recorded connections."
         connections.joinToString("\n") { conn ->
             val other = "${conn.firstName}${conn.lastName?.let { " $it" } ?: ""}"
-            "${person.firstName} → $other: ${conn.label}"
+            "${person.firstName} → $other: ${conn.effectiveLabel}"
         }
     }
 
