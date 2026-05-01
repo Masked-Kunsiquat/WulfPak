@@ -124,6 +124,8 @@ class FamilyInferenceEngine(private val db: AppDatabase) {
         listOf(Step.CHILD,  Step.STEP_CHILD)  -> "step-grandchild"
         // parent's spouse who isn't already the seed's own parent (handled by global visited set)
         listOf(Step.PARENT, Step.SPOUSE)      -> "step-parent"
+        // spouse's child from a prior relationship (complement of parent's spouse = step-parent)
+        listOf(Step.SPOUSE, Step.CHILD)       -> "step-child"
 
         else -> null
     }
