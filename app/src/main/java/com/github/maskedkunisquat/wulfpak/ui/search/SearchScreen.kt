@@ -24,11 +24,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,6 +41,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -132,9 +136,14 @@ fun SearchScreen(
                 } else {
                     itemsIndexed(viewModel.messages, key = { idx, _ -> idx }) { idx, msg ->
                         when (msg) {
-                            is ChatMessage.ToolCall -> ToolCallBubble(
+                            is ChatMessage.ToolCall     -> ToolCallBubble(
                                 message  = msg,
                                 onToggle = { viewModel.toggleToolCall(idx) },
+                            )
+                            is ChatMessage.PendingWrite -> PendingWriteBubble(
+                                message   = msg,
+                                onConfirm = { viewModel.confirmPendingWrite(msg.id) },
+                                onCancel  = { viewModel.cancelPendingWrite(msg.id) },
                             )
                             else -> ChatBubble(msg)
                         }
@@ -242,6 +251,13 @@ private fun ToolCallBubble(message: ChatMessage.ToolCall, onToggle: () -> Unit) 
         "getPendingTasks"      -> message.args["name"]?.takeIf { it.isNotBlank() }?.let { "looked up tasks for $it" } ?: "looked up pending tasks"
         "getUpcomingEvents"    -> "looked up upcoming events"
         "searchAcrossContacts" -> message.args["query"]?.let { "searched for \"$it\"" } ?: "searched notes & memories"
+        "getLapsedContacts"    -> "checked lapsed contacts"
+        "findContactsByRelation" -> message.args["relation"]?.let { "filtered by \"$it\"" } ?: "filtered by relation"
+        "getLifeEvents"        -> message.args["name"]?.let { "looked up life events for $it" } ?: "looked up life events"
+        "getRelationshipWeb"   -> message.args["name"]?.let { "looked up connections for $it" } ?: "looked up connections"
+        "logInteraction"       -> message.args["name"]?.let { "logging interaction with $it" } ?: "logging interaction"
+        "addNote"              -> message.args["name"]?.let { "adding note for $it" } ?: "adding note"
+        "addTask"              -> message.args["name"]?.let { "adding task for $it" } ?: "adding task"
         else                   -> message.name
     }
     Box(
@@ -288,6 +304,94 @@ private fun ToolCallBubble(message: ChatMessage.ToolCall, onToggle: () -> Unit) 
                         style      = MaterialTheme.typography.labelSmall,
                         color      = MaterialTheme.colorScheme.onTertiaryContainer,
                         fontFamily = FontFamily.Monospace,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PendingWriteBubble(
+    message: ChatMessage.PendingWrite,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        when (message.state) {
+            WriteState.PENDING -> Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                        Text(
+                            message.description,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = onConfirm, modifier = Modifier.weight(1f)) { Text("Confirm") }
+                        OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                    }
+                }
+            }
+            WriteState.CONFIRMED -> Surface(
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.secondaryContainer,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(12.dp),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                    Text(
+                        "${message.description} — saved",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
+            }
+            WriteState.CANCELLED -> Surface(
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.surfaceVariant,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = null,
+                        modifier = Modifier.size(12.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        "Cancelled",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

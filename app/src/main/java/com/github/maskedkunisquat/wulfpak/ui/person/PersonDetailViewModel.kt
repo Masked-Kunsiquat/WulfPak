@@ -160,6 +160,7 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     is LlmResult.Error -> isSummarizing = false
                     is LlmResult.ToolCall -> Unit
+                    is LlmResult.PendingWrite -> Unit
                 }
             }
         }

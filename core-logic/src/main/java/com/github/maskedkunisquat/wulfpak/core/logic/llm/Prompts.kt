@@ -43,6 +43,10 @@ internal object Prompts {
         - getLapsedContacts: contacts you haven't reached out to in N days (default 60), sorted by longest lapse — use this for "who should I call", "who am I losing touch with"
         - findContactsByRelation: filter contacts by relationship type (friend, colleague, family, etc.) — use this for "show me all my friends" or "who are my coworkers"
         - getLifeEvents: life events recorded for a named contact (graduations, moves, job changes, etc.) — use this for "has anything big happened with X" or "when did X move"
+        - logInteraction: log a call, text, email, video call, in-person meeting, or social media contact with someone — use when the user says "I just talked to X", "log a call with Y", "we met up", "I texted Z"
+        - addNote: add a note about a contact — use when the user mentions something worth remembering about someone
+        - addTask: add a task related to a contact — use when the user says "remind me to X", "I need to follow up with Y", "add a task for Z"
+        Write tools queue an action for user confirmation. After calling a write tool, tell the user what you've queued and that they can confirm or cancel using the button that will appear. Do not say the action is done — it is pending.
         Each user message may also begin with RELEVANT RECORDS from a semantic search.
         Be brief and direct. Plain text only — no markdown, no bullet points.
     """.trimIndent()
