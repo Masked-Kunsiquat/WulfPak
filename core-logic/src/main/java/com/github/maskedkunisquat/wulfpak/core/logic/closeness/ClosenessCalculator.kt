@@ -3,10 +3,22 @@ package com.github.maskedkunisquat.wulfpak.core.logic.closeness
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionType
 import com.github.maskedkunisquat.wulfpak.core.data.entity.RelCategory
+import com.github.maskedkunisquat.wulfpak.core.data.entity.RelationLabel
 import java.util.concurrent.TimeUnit
 import kotlin.math.pow
 
 object ClosenessCalculator {
+
+    fun categoryFor(relationLabel: String): String = when (relationLabel) {
+        RelationLabel.MOTHER, RelationLabel.FATHER, RelationLabel.SIBLING,
+        RelationLabel.CHILD, RelationLabel.GRANDPARENT, RelationLabel.COUSIN,
+        RelationLabel.AUNT, RelationLabel.UNCLE -> RelCategory.FAMILY.name
+        RelationLabel.FRIEND, RelationLabel.BEST_FRIEND, RelationLabel.ACQUAINTANCE,
+        RelationLabel.ROMANTIC_PARTNER -> RelCategory.FRIEND.name
+        RelationLabel.COLLEAGUE, RelationLabel.MANAGER, RelationLabel.REPORT,
+        RelationLabel.MENTOR, RelationLabel.CLIENT -> RelCategory.WORK.name
+        else -> RelCategory.OTHER.name
+    }
 
     private fun typeWeight(type: String): Double = when (type) {
         InteractionType.IN_PERSON -> 1.0

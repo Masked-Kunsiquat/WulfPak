@@ -120,9 +120,9 @@ Algorithm: decay-weighted interaction sum `Σ { typeWeight × durationBonus × 2
 
 **Files:** `AddEditInteractionViewModel.kt`, `PersonDetailViewModel.kt` (or wherever interaction delete lives)
 
-- [ ] After `interactionDao.insert()` in `save()`, for each `sid` in `selectedIds`: fetch interactions via `interactionDao.getForPersonOnce(sid)`, compute score, call `personDao.updateClosenessScore(sid, score)`
-- [ ] Same recompute after `interactionDao.update()` (edit path) for all current participants
-- [ ] On interaction delete, recompute score for every affected participant before removing the row
+- [x] After `interactionDao.insert()` in `save()`, for each `sid` in `selectedIds`: fetch interactions via `interactionDao.getForPersonOnce(sid)`, compute score, call `personDao.updateClosenessScore(sid, score)`
+- [x] Same recompute after `interactionDao.update()` (edit path) for all current participants
+- [x] On interaction delete, recompute score for every affected participant before removing the row
 
 ---
 

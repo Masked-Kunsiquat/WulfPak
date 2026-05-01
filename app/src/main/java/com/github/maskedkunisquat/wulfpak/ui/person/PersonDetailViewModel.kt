@@ -21,6 +21,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.FamilyRelType
 import com.github.maskedkunisquat.wulfpak.core.data.entity.PersonRelationship
 import com.github.maskedkunisquat.wulfpak.core.data.entity.RelCategory
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Task
+import com.github.maskedkunisquat.wulfpak.core.logic.closeness.ClosenessCalculator
 import com.github.maskedkunisquat.wulfpak.core.logic.family.InferredKin
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.LlmResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -154,8 +155,15 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteInteraction(interaction: Interaction) {
         viewModelScope.launch {
+            val affectedIds = db.interactionDao().getParticipantIds(interaction.id)
             db.interactionDao().delete(interaction)
-            _personId.value?.let { db.personDao().onInteractionDeleted(it) }
+            affectedIds.forEach { pid ->
+                db.personDao().onInteractionDeleted(pid)
+                val person = db.personDao().getById(pid) ?: return@forEach
+                val interactions = db.interactionDao().getForPersonOnce(pid)
+                val score = ClosenessCalculator.compute(interactions, ClosenessCalculator.categoryFor(person.relationLabel))
+                db.personDao().updateClosenessScore(pid, score)
+            }
         }
     }
 
