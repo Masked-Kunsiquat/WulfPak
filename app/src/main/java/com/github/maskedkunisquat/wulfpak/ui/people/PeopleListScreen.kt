@@ -54,6 +54,13 @@ import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
 import com.github.maskedkunisquat.wulfpak.ui.common.toRelativeDisplay
 import java.util.UUID
 
+private val Person.isDrifting: Boolean
+    get() {
+        val rating = closenessRating ?: return false
+        val score = closenessScore ?: return false
+        return rating >= 4 && score < (rating - 1) / 4f - 0.15f
+    }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PeopleListScreen(
@@ -240,13 +247,22 @@ private fun PersonRow(
         },
         trailingContent = {
             if (!inMultiSelect) {
-                IconButton(onClick = { onToggleFavorite(person) }) {
-                    Icon(
-                        imageVector = if (person.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                        contentDescription = null,
-                        tint = if (person.isFavorite) MaterialTheme.colorScheme.primary
-                               else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (person.isDrifting) {
+                        Text(
+                            text = "⚠ Drifting",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
+                    IconButton(onClick = { onToggleFavorite(person) }) {
+                        Icon(
+                            imageVector = if (person.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                            contentDescription = null,
+                            tint = if (person.isFavorite) MaterialTheme.colorScheme.primary
+                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         },
