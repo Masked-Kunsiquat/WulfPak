@@ -584,7 +584,7 @@ private fun ConnectionsTab(
 }
 
 private val CONNECTION_LABELS = listOf(
-    "friend of", "married to", "sibling", "parent of", "child of", "works with", "introduced me to",
+    "Friend", "Spouse", "Sibling", "Parent", "Child", "Colleague", "Introduced me",
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
