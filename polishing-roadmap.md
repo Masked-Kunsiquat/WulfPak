@@ -107,12 +107,12 @@ Tab logic (no schema change):
 
 Algorithm: decay-weighted interaction sum `Σ { typeWeight × durationBonus × 2^(−daysAgo/halfLife) }`, clamped 0–1. Grounded in Granovetter tie-strength theory + Facebook tie-strength study.
 
-- [ ] Create `ClosenessCalculator` — pure `object`, single `fun compute(interactions: List<Interaction>, category: String): Float`
-- [ ] Type weights: `IN_PERSON=1.0, VIDEO_CALL=0.8, CALL=0.6, TEXT=0.4, EMAIL=0.3, SOCIAL_MEDIA=0.2`
-- [ ] Duration bonus: `min(durationSeconds / 3600f, 1f)` (additive to weight, capped at 1 hr)
-- [ ] Half-life by `RelCategory`: `FAMILY=365d, FRIEND=150d, WORK=60d`; default `90d`
-- [ ] Normalize: divide raw sum by theoretical max for the period (~1 yr of weekly IN_PERSON 1-hr contacts), clamp to `0f..1f`
-- [ ] Add `suspend fun getForPersonOnce(personId: UUID): List<Interaction>` to `InteractionDao` (needed for eager recompute)
+- [x] Create `ClosenessCalculator` — pure `object`, single `fun compute(interactions: List<Interaction>, category: String): Float`
+- [x] Type weights: `IN_PERSON=1.0, VIDEO_CALL=0.8, CALL=0.6, TEXT=0.4, EMAIL=0.3, SOCIAL_MEDIA=0.2`
+- [x] Duration bonus: `min(durationSeconds / 3600f, 1f)` (additive to weight, capped at 1 hr)
+- [x] Half-life by `RelCategory`: `FAMILY=365d, FRIEND=150d, WORK=60d`; default `90d`
+- [x] Normalize: divide raw sum by theoretical max for the period (~1 yr of weekly IN_PERSON 1-hr contacts), clamp to `0f..1f`
+- [x] Add `suspend fun getForPersonOnce(personId: UUID): List<Interaction>` to `InteractionDao` (needed for eager recompute)
 
 ---
 
