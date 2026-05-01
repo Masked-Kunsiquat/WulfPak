@@ -80,10 +80,10 @@ Canonical `Long.calculateAge(asOfMs)` moved to `core-data/…/DateExtensions.kt`
 
 ---
 
-### 10. CLAUDE.md says DB is version 4 — it's version 5
+### 10. ~~CLAUDE.md says DB is version 4 — it's version 5~~ FIXED 2026-05-01
 **File:** `CLAUDE.md`
 
-`AppDatabase.kt` has `version = 5` with `MIGRATION_4_5`. Update the CLAUDE.md key-files note to "Room DB is at version 5."
+Both the key-files entry and the architecture note updated to "Room v5". Fixed 2026-05-01.
 
 ---
 
@@ -109,5 +109,5 @@ Fix: use `buildMap { }` with an explicit `require(!contains(key))` check, or `gr
 | 7 | P3 | `SearchRepository.kt` | Performance |
 | 8 | P4 ✓ | `DateExtensions.kt` (canonical) | Duplication |
 | 9 | P4 ✓ | `FactExtractor.kt` | Dead code |
-| 10 | P4 | `CLAUDE.md` | Docs |
+| 10 | P4 ✓ | `CLAUDE.md` | Docs |
 | 11 | P4 | `PersonDetailScreen.kt` | Brittleness |
