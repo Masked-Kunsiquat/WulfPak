@@ -59,13 +59,13 @@ Tab logic (no schema change):
 
 **Files:** `AppNavigation.kt`, `SettingsScreen.kt`, new `*SettingsScreen.kt` files
 
-- [ ] Add 4 route constants: `SETTINGS_SECURITY`, `SETTINGS_DISPLAY`, `SETTINGS_AI`, `SETTINGS_CONTACTS`
-- [ ] Register 4 composable destinations in `AppNavigation`
-- [ ] `SettingsScreen` → convert to 4-row category list (NavigationListItems, no inline widgets)
-- [ ] `SecuritySettingsScreen` — biometric toggle (moved from SettingsScreen)
-- [ ] `DisplaySettingsScreen` — show age toggle (moved from SettingsScreen)
-- [ ] `AiSettingsScreen` — model download + Search index / Index now (Search index moved from Display)
-- [ ] `ContactsSettingsScreen` — merge contacts, import contacts, import vCard, export calendar
+- [x] Add 4 route constants: `SETTINGS_SECURITY`, `SETTINGS_DISPLAY`, `SETTINGS_AI`, `SETTINGS_CONTACTS`
+- [x] Register 4 composable destinations in `AppNavigation`
+- [x] `SettingsScreen` → convert to 4-row category list (NavigationListItems, no inline widgets)
+- [x] `SecuritySettingsScreen` — biometric toggle (moved from SettingsScreen)
+- [x] `DisplaySettingsScreen` — show age toggle (moved from SettingsScreen)
+- [x] `AiSettingsScreen` — model download + Search index / Index now (Search index moved from Display)
+- [x] `ContactsSettingsScreen` — merge contacts, import contacts, import vCard, export calendar
 
 ---
 

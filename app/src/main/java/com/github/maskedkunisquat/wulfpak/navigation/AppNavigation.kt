@@ -47,7 +47,11 @@ import com.github.maskedkunisquat.wulfpak.ui.person.PersonDetailScreen
 import com.github.maskedkunisquat.wulfpak.ui.person.PersonDetailViewModel
 import com.github.maskedkunisquat.wulfpak.ui.search.SearchScreen
 import com.github.maskedkunisquat.wulfpak.ui.search.SearchViewModel
+import com.github.maskedkunisquat.wulfpak.ui.settings.AiSettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.ContactPickScreen
+import com.github.maskedkunisquat.wulfpak.ui.settings.ContactsSettingsScreen
+import com.github.maskedkunisquat.wulfpak.ui.settings.DisplaySettingsScreen
+import com.github.maskedkunisquat.wulfpak.ui.settings.SecuritySettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsViewModel
 import com.github.maskedkunisquat.wulfpak.ui.tasks.TasksScreen
@@ -71,6 +75,10 @@ object Routes {
     const val SETTINGS              = "settings"
     const val CONTACT_PICK          = "contact_pick"
     const val MERGE_CONTACTS        = "merge_contacts"
+    const val SETTINGS_SECURITY     = "settings_security"
+    const val SETTINGS_DISPLAY      = "settings_display"
+    const val SETTINGS_AI           = "settings_ai"
+    const val SETTINGS_CONTACTS     = "settings_contacts"
 
     fun personDetail(personId: String) = "person_detail/$personId"
     fun addEditPerson(personId: String? = null) =
@@ -333,9 +341,57 @@ fun AppNavHost(
 
             composable(Routes.SETTINGS) {
                 SettingsScreen(
+                    onNavigateBack     = { navController.popBackStack() },
+                    onNavigateSecurity = { navController.navigate(Routes.SETTINGS_SECURITY) },
+                    onNavigateDisplay  = { navController.navigate(Routes.SETTINGS_DISPLAY) },
+                    onNavigateAi       = { navController.navigate(Routes.SETTINGS_AI) },
+                    onNavigateContacts = { navController.navigate(Routes.SETTINGS_CONTACTS) },
+                )
+            }
+
+            composable(Routes.SETTINGS_SECURITY) {
+                val settingsEntry = remember(navController) {
+                    navController.getBackStackEntry(Routes.SETTINGS)
+                }
+                val vm: SettingsViewModel = viewModel(settingsEntry)
+                SecuritySettingsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    viewModel      = vm,
+                )
+            }
+
+            composable(Routes.SETTINGS_DISPLAY) {
+                val settingsEntry = remember(navController) {
+                    navController.getBackStackEntry(Routes.SETTINGS)
+                }
+                val vm: SettingsViewModel = viewModel(settingsEntry)
+                DisplaySettingsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    viewModel      = vm,
+                )
+            }
+
+            composable(Routes.SETTINGS_AI) {
+                val settingsEntry = remember(navController) {
+                    navController.getBackStackEntry(Routes.SETTINGS)
+                }
+                val vm: SettingsViewModel = viewModel(settingsEntry)
+                AiSettingsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    viewModel      = vm,
+                )
+            }
+
+            composable(Routes.SETTINGS_CONTACTS) {
+                val settingsEntry = remember(navController) {
+                    navController.getBackStackEntry(Routes.SETTINGS)
+                }
+                val vm: SettingsViewModel = viewModel(settingsEntry)
+                ContactsSettingsScreen(
                     onNavigateBack        = { navController.popBackStack() },
                     onNavigateMerge       = { navController.navigate(Routes.MERGE_CONTACTS) },
                     onNavigateContactPick = { navController.navigate(Routes.CONTACT_PICK) },
+                    viewModel             = vm,
                 )
             }
 
