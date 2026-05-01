@@ -405,12 +405,10 @@ internal class ContactsToolSet(
                 val other = "${conn.firstName}${conn.lastName?.let { " $it" } ?: ""}"
                 appendLine("${person.firstName} → $other: ${conn.effectiveLabel}")
             }
-            if (connections.any { it.category == RelCategory.FAMILY.name }) {
-                val kin = familyEngine.inferKinOf(person.id)
-                if (kin.isNotEmpty()) {
-                    appendLine("Inferred kin:")
-                    kin.forEach { k -> appendLine("- ${k.name}: ${k.kinLabel}") }
-                }
+            val kin = familyEngine.inferKinOf(person.id)
+            if (kin.isNotEmpty()) {
+                appendLine("Inferred kin:")
+                kin.forEach { k -> appendLine("- ${k.name}: ${k.kinLabel}") }
             }
         }.trimEnd()
     }
@@ -423,7 +421,7 @@ internal class ContactsToolSet(
         eventSink?.invoke(LlmResult.ToolCall("inferKinship", mapOf("name" to name)))
         val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\"."
         val kin = familyEngine.inferKinOf(person.id)
-        if (kin.isEmpty()) return@runBlocking "${person.firstName} has no inferred kin (no family edges recorded)."
+        if (kin.isEmpty()) return@runBlocking "No inferred kin found for ${person.firstName} (direct family edges may exist)."
         kin.joinToString("\n") { "${it.name}: ${it.kinLabel}" }
     }
 
