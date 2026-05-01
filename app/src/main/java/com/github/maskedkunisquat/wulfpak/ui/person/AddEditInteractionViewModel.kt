@@ -97,9 +97,14 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
                     ))
                 }
                 interactionId = id
-                db.interactionDao().getParticipantIds(interactionId).forEach { pid ->
+                val oldIds = db.interactionDao().getParticipantIds(interactionId).toSet()
+                oldIds.forEach { pid ->
                     db.interactionDao().deleteParticipant(InteractionParticipant(interactionId, pid))
                 }
+                val removed = oldIds - selectedIds
+                val added   = selectedIds - oldIds
+                removed.forEach { pid -> db.personDao().onInteractionDeleted(pid) }
+                added.forEach   { pid -> db.personDao().onInteractionAdded(pid, timestampMs) }
             }
             selectedIds.forEach { sid ->
                 db.interactionDao().insertParticipant(InteractionParticipant(interactionId, sid))
