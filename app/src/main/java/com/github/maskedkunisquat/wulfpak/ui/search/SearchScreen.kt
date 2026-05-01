@@ -259,6 +259,7 @@ private fun ToolCallBubble(message: ChatMessage.ToolCall, onToggle: () -> Unit) 
         "logInteraction"       -> message.args["name"]?.let { "logging interaction with $it" } ?: "logging interaction"
         "addNote"              -> message.args["name"]?.let { "adding note for $it" } ?: "adding note"
         "addTask"              -> message.args["name"]?.let { "adding task for $it" } ?: "adding task"
+        "addGiftIdea"          -> message.args["name"]?.let { "adding gift idea for $it" } ?: "adding gift idea"
         else                   -> message.name
     }
     Box(
