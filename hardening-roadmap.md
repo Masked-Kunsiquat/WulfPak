@@ -22,20 +22,10 @@ Edit path now captures old participant IDs, computes the removed/added delta, an
 
 ## P1 — Correctness & Stability
 
-### 3. `vm.load()` called on every recomposition
+### 3. ~~`vm.load()` called on every recomposition~~ FIXED 2026-05-01
 **Files:** `app/…/navigation/AppNavigation.kt` ~lines 177, 305
 
-`vm.load(personIdStr)` and `vm.load(activityId)` are called directly in composable bodies, not inside a `LaunchedEffect`. Every recomposition (triggered by any observed `StateFlow`) restarts all downstream flows and cancels in-flight collection.
-
-```kotlin
-// before
-vm.load(UUID.fromString(personIdStr))
-
-// after
-LaunchedEffect(personIdStr) { vm.load(UUID.fromString(personIdStr)) }
-```
-
-Apply the same fix for `ActivityDetailScreen`. While here, move the cached-summary initialization in `PersonDetailViewModel.init` into `load()` or the `person.collect` block to eliminate the fragile init/load ordering dependency.
+`vm.load` in `PERSON_DETAIL` composable wrapped in `LaunchedEffect(personIdStr)`. `ActivityDetailScreen` was already correct. Cached-summary init moved from `PersonDetailViewModel.init` into `load()` to eliminate the fragile init/load ordering dependency.
 
 ---
 

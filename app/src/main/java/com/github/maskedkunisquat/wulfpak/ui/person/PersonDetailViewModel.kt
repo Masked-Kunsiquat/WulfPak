@@ -133,7 +133,8 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { db.personRelationshipDao().deletePair(a, b) }
     }
 
-    init {
+    fun load(personId: UUID) {
+        _personId.value = personId
         viewModelScope.launch {
             val p = person.filterNotNull().first()
             if (summarizeText.isEmpty()) {
@@ -142,8 +143,6 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
     }
-
-    fun load(personId: UUID) { _personId.value = personId }
 
     fun toggleTaskDone(task: Task) {
         viewModelScope.launch { db.taskDao().update(task.copy(isDone = !task.isDone)) }
