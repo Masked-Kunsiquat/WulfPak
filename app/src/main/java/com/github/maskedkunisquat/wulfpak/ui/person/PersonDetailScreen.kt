@@ -570,8 +570,7 @@ private fun ConnectionsTab(
             val name = "${conn.firstName}${conn.lastName?.let { " $it" } ?: ""}"
             ListItem(
                 modifier = Modifier.clickable { onNavigateToPerson(conn.otherId) },
-                headlineContent = { Text(name) },
-                supportingContent = { Text(conn.effectiveLabel) },
+                headlineContent = { Text("$name · ${conn.effectiveLabel}") },
                 trailingContent = {
                     IconButton(onClick = { onDelete(conn.otherId) }) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete",
