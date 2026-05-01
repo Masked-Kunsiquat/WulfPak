@@ -44,7 +44,7 @@ import net.sqlcipher.database.SupportFactory
         Task::class,
         PersonRelationship::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(AppTypeConverters::class)
@@ -108,6 +108,12 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE persons ADD COLUMN closenessScore REAL")
+            }
+        }
+
         fun create(context: Context, key: ByteArray): AppDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
@@ -115,7 +121,7 @@ abstract class AppDatabase : RoomDatabase() {
                 "wulfpak.db"
             )
                 .openHelperFactory(SupportFactory(key))
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .build()
     }
 }

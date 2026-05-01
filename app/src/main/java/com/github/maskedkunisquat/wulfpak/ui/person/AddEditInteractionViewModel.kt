@@ -11,6 +11,7 @@ import com.github.maskedkunisquat.wulfpak.AppApplication
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionParticipant
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionType
+import com.github.maskedkunisquat.wulfpak.core.logic.closeness.ClosenessCalculator
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -41,6 +42,13 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
 
     private var existingId: UUID? = null
     private var personId:   UUID? = null
+
+    private suspend fun recomputeScore(personId: UUID) {
+        val person = db.personDao().getById(personId) ?: return
+        val interactions = db.interactionDao().getForPersonOnce(personId)
+        val score = ClosenessCalculator.compute(interactions, ClosenessCalculator.categoryFor(person.relationLabel))
+        db.personDao().updateClosenessScore(personId, score)
+    }
 
     fun togglePerson(personId: UUID) {
         selectedIds = if (personId in selectedIds) selectedIds - personId else selectedIds + personId
@@ -96,6 +104,7 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
             selectedIds.forEach { sid ->
                 db.interactionDao().insertParticipant(InteractionParticipant(interactionId, sid))
             }
+            selectedIds.forEach { sid -> recomputeScore(sid) }
             EmbeddingWorker.enqueue(WorkManager.getInstance(getApplication()))
             onDone()
         }
