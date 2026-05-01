@@ -121,7 +121,7 @@ internal class ContactsToolSet(
         }
     }
 
-    @Tool(description = "Get interaction and activity history for a contact by first name, or all recent history (last 30 days) across every contact if name is blank.")
+    @Tool(description = "Get recent history with a specific person — use for 'how has X been', 'recent events with X', 'what have I done with X'. Blank = last 30 days all contacts.")
     fun getContactHistory(
         @ToolParam(description = "First name or nickname. Leave blank to get interactions and activities from the last 30 days across all contacts.") name: String = "",
     ): String = runBlocking {
@@ -251,7 +251,7 @@ internal class ContactsToolSet(
         }.trimEnd()
     }
 
-    @Tool(description = "Search across all notes, interactions, and activities using natural language — topics, places, events, or phrases. Use this when asked to find a memory, conversation, or event by topic rather than by person.")
+    @Tool(description = "Keyword or topic search across notes, interactions, and activities — use for 'did I mention X', 'find Y conversation'. NOT for per-person history.")
     fun searchAcrossContacts(
         @ToolParam(description = "The topic, place, event name, or phrase to search for.") query: String,
     ): String = runBlocking {
