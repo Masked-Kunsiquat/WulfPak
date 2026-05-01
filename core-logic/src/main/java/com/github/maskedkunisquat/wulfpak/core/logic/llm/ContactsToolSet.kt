@@ -444,6 +444,36 @@ internal class ContactsToolSet(
         }
     }
 
+    @Tool(description = "Explain why a contact's closeness score has drifted from their rating. Use for 'why am I drifting from X', 'how close am I to X', 'closeness insight for X'.")
+    fun getClosenessInsight(
+        @ToolParam(description = "First name or nickname of the contact.") name: String,
+    ): String = runBlocking {
+        Log.i(TAG, "getClosenessInsight — name=$name")
+        eventSink?.invoke(LlmResult.ToolCall("getClosenessInsight", mapOf("name" to name)))
+        val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\"."
+        val score = person.closenessScore
+            ?: return@runBlocking "No closeness data yet for ${person.firstName}. Log some interactions to build a score."
+        val rating = person.closenessRating
+        val scoreStr = "%.2f".format(score)
+        if (rating == null)
+            return@runBlocking "${person.firstName}'s interaction score is $scoreStr (0–1 scale). No closeness rating has been set."
+        val expectedFloor = (rating - 1) / 4f
+        val ratingDesc = when (rating) {
+            1 -> "acquaintance-level"; 2 -> "casual"; 3 -> "moderate"
+            4 -> "close"; 5 -> "very close"; else -> "rated $rating/5"
+        }
+        val isDrifting = rating >= 4 && score < expectedFloor - 0.15f
+        if (isDrifting) {
+            "${person.firstName} is rated $rating/5 ($ratingDesc) but the interaction score is only $scoreStr" +
+            " — below the expected floor of ${"%.2f".format(expectedFloor)}." +
+            " You're not connecting as often as intended. Consider reaching out."
+        } else {
+            val onTrack = score >= expectedFloor
+            val healthStr = if (onTrack) "on track" else "slightly below target but not yet drifting"
+            "${person.firstName} is rated $rating/5 ($ratingDesc) and the interaction score is $scoreStr. Relationship is $healthStr."
+        }
+    }
+
     // ── Write tools ───────────────────────────────────────────────────────────
 
     @Tool(description = "Log an interaction (call, text, email, video call, in-person meeting, or social media) with a contact.")

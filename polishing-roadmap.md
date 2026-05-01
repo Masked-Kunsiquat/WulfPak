@@ -141,9 +141,9 @@ Drift condition: `closenessRating >= 4 && closenessScore != null && closenessSco
 
 **Files:** `ContactsToolSet.kt`, `Prompts.kt`
 
-- [ ] Add `getClosenessInsight(name: String)` `@Tool` (use `/llm-tool` skill) — looks up person, reads `closenessScore` and `closenessRating`, narrates the drift in plain English; returns `"No closeness data yet"` if score is null
-- [ ] Description ≤ 180 chars: `"Explain why a contact's closeness score has drifted from their rating. Use for 'why am I drifting from X', 'how close am I to X', 'closeness insight for X'."`
-- [ ] Add one-line mention to system prompt in `Prompts.kt`
+- [x] Add `getClosenessInsight(name: String)` `@Tool` (use `/llm-tool` skill) — looks up person, reads `closenessScore` and `closenessRating`, narrates the drift in plain English; returns `"No closeness data yet"` if score is null
+- [x] Description ≤ 180 chars: `"Explain why a contact's closeness score has drifted from their rating. Use for 'why am I drifting from X', 'how close am I to X', 'closeness insight for X'."` (156 chars)
+- [x] Add one-line mention to system prompt in `Prompts.kt`
 
 ---
 
