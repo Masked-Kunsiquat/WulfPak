@@ -37,4 +37,5 @@ data class Person(
     val jobTitle: String? = null,
     val cachedSummary: String? = null,
     val summaryGeneratedAt: Long? = null,
+    val closenessScore: Float? = null,
 )

@@ -58,4 +58,7 @@ interface PersonDao {
 
     @Query("UPDATE persons SET cachedSummary = :summary, summaryGeneratedAt = :generatedAt WHERE id = :id")
     suspend fun updateSummary(id: UUID, summary: String, generatedAt: Long)
+
+    @Query("UPDATE persons SET closenessScore = :score WHERE id = :id")
+    suspend fun updateClosenessScore(id: UUID, score: Float?)
 }

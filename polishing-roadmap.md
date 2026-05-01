@@ -86,6 +86,67 @@ Tab logic (no schema change):
 
 **Dashboard** — revisit after ~1 month of real usage. Natural content: lapsed contacts, upcoming life events (30 days), recent feed summary, closeness snapshot.
 
-**Closeness tracking** — start with a WorkManager periodic-prompt approach when ready. Needs: `closenessUpdatedAt` column on Person (migration), optional `ClosenessSnapshot` table for history. Algorithmic assist (deviation from behavior) as a phase 2 nudge.
+**Closeness tracking / drift detection** — `closenessRating` (manual 1–5) = intended closeness; `closenessScore: Float?` (computed 0–1) = behavioral reality. Gap is the drift signal. Build in order below.
+
+---
+
+## D1 · Schema — `closenessScore` on Person (Room v5)
+
+**Files:** `Person.kt`, `AppDatabase.kt`, `core-data/schemas/.../5.json`
+
+- [x] Add `val closenessScore: Float? = null` to `Person` entity
+- [x] Write migration v4→v5: `ALTER TABLE persons ADD COLUMN closenessScore REAL`
+- [x] Export schema JSON (use `/room-migration` skill)
+- [x] Add `@Query("UPDATE persons SET closenessScore = :score WHERE id = :id") suspend fun updateClosenessScore(id: UUID, score: Float?)` to `PersonDao`
+
+---
+
+## D2 · ClosenessCalculator
+
+**File:** `core-logic/src/main/java/.../logic/closeness/ClosenessCalculator.kt`
+
+Algorithm: decay-weighted interaction sum `Σ { typeWeight × durationBonus × 2^(−daysAgo/halfLife) }`, clamped 0–1. Grounded in Granovetter tie-strength theory + Facebook tie-strength study.
+
+- [ ] Create `ClosenessCalculator` — pure `object`, single `fun compute(interactions: List<Interaction>, category: String): Float`
+- [ ] Type weights: `IN_PERSON=1.0, VIDEO_CALL=0.8, CALL=0.6, TEXT=0.4, EMAIL=0.3, SOCIAL_MEDIA=0.2`
+- [ ] Duration bonus: `min(durationSeconds / 3600f, 1f)` (additive to weight, capped at 1 hr)
+- [ ] Half-life by `RelCategory`: `FAMILY=365d, FRIEND=150d, WORK=60d`; default `90d`
+- [ ] Normalize: divide raw sum by theoretical max for the period (~1 yr of weekly IN_PERSON 1-hr contacts), clamp to `0f..1f`
+- [ ] Add `suspend fun getForPersonOnce(personId: UUID): List<Interaction>` to `InteractionDao` (needed for eager recompute)
+
+---
+
+## D3 · Recompute on interaction save / delete
+
+**Files:** `AddEditInteractionViewModel.kt`, `PersonDetailViewModel.kt` (or wherever interaction delete lives)
+
+- [ ] After `interactionDao.insert()` in `save()`, for each `sid` in `selectedIds`: fetch interactions via `interactionDao.getForPersonOnce(sid)`, compute score, call `personDao.updateClosenessScore(sid, score)`
+- [ ] Same recompute after `interactionDao.update()` (edit path) for all current participants
+- [ ] On interaction delete, recompute score for every affected participant before removing the row
+
+---
+
+## D4 · Drifting badge in People list
+
+**Files:** `PeopleListScreen.kt`, `PeopleListViewModel.kt`
+
+Drift condition: `closenessRating >= 4 && closenessScore != null && closenessScore < (closenessRating - 1) / 4f - 0.15f` (score is materially below the rating's expected band).
+
+- [ ] Expose `isDrifting: Boolean` as an extension on `Person` (or compute inline in the composable)
+- [ ] In `PeopleListScreen` `ListItem`, add a small `Text("⚠ Drifting", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall)` in the `trailingContent` when `isDrifting` (alongside existing star/favourite icon)
+
+---
+
+## D5 · `getClosenessInsight` LLM tool
+
+**Files:** `ContactsToolSet.kt`, `Prompts.kt`
+
+- [ ] Add `getClosenessInsight(name: String)` `@Tool` (use `/llm-tool` skill) — looks up person, reads `closenessScore` and `closenessRating`, narrates the drift in plain English; returns `"No closeness data yet"` if score is null
+- [ ] Description ≤ 180 chars: `"Explain why a contact's closeness score has drifted from their rating. Use for 'why am I drifting from X', 'how close am I to X', 'closeness insight for X'."`
+- [ ] Add one-line mention to system prompt in `Prompts.kt`
+
+---
+
+*Deferred:* Android system signal augmentation (call logs, SMS) — opt-in power feature, avoid sensitive permissions for now.
 
 **ML Kit Entity Extraction** — defer. Notes are short and user-authored today. Revisit when notes grow longer or LLM summaries need to be mined back into structured fields.
