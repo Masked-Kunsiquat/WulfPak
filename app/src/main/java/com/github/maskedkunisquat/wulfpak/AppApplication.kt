@@ -15,6 +15,7 @@ import com.github.maskedkunisquat.wulfpak.core.logic.llm.LocalFallbackProvider
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.LlmOrchestrator
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchRepository
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
+import com.github.maskedkunisquat.wulfpak.core.logic.worker.SummaryWorker
 import com.github.maskedkunisquat.wulfpak.download.DownloadManagerModelDownloader
 import com.github.maskedkunisquat.wulfpak.worker.ContactReminderWorker
 import kotlinx.coroutines.CoroutineScope
@@ -70,6 +71,7 @@ class AppApplication : Application(), Configuration.Provider {
         get() = Configuration.Builder()
             .setWorkerFactory(DelegatingWorkerFactory().also { factory ->
                 factory.addFactory(EmbeddingWorker.Factory(db, embeddingProvider))
+                factory.addFactory(SummaryWorker.Factory(db, llmOrchestrator))
                 factory.addFactory(ContactReminderWorker.Factory(db, llmOrchestrator))
             })
             .build()

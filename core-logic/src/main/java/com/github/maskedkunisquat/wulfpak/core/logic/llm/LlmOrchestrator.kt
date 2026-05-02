@@ -73,6 +73,7 @@ class LlmOrchestrator(
                 appendLine()
                 val job = listOfNotNull(p.jobTitle, p.company).joinToString(" at ")
                 if (job.isNotBlank()) appendLine("- Works as $job")
+                p.cachedSummary?.takeIf { it.isNotBlank() }?.let { appendLine("Summary: $it") }
             }
         }
 

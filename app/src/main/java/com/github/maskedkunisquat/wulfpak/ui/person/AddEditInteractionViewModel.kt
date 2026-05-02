@@ -13,6 +13,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionParticipan
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionType
 import com.github.maskedkunisquat.wulfpak.core.logic.closeness.ClosenessCalculator
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
+import com.github.maskedkunisquat.wulfpak.core.logic.worker.SummaryWorker
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -122,7 +123,9 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
                 removedIds.forEach { rid -> recomputeScore(rid) }
             }
             effectiveIds.forEach { sid -> recomputeScore(sid) }
-            EmbeddingWorker.enqueue(WorkManager.getInstance(getApplication()))
+            val wm = WorkManager.getInstance(getApplication())
+            EmbeddingWorker.enqueue(wm)
+            effectiveIds.forEach { sid -> SummaryWorker.enqueue(wm, sid) }
             onDone()
         }
     }
