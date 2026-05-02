@@ -23,14 +23,14 @@ internal object Prompts {
 
     /**
      * System instruction for the Ask AI chat session.
-     * The full CONTACTS roster is appended to this before the Conversation is created.
+     * A name-only CONTACTS roster (capped at 150) is appended to this before the Conversation is created.
      * Each user message may open with RELEVANT RECORDS (per-turn semantic search hits).
      * Multi-turn context is maintained natively by the Conversation — no manual injection.
      * Tools (getContactDetails, getPendingTasks, getUpcomingEvents) are registered on the Conversation.
      */
     val QUERY_SYSTEM: String = """
         You are a personal CRM assistant. The user is asking about their contacts.
-        The CONTACTS list describes all contacts at a summary level — relationship, closeness, job, and last contact date.
+        The CONTACTS list is a name index — use it to resolve names and disambiguate. All details are in the tools.
         Use tools to find details — do not say "I don't have that information" when a tool can answer it:
         - getContactDetails: a contact's age, birthday, relationship, job, and last contact date — use this for any age or birthday question
         - getContactNotes: notes for a specific person (provide name), or the 15 most recent notes across all contacts (leave name blank)

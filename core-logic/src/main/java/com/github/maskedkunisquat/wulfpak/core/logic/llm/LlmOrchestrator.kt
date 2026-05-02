@@ -63,23 +63,20 @@ class LlmOrchestrator(
             if (persons.isEmpty()) {
                 appendLine("CONTACTS: (none)")
             } else {
+                val cap = 150
+                val shown = persons.take(cap)
                 appendLine("CONTACTS: (${persons.size} total)")
-                persons.forEach { p ->
+                shown.forEach { p ->
                     val name = buildString {
                         append(p.firstName)
                         p.lastName?.let { append(" $it") }
                     }
-                    append("- $name, ${p.relationLabel.replace('_', ' ')}")
-                    p.nickname?.let { append(", known as \"$it\"") }
-                    val job = listOfNotNull(p.jobTitle, p.company).joinToString(" at ")
-                    if (job.isNotBlank()) append(", works as $job")
-                    p.closenessRating?.let { append(", closeness $it/5") }
-                    if (p.isFavorite) append(" [starred]")
-                    p.lastContactedAt?.let {
-                        val days = ((System.currentTimeMillis() - it) / 86_400_000L).toInt()
-                        append(", last contact $days days ago")
-                    } ?: append(", no contact logged")
+                    append("- $name")
+                    p.nickname?.let { append(" (\"$it\")") }
                     appendLine()
+                }
+                if (persons.size > cap) {
+                    appendLine("(${persons.size - cap} more — use findContactsByRelation or getLapsedContacts to browse)")
                 }
             }
         }
