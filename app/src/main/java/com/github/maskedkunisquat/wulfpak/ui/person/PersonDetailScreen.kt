@@ -262,7 +262,9 @@ fun PersonDetailScreen(
                                 " · ${calculateAge(birthday.date)} years old"
                             else -> ""
                         }
-                        Text(p.relationLabel.toDisplayLabel() + ageLabel,
+                        val headerLabel = if (p.isMe) ageLabel.removePrefix(" · ")
+                                         else p.relationLabel.toDisplayLabel() + ageLabel
+                        if (headerLabel.isNotEmpty()) Text(headerLabel,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary)
                         p.nickname?.let { Text("\"$it\"", style = MaterialTheme.typography.bodySmall,
