@@ -1,6 +1,8 @@
 package com.github.maskedkunisquat.wulfpak.core.logic.llm
 
 import android.util.Log
+import com.github.maskedkunisquat.wulfpak.core.logic.BuildConfig
+import com.github.maskedkunisquat.wulfpak.core.data.calculateAge
 import com.github.maskedkunisquat.wulfpak.core.data.dao.ActivityDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.GiftDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.InteractionDao
@@ -69,17 +71,18 @@ internal class ContactsToolSet(
     fun getContactNotes(
         @ToolParam(description = "First name or nickname. Leave blank to get the 15 most recent notes across all contacts.") name: String = "",
     ): String = runBlocking {
-        Log.i(TAG, "getContactNotes — name=${name.ifBlank { "(all)" }}")
+        if (BuildConfig.DEBUG) Log.d(TAG, "getContactNotes — name=${name.ifBlank { "(all)" }}")
         eventSink?.invoke(LlmResult.ToolCall("getContactNotes", if (name.isBlank()) emptyMap() else mapOf("name" to name)))
         if (name.isBlank()) {
             val persons = personDao.getAllOnce()
+            val personById = persons.associateBy { it.id }
             data class NoteEntry(val contactName: String, val timestamp: Long, val body: String)
-            val allNotes = persons.flatMap { p ->
-                val contactName = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
-                noteDao.getForPerson(p.id).first().map { n ->
-                    NoteEntry(contactName, n.timestamp, n.body)
+            val allNotes = noteDao.getAllOnce()
+                .mapNotNull { n ->
+                    val p = n.personId?.let { personById[it] } ?: return@mapNotNull null
+                    NoteEntry("${p.firstName}${p.lastName?.let { " $it" } ?: ""}", n.timestamp, n.body)
                 }
-            }.sortedByDescending { it.timestamp }.take(15)
+                .sortedByDescending { it.timestamp }.take(15)
             if (allNotes.isEmpty()) return@runBlocking "No notes found."
             allNotes.joinToString("\n") { "${it.contactName} (${fmt.format(Date(it.timestamp))}): \"${it.body}\"" }
         } else {
@@ -94,22 +97,20 @@ internal class ContactsToolSet(
     fun getContactGifts(
         @ToolParam(description = "First name or nickname. Leave blank to get all pending gift ideas across all contacts.") name: String = "",
     ): String = runBlocking {
-        Log.i(TAG, "getContactGifts — name=${name.ifBlank { "(all)" }}")
+        if (BuildConfig.DEBUG) Log.d(TAG, "getContactGifts — name=${name.ifBlank { "(all)" }}")
         eventSink?.invoke(LlmResult.ToolCall("getContactGifts", if (name.isBlank()) emptyMap() else mapOf("name" to name)))
         if (name.isBlank()) {
             val persons = personDao.getAllOnce()
-            val lines = mutableListOf<String>()
-            persons.forEach { p ->
-                val gifts = giftDao.getForPerson(p.id).first().filter { it.status != GiftStatus.GIVEN }
-                if (gifts.isNotEmpty()) {
+            val personById = persons.associateBy { it.id }
+            val lines = giftDao.getAllOnce()
+                .filter { it.status != GiftStatus.GIVEN }
+                .mapNotNull { g ->
+                    val p = personById[g.personId] ?: return@mapNotNull null
                     val contactName = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
-                    gifts.forEach { g ->
-                        val occasion = g.occasion?.let { " for $it" } ?: ""
-                        val note = g.note?.let { " — $it" } ?: ""
-                        lines += "$contactName: ${g.name} [${g.status.lowercase()}]$occasion$note"
-                    }
+                    val occasion = g.occasion?.let { " for $it" } ?: ""
+                    val note = g.note?.let { " — $it" } ?: ""
+                    "$contactName: ${g.name} [${g.status.lowercase()}]$occasion$note"
                 }
-            }
             if (lines.isEmpty()) return@runBlocking "No pending gift ideas found."
             lines.joinToString("\n")
         } else {
@@ -128,36 +129,50 @@ internal class ContactsToolSet(
     fun getContactHistory(
         @ToolParam(description = "First name or nickname. Leave blank to get interactions and activities from the last 30 days across all contacts.") name: String = "",
     ): String = runBlocking {
-        Log.i(TAG, "getContactHistory — name=${name.ifBlank { "(all)" }}")
+        if (BuildConfig.DEBUG) Log.d(TAG, "getContactHistory — name=${name.ifBlank { "(all)" }}")
         eventSink?.invoke(LlmResult.ToolCall("getContactHistory", if (name.isBlank()) emptyMap() else mapOf("name" to name)))
         if (name.isBlank()) {
             val cutoff = System.currentTimeMillis() - 30L * 86_400_000L
             val persons = personDao.getAllOnce()
+            val personById = persons.associateBy { it.id }
             data class Entry(val timestamp: Long, val line: String)
             val entries = mutableListOf<Entry>()
-            persons.forEach { p ->
-                val contactName = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
-                interactionDao.getForPerson(p.id).first()
-                    .filter { it.timestamp >= cutoff }
-                    .forEach { i ->
-                        val note = i.note?.let { " — $it" } ?: ""
-                        val others = interactionDao.getParticipantIds(i.id)
-                            .filter { it != p.id }
-                            .mapNotNull { pid -> persons.firstOrNull { it.id == pid } }
-                            .map { op -> "${op.firstName}${op.lastName?.let { " $it" } ?: ""}" }
-                        val withStr = if (others.isNotEmpty()) " [with: ${others.joinToString(", ")}]" else ""
-                        entries += Entry(i.timestamp, "${fmt.format(Date(i.timestamp))} — $contactName: ${i.type.replace('_', ' ')}$note$withStr")
-                    }
-                activityDao.getForPerson(p.id).first()
-                    .filter { it.timestamp >= cutoff }
-                    .forEach { a ->
-                        val others = activityDao.getParticipantIds(a.id)
-                            .filter { it != p.id }
-                            .mapNotNull { pid -> persons.firstOrNull { it.id == pid } }
-                            .map { op -> "${op.firstName}${op.lastName?.let { " $it" } ?: ""}" }
-                        val withStr = if (others.isNotEmpty()) " [with: ${others.joinToString(", ")}]" else ""
-                        entries += Entry(a.timestamp, "${fmt.format(Date(a.timestamp))} — $contactName: activity \"${a.title}\"$withStr")
-                    }
+            val recentInteractions = interactionDao.getAllOnce().filter { it.timestamp >= cutoff }
+            val recentActivities   = activityDao.getAllOnce().filter { it.timestamp >= cutoff }
+            val interactionParticipantsById = if (recentInteractions.isNotEmpty())
+                interactionDao.getParticipantsForIds(recentInteractions.map { it.id })
+                    .groupBy({ it.interactionId }, { it.personId })
+            else emptyMap()
+            val activityParticipantsById = if (recentActivities.isNotEmpty())
+                activityDao.getParticipantsForIds(recentActivities.map { it.id })
+                    .groupBy({ it.activityId }, { it.personId })
+            else emptyMap()
+            recentInteractions.forEach { i ->
+                val participantIds = interactionParticipantsById[i.id] ?: emptyList()
+                val note = i.note?.let { " — $it" } ?: ""
+                participantIds.forEach { pid ->
+                    val p = personById[pid] ?: return@forEach
+                    val contactName = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
+                    val others = participantIds
+                        .filter { it != pid }
+                        .mapNotNull { personById[it] }
+                        .map { op -> "${op.firstName}${op.lastName?.let { " $it" } ?: ""}" }
+                    val withStr = if (others.isNotEmpty()) " [with: ${others.joinToString(", ")}]" else ""
+                    entries += Entry(i.timestamp, "${fmt.format(Date(i.timestamp))} — $contactName: ${i.type.replace('_', ' ')}$note$withStr")
+                }
+            }
+            recentActivities.forEach { a ->
+                val participantIds = activityParticipantsById[a.id] ?: emptyList()
+                participantIds.forEach { pid ->
+                    val p = personById[pid] ?: return@forEach
+                    val contactName = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
+                    val others = participantIds
+                        .filter { it != pid }
+                        .mapNotNull { personById[it] }
+                        .map { op -> "${op.firstName}${op.lastName?.let { " $it" } ?: ""}" }
+                    val withStr = if (others.isNotEmpty()) " [with: ${others.joinToString(", ")}]" else ""
+                    entries += Entry(a.timestamp, "${fmt.format(Date(a.timestamp))} — $contactName: activity \"${a.title}\"$withStr")
+                }
             }
             if (entries.isEmpty()) return@runBlocking "No interactions or activities logged in the last 30 days."
             entries.sortedByDescending { it.timestamp }.joinToString("\n") { it.line }
@@ -168,12 +183,20 @@ internal class ContactsToolSet(
             if (interactions.isEmpty() && activities.isEmpty())
                 return@runBlocking "No interaction history found for ${person.firstName}."
             val persons = personDao.getAllOnce()
+            val interactionParticipantsById = if (interactions.isNotEmpty())
+                interactionDao.getParticipantsForIds(interactions.map { it.id })
+                    .groupBy({ it.interactionId }, { it.personId })
+            else emptyMap()
+            val activityParticipantsById = if (activities.isNotEmpty())
+                activityDao.getParticipantsForIds(activities.map { it.id })
+                    .groupBy({ it.activityId }, { it.personId })
+            else emptyMap()
             buildString {
                 if (interactions.isNotEmpty()) {
                     appendLine("Interactions with ${person.firstName}:")
                     interactions.forEach { i ->
                         val note = i.note?.let { " — $it" } ?: ""
-                        val others = interactionDao.getParticipantIds(i.id)
+                        val others = (interactionParticipantsById[i.id] ?: emptyList())
                             .filter { it != person.id }
                             .mapNotNull { pid -> persons.firstOrNull { it.id == pid } }
                             .map { p -> "${p.firstName}${p.lastName?.let { " $it" } ?: ""}" }
@@ -185,7 +208,7 @@ internal class ContactsToolSet(
                     appendLine("Activities with ${person.firstName}:")
                     activities.forEach { a ->
                         val body = a.body?.let { " — $it" } ?: ""
-                        val others = activityDao.getParticipantIds(a.id)
+                        val others = (activityParticipantsById[a.id] ?: emptyList())
                             .filter { it != person.id }
                             .mapNotNull { pid -> persons.firstOrNull { it.id == pid } }
                             .map { p -> "${p.firstName}${p.lastName?.let { " $it" } ?: ""}" }
@@ -201,7 +224,7 @@ internal class ContactsToolSet(
     fun getPendingTasks(
         @ToolParam(description = "Contact first name to filter by, or blank for all pending tasks.") name: String = "",
     ): String = runBlocking {
-        Log.i(TAG, "getPendingTasks — name=${name.ifBlank { "(all)" }}")
+        if (BuildConfig.DEBUG) Log.d(TAG, "getPendingTasks — name=${name.ifBlank { "(all)" }}")
         eventSink?.invoke(LlmResult.ToolCall("getPendingTasks", if (name.isBlank()) emptyMap() else mapOf("name" to name)))
         val tasks = if (name.isBlank()) {
             taskDao.getPending().first()
@@ -220,7 +243,7 @@ internal class ContactsToolSet(
     fun getContactDetails(
         @ToolParam(description = "First name or nickname of the contact.") name: String,
     ): String = runBlocking {
-        Log.i(TAG, "getContactDetails — name=$name")
+        if (BuildConfig.DEBUG) Log.d(TAG, "getContactDetails — name=$name")
         eventSink?.invoke(LlmResult.ToolCall("getContactDetails", mapOf("name" to name)))
         val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\"."
         val lifeEvents = lifeEventDao.getForPerson(person.id).first()
@@ -237,7 +260,7 @@ internal class ContactsToolSet(
                 val birthYear = Calendar.getInstance().apply { timeInMillis = birthday.date }.get(Calendar.YEAR)
                 if (birthYear != 1900) {
                     val asOf = death?.date ?: System.currentTimeMillis()
-                    val age  = calcAge(birthday.date, asOf)
+                    val age  = birthday.date.calculateAge(asOf)
                     appendLine("Birthday: ${fmt.format(Date(birthday.date))}")
                     if (death != null) appendLine("Age at passing: $age")
                     else appendLine("Current age: $age")
@@ -258,7 +281,7 @@ internal class ContactsToolSet(
     fun searchAcrossContacts(
         @ToolParam(description = "The topic, place, event name, or phrase to search for.") query: String,
     ): String = runBlocking {
-        Log.i(TAG, "searchAcrossContacts — query=$query")
+        if (BuildConfig.DEBUG) Log.d(TAG, "searchAcrossContacts — query=$query")
         eventSink?.invoke(LlmResult.ToolCall("searchAcrossContacts", mapOf("query" to query)))
         val hits = try { searchRepository.search(query, limit = 8) } catch (_: Exception) { emptyList() }
         if (hits.isEmpty()) return@runBlocking "No results found for \"$query\"."
@@ -303,7 +326,7 @@ internal class ContactsToolSet(
 
     @Tool(description = "Get contacts with upcoming birthdays or anniversaries, sorted by soonest first.")
     fun getUpcomingEvents(): String = runBlocking {
-        Log.i(TAG, "getUpcomingEvents called")
+        if (BuildConfig.DEBUG) Log.d(TAG, "getUpcomingEvents called")
         eventSink?.invoke(LlmResult.ToolCall("getUpcomingEvents", emptyMap()))
         val events = lifeEventDao.getAllRecurring().first()
         if (events.isEmpty()) return@runBlocking "No recurring events found."
@@ -334,10 +357,11 @@ internal class ContactsToolSet(
     fun getLapsedContacts(
         @ToolParam(description = "Number of days since last contact to be considered lapsed. Default is 60.") days: Int = 60,
     ): String = runBlocking {
-        Log.i(TAG, "getLapsedContacts — days=$days")
+        if (BuildConfig.DEBUG) Log.d(TAG, "getLapsedContacts — days=$days")
         eventSink?.invoke(LlmResult.ToolCall("getLapsedContacts", mapOf("days" to days.toString())))
         val cutoff = System.currentTimeMillis() - days * 86_400_000L
         val lapsed = personDao.getAllOnce()
+            .filter { !it.isMe }
             .filter { val t = it.lastContactedAt; t == null || t < cutoff }
             .sortedBy { it.lastContactedAt ?: 0L }
         if (lapsed.isEmpty()) return@runBlocking "No contacts lapsed beyond $days days."
@@ -355,12 +379,12 @@ internal class ContactsToolSet(
     fun findContactsByRelation(
         @ToolParam(description = "Relationship type to search for, e.g. 'friend', 'colleague', 'family', 'mentor'.") relation: String,
     ): String = runBlocking {
-        Log.i(TAG, "findContactsByRelation — relation=$relation")
+        if (BuildConfig.DEBUG) Log.d(TAG, "findContactsByRelation — relation=$relation")
         eventSink?.invoke(LlmResult.ToolCall("findContactsByRelation", mapOf("relation" to relation)))
         val query = relation.trim().lowercase()
         val matches = personDao.getAllOnce().filter { p ->
-            p.relationLabel.lowercase().contains(query) ||
-            p.relationLabel.replace("_", " ").lowercase().contains(query)
+            !p.isMe && (p.relationLabel.lowercase().contains(query) ||
+            p.relationLabel.replace("_", " ").lowercase().contains(query))
         }
         if (matches.isEmpty()) return@runBlocking "No contacts found with relation matching '$relation'."
         matches.joinToString("\n") { p ->
@@ -376,7 +400,7 @@ internal class ContactsToolSet(
     fun getLifeEvents(
         @ToolParam(description = "First name or nickname of the contact.") name: String,
     ): String = runBlocking {
-        Log.i(TAG, "getLifeEvents — name=$name")
+        if (BuildConfig.DEBUG) Log.d(TAG, "getLifeEvents — name=$name")
         eventSink?.invoke(LlmResult.ToolCall("getLifeEvents", mapOf("name" to name)))
         val person = findPerson(name) ?: return@runBlocking "No contact found matching '$name'."
         val events = lifeEventDao.getForPersonOnce(person.id)
@@ -395,7 +419,7 @@ internal class ContactsToolSet(
     fun getRelationshipWeb(
         @ToolParam(description = "First name or nickname of the contact.") name: String,
     ): String = runBlocking {
-        Log.i(TAG, "getRelationshipWeb — name=$name")
+        if (BuildConfig.DEBUG) Log.d(TAG, "getRelationshipWeb — name=$name")
         eventSink?.invoke(LlmResult.ToolCall("getRelationshipWeb", mapOf("name" to name)))
         val person = findPerson(name) ?: return@runBlocking "No contact found matching '$name'."
         val connections = personRelationshipDao.getConnectionsForPersonOnce(person.id)
@@ -417,7 +441,7 @@ internal class ContactsToolSet(
     fun inferKinship(
         @ToolParam(description = "First name or nickname of the contact.") name: String,
     ): String = runBlocking {
-        Log.i(TAG, "inferKinship — name=$name")
+        if (BuildConfig.DEBUG) Log.d(TAG, "inferKinship — name=$name")
         eventSink?.invoke(LlmResult.ToolCall("inferKinship", mapOf("name" to name)))
         val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\"."
         val kin = familyEngine.inferKinOf(person.id)
@@ -430,7 +454,7 @@ internal class ContactsToolSet(
         @ToolParam(description = "First name or nickname of the first contact.") nameA: String,
         @ToolParam(description = "First name or nickname of the second contact.") nameB: String,
     ): String = runBlocking {
-        Log.i(TAG, "inferRelationBetween — nameA=$nameA nameB=$nameB")
+        if (BuildConfig.DEBUG) Log.d(TAG, "inferRelationBetween — nameA=$nameA nameB=$nameB")
         eventSink?.invoke(LlmResult.ToolCall("inferRelationBetween", mapOf("nameA" to nameA, "nameB" to nameB)))
         val personA = findPerson(nameA) ?: return@runBlocking "No contact found named \"$nameA\"."
         val personB = findPerson(nameB) ?: return@runBlocking "No contact found named \"$nameB\"."
@@ -448,7 +472,7 @@ internal class ContactsToolSet(
     fun getClosenessInsight(
         @ToolParam(description = "First name or nickname of the contact.") name: String,
     ): String = runBlocking {
-        Log.i(TAG, "getClosenessInsight — name=$name")
+        if (BuildConfig.DEBUG) Log.d(TAG, "getClosenessInsight — name=$name")
         eventSink?.invoke(LlmResult.ToolCall("getClosenessInsight", mapOf("name" to name)))
         val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\"."
         val score = person.closenessScore
@@ -483,7 +507,7 @@ internal class ContactsToolSet(
         @ToolParam(description = "Interaction type: call, text, email, video_call, in_person, or social_media.") type: String,
         @ToolParam(description = "Optional short note about the interaction. Leave blank if none.") note: String = "",
     ): String = runBlocking {
-        Log.i(TAG, "logInteraction — name=$name type=$type")
+        if (BuildConfig.DEBUG) Log.d(TAG, "logInteraction — name=$name type=$type")
         val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\". Ask the user to clarify."
         val normalizedType = normalizeInteractionType(type)
         val writeId = UUID.randomUUID().toString()
@@ -505,7 +529,7 @@ internal class ContactsToolSet(
         @ToolParam(description = "First name or nickname of the contact.") name: String,
         @ToolParam(description = "The note text.") body: String,
     ): String = runBlocking {
-        Log.i(TAG, "addNote — name=$name")
+        if (BuildConfig.DEBUG) Log.d(TAG, "addNote — name=$name")
         val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\". Ask the user to clarify."
         val writeId = UUID.randomUUID().toString()
         val description = "Add note to ${person.firstName}"
@@ -524,7 +548,7 @@ internal class ContactsToolSet(
         @ToolParam(description = "Name or description of the gift idea.") giftName: String,
         @ToolParam(description = "Occasion this gift is for (e.g. birthday, Christmas). Leave blank if none.") occasion: String = "",
     ): String = runBlocking {
-        Log.i(TAG, "addGiftIdea — name=$name giftName=$giftName")
+        if (BuildConfig.DEBUG) Log.d(TAG, "addGiftIdea — name=$name giftName=$giftName")
         val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\". Ask the user to clarify."
         val writeId = UUID.randomUUID().toString()
         val description = "Add gift idea for ${person.firstName}: $giftName"
@@ -542,7 +566,7 @@ internal class ContactsToolSet(
         @ToolParam(description = "Task title.") title: String,
         @ToolParam(description = "Due in how many days. Leave blank for no due date.") dueInDays: String = "",
     ): String = runBlocking {
-        Log.i(TAG, "addTask — name=$name title=$title dueInDays=$dueInDays")
+        if (BuildConfig.DEBUG) Log.d(TAG, "addTask — name=$name title=$title dueInDays=$dueInDays")
         val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\". Ask the user to clarify."
         val writeId = UUID.randomUUID().toString()
         val description = "Add task for ${person.firstName}: $title"
@@ -567,16 +591,6 @@ internal class ContactsToolSet(
             s.contains("social") || s.contains("instagram") || s.contains("twitter") -> InteractionType.SOCIAL_MEDIA
             else -> InteractionType.IN_PERSON
         }
-    }
-
-    private fun calcAge(birthdayMs: Long, asOfMs: Long): Int {
-        val cal = Calendar.getInstance()
-        cal.timeInMillis = asOfMs
-        val nowYear = cal.get(Calendar.YEAR); val nowMonth = cal.get(Calendar.MONTH); val nowDay = cal.get(Calendar.DAY_OF_MONTH)
-        cal.timeInMillis = birthdayMs
-        var age = nowYear - cal.get(Calendar.YEAR)
-        if (nowMonth < cal.get(Calendar.MONTH) || (nowMonth == cal.get(Calendar.MONTH) && nowDay < cal.get(Calendar.DAY_OF_MONTH))) age--
-        return age
     }
 
     private suspend fun findPerson(name: String): Person? {

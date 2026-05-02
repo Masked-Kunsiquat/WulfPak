@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.github.maskedkunisquat.wulfpak.core.data.entity.EmbeddingRow
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
@@ -25,8 +26,14 @@ interface NoteDao {
     @Query("SELECT * FROM notes WHERE id = :id")
     suspend fun getById(id: UUID): Note?
 
+    @Query("SELECT * FROM notes ORDER BY timestamp DESC")
+    suspend fun getAllOnce(): List<Note>
+
     @Query("SELECT * FROM notes WHERE embedding IS NULL")
     suspend fun getUnembedded(): List<Note>
+
+    @Query("SELECT id, embedding FROM notes WHERE embedding IS NOT NULL")
+    suspend fun getEmbedded(): List<EmbeddingRow>
 
     @Query("UPDATE notes SET personId = :toId WHERE personId = :fromId")
     suspend fun reassignToPerson(fromId: UUID, toId: UUID)

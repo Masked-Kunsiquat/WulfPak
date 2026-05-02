@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.withTransaction
 import com.github.maskedkunisquat.wulfpak.AppApplication
 import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
 import com.github.maskedkunisquat.wulfpak.appDataStore
@@ -35,6 +36,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -133,17 +135,16 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { db.personRelationshipDao().deletePair(a, b) }
     }
 
-    init {
+    fun load(personId: UUID) {
+        _personId.value = personId
         viewModelScope.launch {
-            val p = person.filterNotNull().first()
+            val p = withTimeoutOrNull(3_000L) { db.personDao().observe(personId).filterNotNull().first() } ?: return@launch
             if (summarizeText.isEmpty()) {
                 summarizeText = p.cachedSummary ?: ""
                 summaryGeneratedAt = p.summaryGeneratedAt
             }
         }
     }
-
-    fun load(personId: UUID) { _personId.value = personId }
 
     fun toggleTaskDone(task: Task) {
         viewModelScope.launch { db.taskDao().update(task.copy(isDone = !task.isDone)) }
@@ -218,6 +219,17 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { db.contactDetailDao().delete(detail) }
     }
 
+    fun toggleMe() {
+        val id = _personId.value ?: return
+        val shouldBeMe = person.value?.isMe != true
+        viewModelScope.launch {
+            db.withTransaction {
+                db.personDao().clearAllMe()
+                if (shouldBeMe) db.personDao().setMe(id)
+            }
+        }
+    }
+
     fun deletePerson(onDone: () -> Unit) {
         viewModelScope.launch {
             person.value?.let { db.personDao().delete(it) }
@@ -226,8 +238,15 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     companion object {
-        private val FAMILY_REVERSE: Map<String, String> = FamilyRelType.entries
-            .flatMap { t -> listOf(t.displayLabel to t.reverseLabel, t.reverseLabel to t.displayLabel) }
-            .toMap()
+        private val FAMILY_REVERSE: Map<String, String> = buildMap {
+            FamilyRelType.entries.forEach { t ->
+                require(!contains(t.displayLabel)) { "FAMILY_REVERSE key collision on \"${t.displayLabel}\"" }
+                put(t.displayLabel, t.reverseLabel)
+                if (t.reverseLabel != t.displayLabel) {
+                    require(!contains(t.reverseLabel)) { "FAMILY_REVERSE key collision on \"${t.reverseLabel}\"" }
+                    put(t.reverseLabel, t.displayLabel)
+                }
+            }
+        }
     }
 }

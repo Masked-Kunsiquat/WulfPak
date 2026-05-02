@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
@@ -216,6 +217,12 @@ fun PersonDetailScreen(
                             Icon(Icons.Default.MoreVert, contentDescription = "More")
                         }
                         DropdownMenu(expanded = showOverflow, onDismissRequest = { showOverflow = false }) {
+                            val isMe = person?.isMe == true
+                            DropdownMenuItem(
+                                text = { Text(if (isMe) "Not me" else "This is me") },
+                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                                onClick = { showOverflow = false; viewModel.toggleMe() },
+                            )
                             DropdownMenuItem(
                                 text = { Text("Delete person") },
                                 leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
@@ -255,7 +262,9 @@ fun PersonDetailScreen(
                                 " · ${calculateAge(birthday.date)} years old"
                             else -> ""
                         }
-                        Text(p.relationLabel.toDisplayLabel() + ageLabel,
+                        val headerLabel = if (p.isMe) ageLabel.removePrefix(" · ")
+                                         else p.relationLabel.toDisplayLabel() + ageLabel
+                        if (headerLabel.isNotEmpty()) Text(headerLabel,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary)
                         p.nickname?.let { Text("\"$it\"", style = MaterialTheme.typography.bodySmall,
@@ -638,9 +647,16 @@ private val WORK_LABELS = listOf("Colleague", "Manager", "Direct Report", "Clien
 private val FAMILY_LABELS: List<String> = FamilyRelType.entries
     .flatMap { t -> if (t.displayLabel == t.reverseLabel) listOf(t.displayLabel) else listOf(t.displayLabel, t.reverseLabel) }
     .distinct()
-private val FAMILY_LABEL_TO_REL_TYPE: Map<String, FamilyRelType> = FamilyRelType.entries
-    .flatMap { t -> listOf(t.displayLabel to t, t.reverseLabel to t) }
-    .toMap()
+private val FAMILY_LABEL_TO_REL_TYPE: Map<String, FamilyRelType> = buildMap {
+    FamilyRelType.entries.forEach { t ->
+        require(!contains(t.displayLabel)) { "FAMILY_LABEL_TO_REL_TYPE key collision on \"${t.displayLabel}\"" }
+        put(t.displayLabel, t)
+        if (t.reverseLabel != t.displayLabel) {
+            require(!contains(t.reverseLabel)) { "FAMILY_LABEL_TO_REL_TYPE key collision on \"${t.reverseLabel}\"" }
+            put(t.reverseLabel, t)
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

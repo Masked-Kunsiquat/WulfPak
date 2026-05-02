@@ -1,5 +1,6 @@
 package com.github.maskedkunisquat.wulfpak.ui.common
 
+import com.github.maskedkunisquat.wulfpak.core.data.calculateAge
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -27,17 +28,5 @@ fun Long.birthYearIsKnown(): Boolean =
     java.util.Calendar.getInstance().apply { timeInMillis = this@birthYearIsKnown }
         .get(java.util.Calendar.YEAR) != 1900
 
-fun calculateAge(birthdayMs: Long, asOfMs: Long = System.currentTimeMillis()): Int {
-    val cal = java.util.Calendar.getInstance()
-    cal.timeInMillis = asOfMs
-    val nowYear  = cal.get(java.util.Calendar.YEAR)
-    val nowMonth = cal.get(java.util.Calendar.MONTH)
-    val nowDay   = cal.get(java.util.Calendar.DAY_OF_MONTH)
-    cal.timeInMillis = birthdayMs
-    val birthYear  = cal.get(java.util.Calendar.YEAR)
-    val birthMonth = cal.get(java.util.Calendar.MONTH)
-    val birthDay   = cal.get(java.util.Calendar.DAY_OF_MONTH)
-    var age = nowYear - birthYear
-    if (nowMonth < birthMonth || (nowMonth == birthMonth && nowDay < birthDay)) age--
-    return age
-}
+fun calculateAge(birthdayMs: Long, asOfMs: Long = System.currentTimeMillis()): Int =
+    birthdayMs.calculateAge(asOfMs)

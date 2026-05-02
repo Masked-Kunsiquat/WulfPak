@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.github.maskedkunisquat.wulfpak.core.data.entity.EmbeddingRow
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionParticipant
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
@@ -48,8 +49,14 @@ interface InteractionDao {
     """)
     suspend fun getForPersonOnce(personId: UUID): List<Interaction>
 
+    @Query("SELECT * FROM interactions ORDER BY timestamp DESC")
+    suspend fun getAllOnce(): List<Interaction>
+
     @Query("SELECT * FROM interactions WHERE embedding IS NULL")
     suspend fun getUnembedded(): List<Interaction>
+
+    @Query("SELECT id, embedding FROM interactions WHERE embedding IS NOT NULL")
+    suspend fun getEmbedded(): List<EmbeddingRow>
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(interaction: Interaction)
@@ -68,6 +75,9 @@ interface InteractionDao {
 
     @Query("SELECT personId FROM interaction_participants WHERE interactionId = :interactionId")
     suspend fun getParticipantIds(interactionId: UUID): List<UUID>
+
+    @Query("SELECT * FROM interaction_participants WHERE interactionId IN (:ids)")
+    suspend fun getParticipantsForIds(ids: List<UUID>): List<InteractionParticipant>
 
     @Query("SELECT * FROM interaction_participants WHERE personId = :personId")
     suspend fun getParticipantsByPerson(personId: UUID): List<InteractionParticipant>
