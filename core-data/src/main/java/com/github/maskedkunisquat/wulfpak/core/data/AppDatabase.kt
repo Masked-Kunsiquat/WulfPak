@@ -13,6 +13,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.dao.LifeEventDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.NoteDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonRelationshipDao
+import com.github.maskedkunisquat.wulfpak.core.data.dao.SessionMemoryDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.TaskDao
 import com.github.maskedkunisquat.wulfpak.core.data.db.AppTypeConverters
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
@@ -25,6 +26,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.LifeEvent
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
 import com.github.maskedkunisquat.wulfpak.core.data.entity.PersonRelationship
+import com.github.maskedkunisquat.wulfpak.core.data.entity.SessionMemory
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Task
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -43,8 +45,9 @@ import net.sqlcipher.database.SupportFactory
         Gift::class,
         Task::class,
         PersonRelationship::class,
+        SessionMemory::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 @TypeConverters(AppTypeConverters::class)
@@ -59,6 +62,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun giftDao(): GiftDao
     abstract fun taskDao(): TaskDao
     abstract fun personRelationshipDao(): PersonRelationshipDao
+    abstract fun sessionMemoryDao(): SessionMemoryDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -120,6 +124,15 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS session_memories " +
+                    "(id TEXT NOT NULL PRIMARY KEY, timestamp INTEGER NOT NULL, summary TEXT NOT NULL)"
+                )
+            }
+        }
+
         fun create(context: Context, key: ByteArray): AppDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
@@ -127,7 +140,7 @@ abstract class AppDatabase : RoomDatabase() {
                 "wulfpak.db"
             )
                 .openHelperFactory(SupportFactory(key))
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .build()
     }
 }

@@ -8,6 +8,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.dao.LifeEventDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.NoteDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonRelationshipDao
+import com.github.maskedkunisquat.wulfpak.core.data.dao.SessionMemoryDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.TaskDao
 import com.github.maskedkunisquat.wulfpak.core.logic.family.FamilyInferenceEngine
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchHit
@@ -32,6 +33,7 @@ class LlmOrchestrator(
     private val searchRepository: SearchRepository,
     private val personRelationshipDao: PersonRelationshipDao,
     private val familyInferenceEngine: FamilyInferenceEngine,
+    private val sessionMemoryDao: SessionMemoryDao,
 ) {
     private val contactsToolSet = ContactsToolSet(
         personDao, interactionDao, noteDao, activityDao, lifeEventDao, giftDao, taskDao,
@@ -59,6 +61,7 @@ class LlmOrchestrator(
         val dateFmt = SimpleDateFormat("MMM d", Locale.ENGLISH)
         val persons = personDao.getAllOnce()
         val me = personDao.getMe()
+        val recentMemories = sessionMemoryDao.getRecent(5)
         val hits = try { searchRepository.search(naturalLanguage, limit = 5) } catch (_: Exception) { emptyList() }
 
         val meProfile = me?.let { p ->
@@ -135,6 +138,13 @@ class LlmOrchestrator(
             val systemPrompt = buildString {
                 append(Prompts.QUERY_SYSTEM)
                 if (meProfile != null) { appendLine(); appendLine(); append(meProfile.trimEnd()) }
+                if (recentMemories.isNotEmpty()) {
+                    appendLine(); appendLine()
+                    appendLine("RECENT SESSIONS:")
+                    recentMemories.forEach { m ->
+                        appendLine("- ${dateFmt.format(m.timestamp)}: ${m.summary}")
+                    }
+                }
                 appendLine(); appendLine(); append(roster.trimEnd())
             }
             provider.chatSend(userMsg, systemPrompt, listOf(contactsToolSet))
@@ -168,6 +178,9 @@ class LlmOrchestrator(
             "in $daysSinceContact days. Suggest a brief, warm message to reconnect."
         emitAll(provider.process(prompt, Prompts.FOLLOW_UP_SYSTEM))
     }
+
+    fun extractSessionMemory(conversationText: String): Flow<LlmResult> =
+        provider.process(conversationText, Prompts.SESSION_MEMORY_SYSTEM)
 
     fun summarizeMe(): Flow<LlmResult> = flow {
         val me = personDao.getMe() ?: run {

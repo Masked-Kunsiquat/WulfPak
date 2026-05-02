@@ -9,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.github.maskedkunisquat.wulfpak.AppApplication
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.LlmResult
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.ModelLoadState
+import com.github.maskedkunisquat.wulfpak.core.data.entity.SessionMemory
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.StateFlow
@@ -75,6 +77,39 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
     var query    by mutableStateOf("")
     var messages by mutableStateOf<List<ChatMessage>>(emptyList()); private set
     private var streamingJob: Job? = null
+    private var memorySaved = false
+
+    private fun maybeSaveSessionMemory() {
+        if (memorySaved) return
+        val toSave = messages
+        val hasExchange = toSave.any { it is ChatMessage.User } &&
+            toSave.any { it is ChatMessage.Assistant && !(it as ChatMessage.Assistant).isStreaming && (it as ChatMessage.Assistant).text.isNotBlank() }
+        if (!hasExchange) return
+        memorySaved = true
+        val conversationText = buildString {
+            toSave.forEach { msg ->
+                when (msg) {
+                    is ChatMessage.User      -> appendLine("User: ${msg.text}")
+                    is ChatMessage.Assistant -> if (msg.text.isNotBlank()) appendLine("Assistant: ${msg.text.take(300)}")
+                    else                     -> Unit
+                }
+            }
+        }.take(2000)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val text = StringBuilder()
+                llmOrchestrator.extractSessionMemory(conversationText).collect { result ->
+                    if (result is LlmResult.Token) text.append(result.text)
+                }
+                val summary = text.toString().trim()
+                if (summary.isNotEmpty()) {
+                    db.sessionMemoryDao().insert(
+                        SessionMemory(timestamp = System.currentTimeMillis(), summary = summary)
+                    )
+                }
+            } catch (_: Exception) { }
+        }
+    }
 
     val isQuerying: Boolean
         get() = (messages.lastOrNull() as? ChatMessage.Assistant)?.isStreaming == true
@@ -140,6 +175,8 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun clearConversation() {
+        maybeSaveSessionMemory()
+        memorySaved = false
         streamingJob?.cancel()
         streamingJob = null
         messages = emptyList()
@@ -147,5 +184,10 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch(Dispatchers.IO) {
             llmOrchestrator.resetChat()
         }
+    }
+
+    override fun onCleared() {
+        maybeSaveSessionMemory()
+        super.onCleared()
     }
 }
