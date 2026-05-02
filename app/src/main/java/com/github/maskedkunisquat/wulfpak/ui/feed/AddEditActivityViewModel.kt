@@ -64,6 +64,7 @@ class AddEditActivityViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val id = existingId
             val activityId: UUID
+            var prevParticipantIds = emptySet<UUID>()
             if (id == null) {
                 val activity = Activity(
                     timestamp = timestampMs,
@@ -81,7 +82,8 @@ class AddEditActivityViewModel(app: Application) : AndroidViewModel(app) {
                     ))
                 }
                 activityId = id
-                db.activityDao().getParticipantIds(activityId).forEach { pid ->
+                prevParticipantIds = db.activityDao().getParticipantIds(activityId).toSet()
+                prevParticipantIds.forEach { pid ->
                     db.activityDao().deleteParticipant(ActivityParticipant(activityId, pid))
                 }
             }
@@ -90,7 +92,7 @@ class AddEditActivityViewModel(app: Application) : AndroidViewModel(app) {
             }
             val wm = WorkManager.getInstance(getApplication())
             EmbeddingWorker.enqueue(wm)
-            selectedIds.forEach { SummaryWorker.enqueue(wm, it) }
+            (prevParticipantIds + selectedIds).forEach { SummaryWorker.enqueue(wm, it) }
             onDone()
         }
     }

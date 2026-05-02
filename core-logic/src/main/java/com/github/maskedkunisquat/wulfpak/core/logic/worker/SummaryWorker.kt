@@ -34,14 +34,24 @@ class SummaryWorker(
 
         return try {
             val text = StringBuilder()
+            var llmError: LlmResult.Error? = null
             llmOrchestrator.summarize(personId).collect { result ->
-                if (result is LlmResult.Token) text.append(result.text)
+                when (result) {
+                    is LlmResult.Token -> text.append(result.text)
+                    is LlmResult.Error -> llmError = result
+                    else               -> Unit
+                }
             }
-            val summary = text.toString().trim()
-            if (summary.isNotEmpty()) {
-                db.personDao().updateSummary(personId, summary, System.currentTimeMillis())
+            if (llmError != null) {
+                Log.w(TAG, "LLM error summarizing $personId: ${llmError!!.cause}")
+                Result.retry()
+            } else {
+                val summary = text.toString().trim()
+                if (summary.isNotEmpty()) {
+                    db.personDao().updateSummary(personId, summary, System.currentTimeMillis())
+                }
+                Result.success()
             }
-            Result.success()
         } catch (e: Exception) {
             Log.w(TAG, "Summary failed for $personId", e)
             Result.retry()
@@ -71,7 +81,7 @@ class SummaryWorker(
             val data = Data.Builder().putString(KEY_PERSON_ID, personId.toString()).build()
             workManager.enqueueUniqueWork(
                 "summary_$personId",
-                ExistingWorkPolicy.KEEP,
+                ExistingWorkPolicy.REPLACE,
                 OneTimeWorkRequestBuilder<SummaryWorker>()
                     .setInputData(data)
                     .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
