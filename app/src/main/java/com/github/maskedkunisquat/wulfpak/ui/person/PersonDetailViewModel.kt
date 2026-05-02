@@ -137,7 +137,7 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
     fun load(personId: UUID) {
         _personId.value = personId
         viewModelScope.launch {
-            val p = withTimeoutOrNull(3_000L) { person.filterNotNull().first() } ?: return@launch
+            val p = withTimeoutOrNull(3_000L) { db.personDao().observe(personId).filterNotNull().first() } ?: return@launch
             if (summarizeText.isEmpty()) {
                 summarizeText = p.cachedSummary ?: ""
                 summaryGeneratedAt = p.summaryGeneratedAt
