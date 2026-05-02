@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import com.github.maskedkunisquat.wulfpak.AppApplication
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
+import com.github.maskedkunisquat.wulfpak.core.logic.worker.SummaryWorker
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -50,7 +51,9 @@ class AddEditNoteViewModel(app: Application) : AndroidViewModel(app) {
                     db.noteDao().update(existing.copy(body = body.trim()))
                 }
             }
-            EmbeddingWorker.enqueue(WorkManager.getInstance(getApplication()))
+            val wm = WorkManager.getInstance(getApplication())
+            EmbeddingWorker.enqueue(wm)
+            SummaryWorker.enqueue(wm, pid)
             onDone()
         }
     }
