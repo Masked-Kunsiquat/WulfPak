@@ -122,47 +122,49 @@ fun AddEditPersonScreen(
                 singleLine = true,
             )
 
-            ExposedDropdownMenuBox(
-                expanded = relationExpanded,
-                onExpandedChange = { relationExpanded = it },
-            ) {
-                OutlinedTextField(
-                    value = viewModel.relationLabel.toDisplayLabel(),
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Relation") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = relationExpanded) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable),
-                )
-                ExposedDropdownMenu(
+            if (!viewModel.isMe) {
+                ExposedDropdownMenuBox(
                     expanded = relationExpanded,
-                    onDismissRequest = { relationExpanded = false },
+                    onExpandedChange = { relationExpanded = it },
                 ) {
-                    ALL_RELATION_LABELS.forEach { label ->
-                        DropdownMenuItem(
-                            text = { Text(label.toDisplayLabel()) },
-                            onClick = { viewModel.relationLabel = label; relationExpanded = false },
-                        )
+                    OutlinedTextField(
+                        value = viewModel.relationLabel.toDisplayLabel(),
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Relation") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = relationExpanded) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                    )
+                    ExposedDropdownMenu(
+                        expanded = relationExpanded,
+                        onDismissRequest = { relationExpanded = false },
+                    ) {
+                        ALL_RELATION_LABELS.forEach { label ->
+                            DropdownMenuItem(
+                                text = { Text(label.toDisplayLabel()) },
+                                onClick = { viewModel.relationLabel = label; relationExpanded = false },
+                            )
+                        }
                     }
                 }
-            }
 
-            Text("Closeness rating", style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row {
-                (1..5).forEach { star ->
-                    val filled = (viewModel.closenessRating ?: 0) >= star
-                    IconButton(onClick = {
-                        viewModel.closenessRating = if (viewModel.closenessRating == star) null else star
-                    }) {
-                        Icon(
-                            imageVector = if (filled) Icons.Default.Star else Icons.Default.StarBorder,
-                            contentDescription = "$star stars",
-                            tint = if (filled) MaterialTheme.colorScheme.primary
-                                   else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                Text("Closeness rating", style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row {
+                    (1..5).forEach { star ->
+                        val filled = (viewModel.closenessRating ?: 0) >= star
+                        IconButton(onClick = {
+                            viewModel.closenessRating = if (viewModel.closenessRating == star) null else star
+                        }) {
+                            Icon(
+                                imageVector = if (filled) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = "$star stars",
+                                tint = if (filled) MaterialTheme.colorScheme.primary
+                                       else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }

@@ -24,6 +24,8 @@ class AddEditPersonViewModel(app: Application) : AndroidViewModel(app) {
     var relationLabel   by mutableStateOf(RelationLabel.FRIEND)
     var closenessRating by mutableStateOf<Int?>(null)
     var photoUri        by mutableStateOf<String?>(null)
+    var isMe            by mutableStateOf(false)
+        private set
 
     private var existingId: UUID? = null
 
@@ -39,6 +41,7 @@ class AddEditPersonViewModel(app: Application) : AndroidViewModel(app) {
             relationLabel   = p.relationLabel
             closenessRating = p.closenessRating
             photoUri        = p.photoUri
+            isMe            = p.isMe
         }
     }
 

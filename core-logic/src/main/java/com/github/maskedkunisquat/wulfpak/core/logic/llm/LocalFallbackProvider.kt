@@ -145,14 +145,11 @@ class LocalFallbackProvider(
         systemInstruction: String?,
         allowOpenClRetry: Boolean,
     ): Flow<LlmResult> = flow {
-        val eng = engineLock.readLock().withLock {
-            engine ?: throw IllegalStateException(
-                "Model not loaded. ${initFailureReason ?: "Call initialize() first."}"
-            )
-        }
-
         engineLock.readLock().lock()
         try {
+            val eng = engine ?: throw IllegalStateException(
+                "Model not loaded. ${initFailureReason ?: "Call initialize() first."}"
+            )
             val config = if (systemInstruction != null) {
                 ConversationConfig(systemInstruction = Contents.of(systemInstruction))
             } else {
@@ -189,14 +186,11 @@ class LocalFallbackProvider(
         tools: List<Any>,
         allowOpenClRetry: Boolean,
     ): Flow<LlmResult> = flow {
-        val eng = engineLock.readLock().withLock {
-            engine ?: throw IllegalStateException(
-                "Model not loaded. ${initFailureReason ?: "Call initialize() first."}"
-            )
-        }
-
         engineLock.readLock().lock()
         try {
+            val eng = engine ?: throw IllegalStateException(
+                "Model not loaded. ${initFailureReason ?: "Call initialize() first."}"
+            )
             val conv = chatConversation ?: run {
                 val toolConfigs = tools.filterIsInstance<ToolSet>().map { tool(it) }
                 val config = ConversationConfig(

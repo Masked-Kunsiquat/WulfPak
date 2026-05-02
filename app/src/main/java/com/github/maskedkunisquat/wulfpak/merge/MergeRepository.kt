@@ -49,7 +49,7 @@ class MergeRepository(private val db: AppDatabase) {
             val newA = if (rel.personAId == discardId) keepId else rel.personAId
             val newB = if (rel.personBId == discardId) keepId else rel.personBId
             if (newA != newB) {
-                db.personRelationshipDao().insert(PersonRelationship(newA, newB, rel.label))
+                db.personRelationshipDao().insert(PersonRelationship(newA, newB, rel.label, rel.category, rel.relType))
             }
         }
 

@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
 import com.github.maskedkunisquat.wulfpak.appDataStore
+import androidx.room.withTransaction
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -84,25 +85,40 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
                     durationSeconds = durationSec,
                     note            = note.trim().ifEmpty { null },
                 )
-                db.interactionDao().insert(interaction)
                 interactionId = interaction.id
-                selectedIds.forEach { sid -> db.personDao().onInteractionAdded(sid, timestampMs) }
+                db.withTransaction {
+                    db.interactionDao().insert(interaction)
+                    selectedIds.forEach { sid -> db.personDao().onInteractionAdded(sid, timestampMs) }
+                    selectedIds.forEach { sid ->
+                        db.interactionDao().insertParticipant(InteractionParticipant(interactionId, sid))
+                    }
+                }
             } else {
-                db.interactionDao().getById(id)?.let { existing ->
-                    db.interactionDao().update(existing.copy(
-                        timestamp       = timestampMs,
-                        type            = type,
-                        durationSeconds = durationSec,
-                        note            = note.trim().ifEmpty { null },
-                    ))
-                }
                 interactionId = id
-                db.interactionDao().getParticipantIds(interactionId).forEach { pid ->
-                    db.interactionDao().deleteParticipant(InteractionParticipant(interactionId, pid))
+                var removedIds = emptySet<UUID>()
+                db.withTransaction {
+                    db.interactionDao().getById(id)?.let { existing ->
+                        db.interactionDao().update(existing.copy(
+                            timestamp       = timestampMs,
+                            type            = type,
+                            durationSeconds = durationSec,
+                            note            = note.trim().ifEmpty { null },
+                        ))
+                    }
+                    val oldIds = db.interactionDao().getParticipantIds(id).toSet()
+                    oldIds.forEach { pid ->
+                        db.interactionDao().deleteParticipant(InteractionParticipant(id, pid))
+                    }
+                    val removed = oldIds - selectedIds
+                    val added   = selectedIds - oldIds
+                    removedIds = removed
+                    removed.forEach { pid -> db.personDao().onInteractionDeleted(pid) }
+                    added.forEach   { pid -> db.personDao().onInteractionAdded(pid, timestampMs) }
+                    selectedIds.forEach { sid ->
+                        db.interactionDao().insertParticipant(InteractionParticipant(id, sid))
+                    }
                 }
-            }
-            selectedIds.forEach { sid ->
-                db.interactionDao().insertParticipant(InteractionParticipant(interactionId, sid))
+                removedIds.forEach { rid -> recomputeScore(rid) }
             }
             selectedIds.forEach { sid -> recomputeScore(sid) }
             EmbeddingWorker.enqueue(WorkManager.getInstance(getApplication()))

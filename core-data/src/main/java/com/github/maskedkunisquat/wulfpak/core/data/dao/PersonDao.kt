@@ -61,4 +61,13 @@ interface PersonDao {
 
     @Query("UPDATE persons SET closenessScore = :score WHERE id = :id")
     suspend fun updateClosenessScore(id: UUID, score: Float?)
+
+    @Query("SELECT * FROM persons WHERE isMe = 1 LIMIT 1")
+    suspend fun getMe(): Person?
+
+    @Query("UPDATE persons SET isMe = 0")
+    suspend fun clearAllMe()
+
+    @Query("UPDATE persons SET isMe = 1 WHERE id = :id")
+    suspend fun setMe(id: UUID)
 }

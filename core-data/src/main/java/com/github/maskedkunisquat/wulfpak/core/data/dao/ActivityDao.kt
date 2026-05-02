@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ActivityParticipant
+import com.github.maskedkunisquat.wulfpak.core.data.entity.EmbeddingRow
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
@@ -40,8 +41,14 @@ interface ActivityDao {
     """)
     fun getParticipants(activityId: UUID): Flow<List<Person>>
 
+    @Query("SELECT * FROM activities ORDER BY timestamp DESC")
+    suspend fun getAllOnce(): List<Activity>
+
     @Query("SELECT * FROM activities WHERE embedding IS NULL")
     suspend fun getUnembedded(): List<Activity>
+
+    @Query("SELECT id, embedding FROM activities WHERE embedding IS NOT NULL")
+    suspend fun getEmbedded(): List<EmbeddingRow>
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(activity: Activity)
@@ -60,6 +67,9 @@ interface ActivityDao {
 
     @Query("SELECT personId FROM activity_participants WHERE activityId = :activityId")
     suspend fun getParticipantIds(activityId: UUID): List<UUID>
+
+    @Query("SELECT * FROM activity_participants WHERE activityId IN (:ids)")
+    suspend fun getParticipantsForIds(ids: List<UUID>): List<ActivityParticipant>
 
     @Query("SELECT * FROM activity_participants WHERE personId = :personId")
     suspend fun getParticipantsByPerson(personId: UUID): List<ActivityParticipant>
