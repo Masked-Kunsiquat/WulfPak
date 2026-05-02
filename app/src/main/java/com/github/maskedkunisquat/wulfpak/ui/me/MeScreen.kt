@@ -5,18 +5,25 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,8 +41,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +64,7 @@ import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
 import com.github.maskedkunisquat.wulfpak.ui.common.toRelativeDisplay
 import com.github.maskedkunisquat.wulfpak.ui.feed.FeedItem
 import java.util.UUID
+import kotlinx.coroutines.launch
 
 private val ME_TABS = listOf("Overview", "Activity", "Relationships", "Tasks")
 
@@ -64,6 +73,11 @@ private val ME_TABS = listOf("Overview", "Activity", "Relationships", "Tasks")
 fun MeScreen(
     onAddTask: () -> Unit,
     onEditTask: (Task) -> Unit,
+    onEditMe: (UUID) -> Unit,
+    onLogInteraction: () -> Unit,
+    onViewInteraction: (UUID) -> Unit,
+    onViewActivity: (UUID) -> Unit,
+    onOpenPerson: (UUID) -> Unit,
     viewModel: MeViewModel = viewModel(),
 ) {
     val me by viewModel.me.collectAsStateWithLifecycle()
@@ -76,35 +90,55 @@ fun MeScreen(
     val lapsingContacts by viewModel.lapsingContacts.collectAsStateWithLifecycle()
     val allOpenTasks by viewModel.allOpenTasks.collectAsStateWithLifecycle()
 
-    var selectedTab by remember { mutableIntStateOf(0) }
+    val pagerState = rememberPagerState { ME_TABS.size }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Me") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Me") },
+                actions = {
+                    me?.let { person ->
+                        IconButton(onClick = { onEditMe(person.id) }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit profile")
+                        }
+                    }
+                },
+            )
+        },
         floatingActionButton = {
-            if (me != null && selectedTab == 3) {
-                FloatingActionButton(onClick = onAddTask) {
-                    Icon(Icons.Default.Add, contentDescription = "Add task")
+            if (me != null) {
+                when (pagerState.currentPage) {
+                    1 -> FloatingActionButton(onClick = onLogInteraction) {
+                        Icon(Icons.Default.Add, contentDescription = "Log interaction")
+                    }
+                    3 -> FloatingActionButton(onClick = onAddTask) {
+                        Icon(Icons.Default.Add, contentDescription = "Add task")
+                    }
                 }
             }
         },
     ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
+        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             if (me == null) {
                 EmptyMeCard()
             } else {
                 val p = me!!
                 MeHeader(me = p, lifeEvents = meLifeEvents)
-                ScrollableTabRow(selectedTabIndex = selectedTab, edgePadding = 0.dp) {
+                ScrollableTabRow(selectedTabIndex = pagerState.currentPage, edgePadding = 0.dp) {
                     ME_TABS.forEachIndexed { i, title ->
                         Tab(
-                            selected = selectedTab == i,
-                            onClick  = { selectedTab = i },
+                            selected = pagerState.currentPage == i,
+                            onClick  = { coroutineScope.launch { pagerState.animateScrollToPage(i) } },
                             text     = { Text(title) },
                         )
                     }
                 }
-                Box(modifier = Modifier.fillMaxSize()) {
-                    when (selectedTab) {
+                HorizontalPager(
+                    state    = pagerState,
+                    modifier = Modifier.weight(1f),
+                ) { page ->
+                    when (page) {
                         0 -> OverviewTab(
                             totalContacts         = totalContacts,
                             interactionsThisMonth = interactionsThisMonth,
@@ -113,8 +147,17 @@ fun MeScreen(
                             summaryGeneratedAt    = viewModel.summaryGeneratedAt,
                             onSummarize           = viewModel::summarizeMe,
                         )
-                        1 -> ActivityTab(feed = feed, personsById = personsById)
-                        2 -> RelationshipsTab(ranked = rankedContacts, lapsing = lapsingContacts)
+                        1 -> ActivityTab(
+                            feed              = feed,
+                            personsById       = personsById,
+                            onViewInteraction = onViewInteraction,
+                            onViewActivity    = onViewActivity,
+                        )
+                        2 -> RelationshipsTab(
+                            ranked       = rankedContacts,
+                            lapsing      = lapsingContacts,
+                            onOpenPerson = onOpenPerson,
+                        )
                         3 -> TasksTab(
                             items        = allOpenTasks,
                             onToggleDone = { viewModel.toggleTaskDone(it.task) },
@@ -141,6 +184,7 @@ private fun EmptyMeCard() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MeHeader(me: Person, lifeEvents: List<LifeEvent>) {
     Row(
@@ -278,7 +322,12 @@ private fun MeAiSummaryCard(
 }
 
 @Composable
-private fun ActivityTab(feed: List<FeedItem>, personsById: Map<UUID, Person>) {
+private fun ActivityTab(
+    feed: List<FeedItem>,
+    personsById: Map<UUID, Person>,
+    onViewInteraction: (UUID) -> Unit,
+    onViewActivity: (UUID) -> Unit,
+) {
     if (feed.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No activity yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -296,6 +345,7 @@ private fun ActivityTab(feed: List<FeedItem>, personsById: Map<UUID, Person>) {
                 is FeedItem.InteractionItem -> {
                     val i = item.interaction
                     ListItem(
+                        modifier          = Modifier.clickable { onViewInteraction(i.id) },
                         headlineContent   = { Text(i.type.toDisplayLabel()) },
                         supportingContent = {
                             i.note?.let { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) }
@@ -306,6 +356,7 @@ private fun ActivityTab(feed: List<FeedItem>, personsById: Map<UUID, Person>) {
                 is FeedItem.ActivityItem -> {
                     val a = item.activity
                     ListItem(
+                        modifier          = Modifier.clickable { onViewActivity(a.id) },
                         headlineContent   = { Text(a.title) },
                         supportingContent = {
                             a.body?.let { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) }
@@ -319,73 +370,151 @@ private fun ActivityTab(feed: List<FeedItem>, personsById: Map<UUID, Person>) {
 }
 
 @Composable
-private fun RelationshipsTab(ranked: List<Person>, lapsing: List<Person>) {
+private fun CollapsibleSectionHeader(title: String, expanded: Boolean, onToggle: () -> Unit) {
+    Row(
+        modifier              = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+        Icon(
+            imageVector        = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+            contentDescription = if (expanded) "Collapse" else "Expand",
+            tint               = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+@Composable
+private fun PersonMiniCard(
+    person: Person,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Card(modifier = modifier.clickable(onClick = onClick)) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                PersonAvatar(person, size = 32.dp)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    listOfNotNull(person.firstName, person.lastName).joinToString(" "),
+                    style    = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            content()
+        }
+    }
+}
+
+@Composable
+private fun RelationshipsTab(
+    ranked: List<Person>,
+    lapsing: List<Person>,
+    onOpenPerson: (UUID) -> Unit,
+) {
+    var closestExpanded by remember { mutableStateOf(true) }
+    var lapsingExpanded by remember { mutableStateOf(true) }
+
     LazyColumn(modifier = Modifier.fillMaxSize()) {
-        item {
-            Text(
-                "Closest",
-                style    = MaterialTheme.typography.labelMedium,
-                color    = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        item(key = "closest_header") {
+            CollapsibleSectionHeader(
+                title    = "Closest (${ranked.size})",
+                expanded = closestExpanded,
+                onToggle = { closestExpanded = !closestExpanded },
             )
         }
-        if (ranked.isEmpty()) {
-            item {
-                Text(
-                    "No contacts yet",
-                    style    = MaterialTheme.typography.bodySmall,
-                    color    = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                )
-            }
-        } else {
-            items(ranked, key = { "r:${it.id}" }) { person ->
-                ListItem(
-                    headlineContent = {
-                        Text(listOfNotNull(person.firstName, person.lastName).joinToString(" "))
-                    },
-                    trailingContent = person.closenessScore?.let { score ->
-                        {
-                            LinearProgressIndicator(
-                                progress = { score.coerceIn(0f, 1f) },
-                                modifier = Modifier.width(64.dp),
-                            )
+        if (closestExpanded) {
+            if (ranked.isEmpty()) {
+                item(key = "closest_empty") {
+                    Text(
+                        "No contacts yet",
+                        style    = MaterialTheme.typography.bodySmall,
+                        color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    )
+                }
+            } else {
+                items(ranked.chunked(2), key = { "r:${it.first().id}" }) { pair ->
+                    Row(
+                        modifier              = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        pair.forEach { person ->
+                            PersonMiniCard(
+                                modifier = Modifier.weight(1f),
+                                person   = person,
+                                onClick  = { onOpenPerson(person.id) },
+                            ) {
+                                person.closenessScore?.let { score ->
+                                    LinearProgressIndicator(
+                                        progress = { score.coerceIn(0f, 1f) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                }
+                            }
                         }
-                    },
-                )
+                        if (pair.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                }
             }
         }
-        item {
+
+        item(key = "lapsing_divider") {
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
-            Text(
-                "Lapsing",
-                style    = MaterialTheme.typography.labelMedium,
-                color    = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        }
+        item(key = "lapsing_header") {
+            CollapsibleSectionHeader(
+                title    = "Lapsing (${lapsing.size})",
+                expanded = lapsingExpanded,
+                onToggle = { lapsingExpanded = !lapsingExpanded },
             )
         }
-        if (lapsing.isEmpty()) {
-            item {
-                Text(
-                    "Everyone's in touch",
-                    style    = MaterialTheme.typography.bodySmall,
-                    color    = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                )
-            }
-        } else {
-            items(lapsing, key = { "l:${it.id}" }) { person ->
-                ListItem(
-                    headlineContent = {
-                        Text(listOfNotNull(person.firstName, person.lastName).joinToString(" "))
-                    },
-                    supportingContent = {
-                        val label = person.lastContactedAt
-                            ?.let { "Last contact ${it.toRelativeDisplay()}" }
-                            ?: "Never contacted"
-                        Text(label)
-                    },
-                )
+        if (lapsingExpanded) {
+            if (lapsing.isEmpty()) {
+                item(key = "lapsing_empty") {
+                    Text(
+                        "Everyone's in touch",
+                        style    = MaterialTheme.typography.bodySmall,
+                        color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    )
+                }
+            } else {
+                items(lapsing.chunked(2), key = { "l:${it.first().id}" }) { pair ->
+                    Row(
+                        modifier              = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        pair.forEach { person ->
+                            PersonMiniCard(
+                                modifier = Modifier.weight(1f),
+                                person   = person,
+                                onClick  = { onOpenPerson(person.id) },
+                            ) {
+                                val label = person.lastContactedAt
+                                    ?.let { "Last contact ${it.toRelativeDisplay()}" }
+                                    ?: "Never contacted"
+                                Text(
+                                    label,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        if (pair.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                }
             }
         }
     }
