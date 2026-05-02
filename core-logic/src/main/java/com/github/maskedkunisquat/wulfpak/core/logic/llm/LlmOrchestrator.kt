@@ -179,6 +179,7 @@ class LlmOrchestrator(
         val recentInteractions = interactionDao.countSince(thirtyDaysAgo)
         val pendingTaskCount = taskDao.getPending().first().size
         val top5 = contacts
+            .filter { it.closenessScore != null }
             .sortedWith(compareByDescending<Person> { it.closenessScore }.thenBy { it.firstName })
             .take(5)
         val facts = buildString {

@@ -75,6 +75,7 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun save(onDone: () -> Unit) {
         viewModelScope.launch {
+            val effectiveIds = selectedIds.filterNot { it == UUID(0L, 0L) }.toSet()
             val durationSec = durationMins.trim().toIntOrNull()?.times(60)
             val id = existingId
             val interactionId: UUID
@@ -88,8 +89,8 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
                 interactionId = interaction.id
                 db.withTransaction {
                     db.interactionDao().insert(interaction)
-                    selectedIds.forEach { sid -> db.personDao().onInteractionAdded(sid, timestampMs) }
-                    selectedIds.forEach { sid ->
+                    effectiveIds.forEach { sid -> db.personDao().onInteractionAdded(sid, timestampMs) }
+                    effectiveIds.forEach { sid ->
                         db.interactionDao().insertParticipant(InteractionParticipant(interactionId, sid))
                     }
                 }
@@ -109,18 +110,18 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
                     oldIds.forEach { pid ->
                         db.interactionDao().deleteParticipant(InteractionParticipant(id, pid))
                     }
-                    val removed = oldIds - selectedIds
-                    val added   = selectedIds - oldIds
+                    val removed = oldIds - effectiveIds
+                    val added   = effectiveIds - oldIds
                     removedIds = removed
                     removed.forEach { pid -> db.personDao().onInteractionDeleted(pid) }
                     added.forEach   { pid -> db.personDao().onInteractionAdded(pid, timestampMs) }
-                    selectedIds.forEach { sid ->
+                    effectiveIds.forEach { sid ->
                         db.interactionDao().insertParticipant(InteractionParticipant(id, sid))
                     }
                 }
                 removedIds.forEach { rid -> recomputeScore(rid) }
             }
-            selectedIds.forEach { sid -> recomputeScore(sid) }
+            effectiveIds.forEach { sid -> recomputeScore(sid) }
             EmbeddingWorker.enqueue(WorkManager.getInstance(getApplication()))
             onDone()
         }
