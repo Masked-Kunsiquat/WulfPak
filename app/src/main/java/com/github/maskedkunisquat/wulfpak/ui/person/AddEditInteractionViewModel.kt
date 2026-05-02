@@ -85,11 +85,13 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
                     durationSeconds = durationSec,
                     note            = note.trim().ifEmpty { null },
                 )
-                db.interactionDao().insert(interaction)
                 interactionId = interaction.id
-                selectedIds.forEach { sid -> db.personDao().onInteractionAdded(sid, timestampMs) }
-                selectedIds.forEach { sid ->
-                    db.interactionDao().insertParticipant(InteractionParticipant(interactionId, sid))
+                db.withTransaction {
+                    db.interactionDao().insert(interaction)
+                    selectedIds.forEach { sid -> db.personDao().onInteractionAdded(sid, timestampMs) }
+                    selectedIds.forEach { sid ->
+                        db.interactionDao().insertParticipant(InteractionParticipant(interactionId, sid))
+                    }
                 }
             } else {
                 interactionId = id
