@@ -1,6 +1,7 @@
 package com.github.maskedkunisquat.wulfpak.core.logic.llm
 
 import com.github.maskedkunisquat.wulfpak.core.data.dao.ActivityDao
+import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
 import com.github.maskedkunisquat.wulfpak.core.data.dao.GiftDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.InteractionDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.LifeEventDao
@@ -165,5 +166,40 @@ class LlmOrchestrator(
         val prompt = "I haven't contacted ${person.firstName} (my ${person.relationLabel.replace('_', ' ')}) " +
             "in $daysSinceContact days. Suggest a brief, warm message to reconnect."
         emitAll(provider.process(prompt, Prompts.FOLLOW_UP_SYSTEM))
+    }
+
+    fun summarizeMe(): Flow<LlmResult> = flow {
+        val me = personDao.getMe() ?: run {
+            emit(LlmResult.Error(IllegalArgumentException("No 'me' contact set")))
+            return@flow
+        }
+        val allPersons = personDao.getAllOnce()
+        val contacts = allPersons.filter { !it.isMe }
+        val thirtyDaysAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
+        val recentInteractions = interactionDao.getAllOnce().count { it.timestamp >= thirtyDaysAgo }
+        val pendingTaskCount = taskDao.getPending().first().size
+        val top5 = contacts
+            .sortedWith(compareByDescending<Person> { it.closenessScore }.thenBy { it.firstName })
+            .take(5)
+        val facts = buildString {
+            val name = buildString {
+                append(me.firstName)
+                me.lastName?.let { append(" $it") }
+            }
+            appendLine("FACTS about $name:")
+            appendLine("- ${ contacts.size } total contacts")
+            appendLine("- $recentInteractions interactions in the last 30 days")
+            appendLine("- $pendingTaskCount open tasks")
+            if (top5.isNotEmpty()) {
+                append("- Closest contacts: ")
+                appendLine(top5.joinToString(", ") { p ->
+                    buildString {
+                        append(p.firstName)
+                        p.lastName?.let { append(" $it") }
+                    }
+                })
+            }
+        }
+        emitAll(provider.process(facts, Prompts.SUMMARIZE_SYSTEM))
     }
 }
