@@ -176,7 +176,7 @@ class LlmOrchestrator(
         val allPersons = personDao.getAllOnce()
         val contacts = allPersons.filter { !it.isMe }
         val thirtyDaysAgo = System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000
-        val recentInteractions = interactionDao.getAllOnce().count { it.timestamp >= thirtyDaysAgo }
+        val recentInteractions = interactionDao.countSince(thirtyDaysAgo)
         val pendingTaskCount = taskDao.getPending().first().size
         val top5 = contacts
             .sortedWith(compareByDescending<Person> { it.closenessScore }.thenBy { it.firstName })

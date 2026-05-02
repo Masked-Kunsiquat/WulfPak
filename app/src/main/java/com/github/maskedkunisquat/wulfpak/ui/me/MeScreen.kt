@@ -85,7 +85,6 @@ fun MeScreen(
     val totalContacts by viewModel.totalContacts.collectAsStateWithLifecycle()
     val interactionsThisMonth by viewModel.interactionsThisMonth.collectAsStateWithLifecycle()
     val feed by viewModel.feed.collectAsStateWithLifecycle()
-    val personsById by viewModel.personsById.collectAsStateWithLifecycle()
     val rankedContacts by viewModel.rankedContacts.collectAsStateWithLifecycle()
     val lapsingContacts by viewModel.lapsingContacts.collectAsStateWithLifecycle()
     val allOpenTasks by viewModel.allOpenTasks.collectAsStateWithLifecycle()
@@ -149,7 +148,6 @@ fun MeScreen(
                         )
                         1 -> ActivityTab(
                             feed              = feed,
-                            personsById       = personsById,
                             onViewInteraction = onViewInteraction,
                             onViewActivity    = onViewActivity,
                         )
@@ -293,7 +291,7 @@ private fun MeAiSummaryCard(
                     }
                 }
                 if (!isSummarizing) {
-                    IconButton(onClick = onSummarize, modifier = Modifier.size(28.dp)) {
+                    IconButton(onClick = onSummarize) {
                         Icon(Icons.Default.Refresh, contentDescription = "Regenerate",
                             modifier = Modifier.size(18.dp))
                     }
@@ -324,7 +322,6 @@ private fun MeAiSummaryCard(
 @Composable
 private fun ActivityTab(
     feed: List<FeedItem>,
-    personsById: Map<UUID, Person>,
     onViewInteraction: (UUID) -> Unit,
     onViewActivity: (UUID) -> Unit,
 ) {
