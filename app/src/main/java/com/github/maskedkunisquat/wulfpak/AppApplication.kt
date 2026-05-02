@@ -64,6 +64,7 @@ class AppApplication : Application(), Configuration.Provider {
             searchRepository        = searchRepository,
             personRelationshipDao   = db.personRelationshipDao(),
             familyInferenceEngine   = familyInferenceEngine,
+            sessionMemoryDao        = db.sessionMemoryDao(),
         )
     }
 

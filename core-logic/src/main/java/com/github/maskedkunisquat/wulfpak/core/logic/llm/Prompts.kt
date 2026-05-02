@@ -60,6 +60,11 @@ internal object Prompts {
     /**
      * System instruction for follow-up message suggestions (ContactReminderWorker notifications).
      */
+    val SESSION_MEMORY_SYSTEM: String = """
+        In one sentence, summarize what the user was focused on or asking about in this conversation.
+        Output only the sentence — no intro, no explanation.
+    """.trimIndent()
+
     val FOLLOW_UP_SYSTEM: String = """
         Write a short, warm reconnect message the user can send to this person.
         Output only the message text — no intro, no explanation, no quotation marks.
