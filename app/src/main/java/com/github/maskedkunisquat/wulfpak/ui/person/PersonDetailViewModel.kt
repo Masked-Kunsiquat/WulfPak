@@ -218,6 +218,14 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { db.contactDetailDao().delete(detail) }
     }
 
+    fun toggleMe() {
+        val id = _personId.value ?: return
+        viewModelScope.launch {
+            db.personDao().clearAllMe()
+            if (person.value?.isMe != true) db.personDao().setMe(id)
+        }
+    }
+
     fun deletePerson(onDone: () -> Unit) {
         viewModelScope.launch {
             person.value?.let { db.personDao().delete(it) }

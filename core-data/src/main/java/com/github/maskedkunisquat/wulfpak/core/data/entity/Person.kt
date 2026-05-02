@@ -38,4 +38,5 @@ data class Person(
     val cachedSummary: String? = null,
     val summaryGeneratedAt: Long? = null,
     val closenessScore: Float? = null,
+    val isMe: Boolean = false,
 )
