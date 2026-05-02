@@ -45,16 +45,16 @@ fun observeMe(): Flow<Person?>
 
 **New file:** `app/src/main/java/.../ui/me/MeScreen.kt`
 
-- [ ] Composable signature: `fun MeScreen(onAddTask: () -> Unit, onEditTask: (Task) -> Unit, viewModel: MeViewModel = viewModel())`
-- [ ] `Scaffold` with `TopAppBar("Me")` and FAB gated to `selectedTab == 3`
-- [ ] `EmptyMeCard` private composable — centered Card: "Tap ··· on a contact and choose 'This is me'"
-- [ ] Show `EmptyMeCard` when `me == null`; rest of screen only when `me != null`
-- [ ] `MeHeader` private composable — copy top-section Row from `PersonDetailScreen` lines 247–276, strip `relationLabel`; show avatar (56dp), name, age from birthday life event via `calculateAge()`, nickname, jobTitle/company
-- [ ] `ScrollableTabRow` — tabs: Overview | Activity | Relationships | Tasks
-- [ ] **OverviewTab** — `LazyColumn` with stats Card ("X contacts · Y interactions this month") + `MeAiSummaryCard` (replicate private AI summary card from `PersonDetailScreen` lines 364–419)
-- [ ] **ActivityTab** — `LazyColumn` of `FeedItem` rows; `InteractionItem` → resolve person name from `personsById[interaction.personId]`; `ActivityItem` → title + timestamp only (no personId)
-- [ ] **RelationshipsTab** — two sections: "Closest" ranked list with `LinearProgressIndicator(closenessScore)` trailing; "Lapsing" list with time-since-contact supporting text
-- [ ] **TasksTab** — mirror private `TasksTab` in `PersonDetailScreen` lines 893–931; Checkbox leading, delete IconButton trailing, person name + due date supporting
+- [x] Composable signature: `fun MeScreen(onAddTask: () -> Unit, onEditTask: (Task) -> Unit, viewModel: MeViewModel = viewModel())`
+- [x] `Scaffold` with `TopAppBar("Me")` and FAB gated to `selectedTab == 3`
+- [x] `EmptyMeCard` private composable — centered Card: "Tap ··· on a contact and choose 'This is me'"
+- [x] Show `EmptyMeCard` when `me == null`; rest of screen only when `me != null`
+- [x] `MeHeader` private composable — copy top-section Row from `PersonDetailScreen` lines 247–276, strip `relationLabel`; show avatar (56dp), name, age from birthday life event via `calculateAge()`, nickname, jobTitle/company
+- [x] `ScrollableTabRow` — tabs: Overview | Activity | Relationships | Tasks
+- [x] **OverviewTab** — `LazyColumn` with stats Card ("X contacts · Y interactions this month") + `MeAiSummaryCard` (replicate private AI summary card from `PersonDetailScreen` lines 364–419)
+- [x] **ActivityTab** — `LazyColumn` of `FeedItem` rows; `InteractionItem` → type + note (Interaction has no personId); `ActivityItem` → title + timestamp only
+- [x] **RelationshipsTab** — two sections: "Closest" ranked list with `LinearProgressIndicator(closenessScore)` trailing; "Lapsing" list with time-since-contact supporting text
+- [x] **TasksTab** — mirror private `TasksTab` in `PersonDetailScreen` lines 893–931; Checkbox leading, delete IconButton trailing, person name + due date supporting
 
 ---
 
@@ -62,12 +62,12 @@ fun observeMe(): Flow<Person?>
 
 **File:** `app/src/main/java/.../navigation/AppNavigation.kt`
 
-- [ ] Add `const val ME = "me"` to `Routes` object (after `TASKS`)
-- [ ] Add `import androidx.compose.material.icons.filled.Person` (not yet in this file)
-- [ ] Replace `TopLevelDest(Routes.TASKS, Icons.Default.Assignment, "Tasks")` in `TOP_LEVEL_DESTS` (line 120) with `TopLevelDest(Routes.ME, Icons.Default.Person, "Me")`
-- [ ] Replace `composable(Routes.TASKS)` NavHost block (lines 337–349) with `composable(Routes.ME) { MeScreen(onAddTask = ..., onEditTask = ...) }`
-- [ ] Add `import com.github.maskedkunisquat.wulfpak.ui.me.MeScreen`
-- [ ] Leave `const val TASKS` and `Routes.addEditTask()` in place — still used by add/edit task navigation
+- [x] Add `const val ME = "me"` to `Routes` object (after `TASKS`)
+- [x] Add `import androidx.compose.material.icons.filled.Person` (not yet in this file)
+- [x] Replace `TopLevelDest(Routes.TASKS, Icons.Default.Assignment, "Tasks")` in `TOP_LEVEL_DESTS` with `TopLevelDest(Routes.ME, Icons.Default.Person, "Me")`
+- [x] Add `composable(Routes.ME) { MeScreen(onAddTask = ..., onEditTask = ...) }` (Tasks composable left in place)
+- [x] Add `import com.github.maskedkunisquat.wulfpak.ui.me.MeScreen`
+- [x] Leave `const val TASKS` and `Routes.addEditTask()` in place — still used by add/edit task navigation
 
 ---
 
