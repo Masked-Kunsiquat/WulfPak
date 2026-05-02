@@ -69,7 +69,7 @@ class PeopleListViewModel(app: Application) : AndroidViewModel(app) {
     fun bulkDelete() {
         val ids = _selectedIds.value
         viewModelScope.launch {
-            ids.forEach { id -> personDao.getById(id)?.let { personDao.delete(it) } }
+            ids.forEach { id -> personDao.getById(id)?.let { if (!it.isMe) personDao.delete(it) } }
             _selectedIds.value = emptySet()
         }
     }
