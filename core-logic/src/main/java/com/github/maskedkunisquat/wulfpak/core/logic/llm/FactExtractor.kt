@@ -91,7 +91,7 @@ internal object FactExtractor {
         val deathDate = lifeEvents.firstOrNull { it.eventType == LifeEventType.DEATH }?.date
         if (birthday != null) {
             val daysUntil  = daysUntilNextOccurrence(birthday.date)
-            val currentAge = if (birthYearIsKnown(birthday.date)) birthday.date.calculateAge() else null
+            val currentAge = if (birthYearIsKnown(birthday.date)) birthday.date.calculateAge(asOfMs = deathDate ?: System.currentTimeMillis()) else null
             sentences += when {
                 daysUntil == 0  -> "$firstName's birthday is today${currentAge?.let { " — turning $it" } ?: ""}!"
                 daysUntil <= 30 -> "$firstName's birthday is coming up in $daysUntil days${currentAge?.let { " — turning ${it + 1}" } ?: ""}."

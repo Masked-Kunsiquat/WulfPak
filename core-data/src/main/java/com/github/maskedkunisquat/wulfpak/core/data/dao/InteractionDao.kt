@@ -76,6 +76,9 @@ interface InteractionDao {
     @Query("SELECT personId FROM interaction_participants WHERE interactionId = :interactionId")
     suspend fun getParticipantIds(interactionId: UUID): List<UUID>
 
+    @Query("SELECT * FROM interaction_participants WHERE interactionId IN (:ids)")
+    suspend fun getParticipantsForIds(ids: List<UUID>): List<InteractionParticipant>
+
     @Query("SELECT * FROM interaction_participants WHERE personId = :personId")
     suspend fun getParticipantsByPerson(personId: UUID): List<InteractionParticipant>
 

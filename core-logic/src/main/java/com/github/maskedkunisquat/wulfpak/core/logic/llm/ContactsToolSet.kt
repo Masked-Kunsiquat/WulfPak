@@ -137,37 +137,43 @@ internal class ContactsToolSet(
             val personById = persons.associateBy { it.id }
             data class Entry(val timestamp: Long, val line: String)
             val entries = mutableListOf<Entry>()
-            interactionDao.getAllOnce()
-                .filter { it.timestamp >= cutoff }
-                .forEach { i ->
-                    val participantIds = interactionDao.getParticipantIds(i.id)
-                    val note = i.note?.let { " — $it" } ?: ""
-                    participantIds.forEach { pid ->
-                        val p = personById[pid] ?: return@forEach
-                        val contactName = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
-                        val others = participantIds
-                            .filter { it != pid }
-                            .mapNotNull { personById[it] }
-                            .map { op -> "${op.firstName}${op.lastName?.let { " $it" } ?: ""}" }
-                        val withStr = if (others.isNotEmpty()) " [with: ${others.joinToString(", ")}]" else ""
-                        entries += Entry(i.timestamp, "${fmt.format(Date(i.timestamp))} — $contactName: ${i.type.replace('_', ' ')}$note$withStr")
-                    }
+            val recentInteractions = interactionDao.getAllOnce().filter { it.timestamp >= cutoff }
+            val recentActivities   = activityDao.getAllOnce().filter { it.timestamp >= cutoff }
+            val interactionParticipantsById = if (recentInteractions.isNotEmpty())
+                interactionDao.getParticipantsForIds(recentInteractions.map { it.id })
+                    .groupBy({ it.interactionId }, { it.personId })
+            else emptyMap()
+            val activityParticipantsById = if (recentActivities.isNotEmpty())
+                activityDao.getParticipantsForIds(recentActivities.map { it.id })
+                    .groupBy({ it.activityId }, { it.personId })
+            else emptyMap()
+            recentInteractions.forEach { i ->
+                val participantIds = interactionParticipantsById[i.id] ?: emptyList()
+                val note = i.note?.let { " — $it" } ?: ""
+                participantIds.forEach { pid ->
+                    val p = personById[pid] ?: return@forEach
+                    val contactName = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
+                    val others = participantIds
+                        .filter { it != pid }
+                        .mapNotNull { personById[it] }
+                        .map { op -> "${op.firstName}${op.lastName?.let { " $it" } ?: ""}" }
+                    val withStr = if (others.isNotEmpty()) " [with: ${others.joinToString(", ")}]" else ""
+                    entries += Entry(i.timestamp, "${fmt.format(Date(i.timestamp))} — $contactName: ${i.type.replace('_', ' ')}$note$withStr")
                 }
-            activityDao.getAllOnce()
-                .filter { it.timestamp >= cutoff }
-                .forEach { a ->
-                    val participantIds = activityDao.getParticipantIds(a.id)
-                    participantIds.forEach { pid ->
-                        val p = personById[pid] ?: return@forEach
-                        val contactName = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
-                        val others = participantIds
-                            .filter { it != pid }
-                            .mapNotNull { personById[it] }
-                            .map { op -> "${op.firstName}${op.lastName?.let { " $it" } ?: ""}" }
-                        val withStr = if (others.isNotEmpty()) " [with: ${others.joinToString(", ")}]" else ""
-                        entries += Entry(a.timestamp, "${fmt.format(Date(a.timestamp))} — $contactName: activity \"${a.title}\"$withStr")
-                    }
+            }
+            recentActivities.forEach { a ->
+                val participantIds = activityParticipantsById[a.id] ?: emptyList()
+                participantIds.forEach { pid ->
+                    val p = personById[pid] ?: return@forEach
+                    val contactName = "${p.firstName}${p.lastName?.let { " $it" } ?: ""}"
+                    val others = participantIds
+                        .filter { it != pid }
+                        .mapNotNull { personById[it] }
+                        .map { op -> "${op.firstName}${op.lastName?.let { " $it" } ?: ""}" }
+                    val withStr = if (others.isNotEmpty()) " [with: ${others.joinToString(", ")}]" else ""
+                    entries += Entry(a.timestamp, "${fmt.format(Date(a.timestamp))} — $contactName: activity \"${a.title}\"$withStr")
                 }
+            }
             if (entries.isEmpty()) return@runBlocking "No interactions or activities logged in the last 30 days."
             entries.sortedByDescending { it.timestamp }.joinToString("\n") { it.line }
         } else {
@@ -177,12 +183,20 @@ internal class ContactsToolSet(
             if (interactions.isEmpty() && activities.isEmpty())
                 return@runBlocking "No interaction history found for ${person.firstName}."
             val persons = personDao.getAllOnce()
+            val interactionParticipantsById = if (interactions.isNotEmpty())
+                interactionDao.getParticipantsForIds(interactions.map { it.id })
+                    .groupBy({ it.interactionId }, { it.personId })
+            else emptyMap()
+            val activityParticipantsById = if (activities.isNotEmpty())
+                activityDao.getParticipantsForIds(activities.map { it.id })
+                    .groupBy({ it.activityId }, { it.personId })
+            else emptyMap()
             buildString {
                 if (interactions.isNotEmpty()) {
                     appendLine("Interactions with ${person.firstName}:")
                     interactions.forEach { i ->
                         val note = i.note?.let { " — $it" } ?: ""
-                        val others = interactionDao.getParticipantIds(i.id)
+                        val others = (interactionParticipantsById[i.id] ?: emptyList())
                             .filter { it != person.id }
                             .mapNotNull { pid -> persons.firstOrNull { it.id == pid } }
                             .map { p -> "${p.firstName}${p.lastName?.let { " $it" } ?: ""}" }
@@ -194,7 +208,7 @@ internal class ContactsToolSet(
                     appendLine("Activities with ${person.firstName}:")
                     activities.forEach { a ->
                         val body = a.body?.let { " — $it" } ?: ""
-                        val others = activityDao.getParticipantIds(a.id)
+                        val others = (activityParticipantsById[a.id] ?: emptyList())
                             .filter { it != person.id }
                             .mapNotNull { pid -> persons.firstOrNull { it.id == pid } }
                             .map { p -> "${p.firstName}${p.lastName?.let { " $it" } ?: ""}" }
