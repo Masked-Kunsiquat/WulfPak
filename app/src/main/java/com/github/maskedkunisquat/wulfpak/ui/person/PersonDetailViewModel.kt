@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -136,7 +137,7 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
     fun load(personId: UUID) {
         _personId.value = personId
         viewModelScope.launch {
-            val p = person.filterNotNull().first()
+            val p = withTimeoutOrNull(3_000L) { person.filterNotNull().first() } ?: return@launch
             if (summarizeText.isEmpty()) {
                 summarizeText = p.cachedSummary ?: ""
                 summaryGeneratedAt = p.summaryGeneratedAt
@@ -225,8 +226,15 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     companion object {
-        private val FAMILY_REVERSE: Map<String, String> = FamilyRelType.entries
-            .flatMap { t -> listOf(t.displayLabel to t.reverseLabel, t.reverseLabel to t.displayLabel) }
-            .toMap()
+        private val FAMILY_REVERSE: Map<String, String> = buildMap {
+            FamilyRelType.entries.forEach { t ->
+                require(!contains(t.displayLabel)) { "FAMILY_REVERSE key collision on \"${t.displayLabel}\"" }
+                put(t.displayLabel, t.reverseLabel)
+                if (t.reverseLabel != t.displayLabel) {
+                    require(!contains(t.reverseLabel)) { "FAMILY_REVERSE key collision on \"${t.reverseLabel}\"" }
+                    put(t.reverseLabel, t.displayLabel)
+                }
+            }
+        }
     }
 }

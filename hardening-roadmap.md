@@ -20,7 +20,7 @@ Edit path now captures old participant IDs, computes the removed/added delta, an
 
 ---
 
-## P1 — Correctness & Stability
+## P1 — Correctness & Stability ✓ DONE
 
 ### 3. ~~`vm.load()` called on every recomposition~~ FIXED 2026-05-01
 **Files:** `app/…/navigation/AppNavigation.kt` ~lines 177, 305
@@ -36,7 +36,7 @@ Eliminated the double-lock in `processInternal` and `chatSendInternal`: removed 
 
 ---
 
-## P2 — Privacy / Security
+## P2 — Privacy / Security ✓ DONE
 
 ### 5. ~~PII logged at `Log.i` in production~~ FIXED 2026-05-01
 **File:** `core-logic/…/llm/ContactsToolSet.kt`
@@ -45,7 +45,7 @@ All 18 `Log.i(TAG, ...)` calls converted to `if (BuildConfig.DEBUG) Log.d(TAG, .
 
 ---
 
-## P3 — Performance
+## P3 — Performance ✓ DONE
 
 ### 6. ~~N×M DAO round-trips per LLM tool call~~ FIXED 2026-05-01
 **Files:** `core-logic/…/llm/ContactsToolSet.kt`, `core-data/…/dao/{Interaction,Activity,Note,Gift}Dao.kt`
@@ -61,7 +61,7 @@ Added `EmbeddingRow(id, embedding)` projection type. Each DAO now has `getEmbedd
 
 ---
 
-## P4 — Code Health
+## P4 — Code Health ✓ DONE
 
 ### 8. ~~`calculateAge` duplicated in three places~~ FIXED 2026-05-01
 **Files:**
@@ -105,7 +105,7 @@ Replaced `.flatMap { … }.toMap()` with `buildMap { … }`. Symmetric entries (
 | 5 | P2 | `ContactsToolSet.kt` | Privacy |
 | 6 | P3 | `ContactsToolSet.kt` | Performance |
 | 7 | P3 | `SearchRepository.kt` | Performance |
-| 8 | P4 ✓ | `DateExtensions.kt` (canonical) | Duplication |
-| 9 | P4 ✓ | `FactExtractor.kt` | Dead code |
-| 10 | P4 ✓ | `CLAUDE.md` | Docs |
-| 11 | P4 ✓ | `PersonDetailScreen.kt` | Brittleness |
+| 8 | P4 | `DateExtensions.kt` (canonical) | Duplication |
+| 9 | P4 | `FactExtractor.kt` | Dead code |
+| 10 | P4 | `CLAUDE.md` | Docs |
+| 11 | P4 | `PersonDetailScreen.kt` | Brittleness |
