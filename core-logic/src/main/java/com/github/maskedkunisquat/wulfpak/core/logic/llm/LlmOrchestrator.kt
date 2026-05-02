@@ -57,15 +57,32 @@ class LlmOrchestrator(
     fun query(naturalLanguage: String): Flow<LlmResult> = flow {
         val dateFmt = SimpleDateFormat("MMM d", Locale.ENGLISH)
         val persons = personDao.getAllOnce()
+        val me = personDao.getMe()
         val hits = try { searchRepository.search(naturalLanguage, limit = 5) } catch (_: Exception) { emptyList() }
 
+        val meProfile = me?.let { p ->
+            buildString {
+                appendLine("YOUR PROFILE:")
+                val name = buildString {
+                    append(p.firstName)
+                    p.lastName?.let { append(" $it") }
+                }
+                append("- Name: $name")
+                p.nickname?.let { append(" (\"$it\")") }
+                appendLine()
+                val job = listOfNotNull(p.jobTitle, p.company).joinToString(" at ")
+                if (job.isNotBlank()) appendLine("- Works as $job")
+            }
+        }
+
+        val contacts = persons.filter { !it.isMe }
         val roster = buildString {
-            if (persons.isEmpty()) {
+            if (contacts.isEmpty()) {
                 appendLine("CONTACTS: (none)")
             } else {
                 val cap = 150
-                val shown = persons.take(cap)
-                appendLine("CONTACTS: (${persons.size} total)")
+                val shown = contacts.take(cap)
+                appendLine("CONTACTS: (${contacts.size} total)")
                 shown.forEach { p ->
                     val name = buildString {
                         append(p.firstName)
@@ -75,8 +92,8 @@ class LlmOrchestrator(
                     p.nickname?.let { append(" (\"$it\")") }
                     appendLine()
                 }
-                if (persons.size > cap) {
-                    appendLine("(${persons.size - cap} more — use findContactsByRelation or getLapsedContacts to browse)")
+                if (contacts.size > cap) {
+                    appendLine("(${contacts.size - cap} more — use findContactsByRelation or getLapsedContacts to browse)")
                 }
             }
         }
@@ -113,7 +130,12 @@ class LlmOrchestrator(
         contactsToolSet.eventSink = { pendingBuffer.add(it) }
         contactsToolSet.writeSink  = { pendingBuffer.add(it) }
         try {
-            provider.chatSend(userMsg, Prompts.QUERY_SYSTEM + "\n\n" + roster, listOf(contactsToolSet))
+            val systemPrompt = buildString {
+                append(Prompts.QUERY_SYSTEM)
+                if (meProfile != null) { appendLine(); appendLine(); append(meProfile.trimEnd()) }
+                appendLine(); appendLine(); append(roster.trimEnd())
+            }
+            provider.chatSend(userMsg, systemPrompt, listOf(contactsToolSet))
                 .collect { result ->
                     if (pendingBuffer.isNotEmpty()) {
                         pendingBuffer.forEach { emit(it) }

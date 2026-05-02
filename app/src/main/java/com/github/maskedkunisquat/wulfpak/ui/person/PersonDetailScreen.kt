@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
@@ -216,6 +217,12 @@ fun PersonDetailScreen(
                             Icon(Icons.Default.MoreVert, contentDescription = "More")
                         }
                         DropdownMenu(expanded = showOverflow, onDismissRequest = { showOverflow = false }) {
+                            val isMe = person?.isMe == true
+                            DropdownMenuItem(
+                                text = { Text(if (isMe) "Not me" else "This is me") },
+                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                                onClick = { showOverflow = false; viewModel.toggleMe() },
+                            )
                             DropdownMenuItem(
                                 text = { Text("Delete person") },
                                 leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
