@@ -348,6 +348,11 @@ fun AppNavHost(
                             )
                         )
                     },
+                    onEditMe          = { id -> navController.navigate(Routes.personDetail(id.toString())) },
+                    onLogInteraction  = { navController.navigate(Routes.addEditInteraction("00000000-0000-0000-0000-000000000000")) },
+                    onViewInteraction = { id -> navController.navigate(Routes.interactionDetail(id.toString())) },
+                    onViewActivity    = { id -> navController.navigate(Routes.activityDetail(id.toString())) },
+                    onOpenPerson      = { id -> navController.navigate(Routes.personDetail(id.toString())) },
                 )
             }
 

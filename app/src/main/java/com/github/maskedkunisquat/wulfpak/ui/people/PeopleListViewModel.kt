@@ -35,8 +35,9 @@ class PeopleListViewModel(app: Application) : AndroidViewModel(app) {
         },
         sortByLastName,
     ) { persons, byLast ->
-        if (byLast) persons.sortedWith(compareBy({ it.lastName ?: it.firstName }, { it.firstName }))
-        else persons.sortedBy { it.firstName }
+        val filtered = persons.filter { !it.isMe }
+        if (byLast) filtered.sortedWith(compareBy({ it.lastName ?: it.firstName }, { it.firstName }))
+        else filtered.sortedBy { it.firstName }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _selectedIds = MutableStateFlow(emptySet<UUID>())
