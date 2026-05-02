@@ -24,20 +24,20 @@ fun observeMe(): Flow<Person?>
 
 **New file:** `app/src/main/java/.../ui/me/MeViewModel.kt`
 
-- [ ] Class skeleton — `AndroidViewModel`, DB via `getApplication<AppApplication>().db`, `llm` via `getApplication<AppApplication>().llmOrchestrator`
-- [ ] `me: StateFlow<Person?>` — from `personDao.observeMe()`
-- [ ] `meLifeEvents: StateFlow<List<LifeEvent>>` — `me.filterNotNull().flatMapLatest { lifeEventDao.getForPerson(it.id) }` (needs `@OptIn(ExperimentalCoroutinesApi::class)`)
-- [ ] `totalContacts: StateFlow<Int>` — `personDao.getAll().map { it.count { p -> !p.isMe } }`
-- [ ] `interactionsThisMonth: StateFlow<Int>` — `interactionDao.getAll().map { filter by Calendar month-start timestamp }`
-- [ ] `feed: StateFlow<List<FeedItem>>` — `combine(interactionDao.getAll(), activityDao.getAll())` sorted desc, capped at 50; reuse `FeedItem` from `ActivityFeedViewModel.kt` (already public)
-- [ ] `personsById: StateFlow<Map<UUID, Person>>` — `personDao.getAll().map { it.associateBy { p -> p.id } }` (for resolving names in feed rows)
-- [ ] `rankedContacts: StateFlow<List<Person>>` — `personDao.getAll().map { filter !isMe, sort by closenessScore desc nulls last }`
-- [ ] `lapsingContacts: StateFlow<List<Person>>` — `personDao.getAll().map { filter !isMe && (lastContactedAt == null || lastContactedAt < now - 60d) }`
-- [ ] `allOpenTasks: StateFlow<List<TaskWithPerson>>` — `combine(taskDao.getPending(), allPersons)`; re-declare `data class TaskWithPerson(val task: Task, val person: Person?)` locally (don't import from `TasksViewModel`)
-- [ ] `meSummaryText`, `isSummarizing`, `summaryGeneratedAt` — `mutableStateOf`, same pattern as `PersonDetailViewModel`
-- [ ] `init` block — pre-load `cachedSummary` / `summaryGeneratedAt` from `personDao.getMe()`
-- [ ] `summarizeMe()` — guard `isSummarizing`, collect `llm.summarizeMe()`, append tokens, persist on `LlmResult.Complete` via `personDao.updateSummary(me.value!!.id, ...)`
-- [ ] `toggleTaskDone(task)` + `deleteTask(task)` — `viewModelScope.launch { db.taskDao().update/delete(...) }`
+- [x] Class skeleton — `AndroidViewModel`, DB via `getApplication<AppApplication>().db`, `llm` via `getApplication<AppApplication>().llmOrchestrator`
+- [x] `me: StateFlow<Person?>` — from `personDao.observeMe()`
+- [x] `meLifeEvents: StateFlow<List<LifeEvent>>` — `me.filterNotNull().flatMapLatest { lifeEventDao.getForPerson(it.id) }` (needs `@OptIn(ExperimentalCoroutinesApi::class)`)
+- [x] `totalContacts: StateFlow<Int>` — `personDao.getAll().map { it.count { p -> !p.isMe } }`
+- [x] `interactionsThisMonth: StateFlow<Int>` — `interactionDao.getAll().map { filter by Calendar month-start timestamp }`
+- [x] `feed: StateFlow<List<FeedItem>>` — `combine(interactionDao.getAll(), activityDao.getAll())` sorted desc, capped at 50; reuse `FeedItem` from `ActivityFeedViewModel.kt` (already public)
+- [x] `personsById: StateFlow<Map<UUID, Person>>` — `personDao.getAll().map { it.associateBy { p -> p.id } }` (for resolving names in feed rows)
+- [x] `rankedContacts: StateFlow<List<Person>>` — `personDao.getAll().map { filter !isMe, sort by closenessScore desc nulls last }`
+- [x] `lapsingContacts: StateFlow<List<Person>>` — `personDao.getAll().map { filter !isMe && (lastContactedAt == null || lastContactedAt < now - 60d) }`
+- [x] `allOpenTasks: StateFlow<List<TaskWithPerson>>` — `combine(taskDao.getPending(), allPersons)`; re-declare `data class TaskWithPerson(val task: Task, val person: Person?)` locally (don't import from `TasksViewModel`)
+- [x] `meSummaryText`, `isSummarizing`, `summaryGeneratedAt` — `mutableStateOf`, same pattern as `PersonDetailViewModel`
+- [x] `init` block — pre-load `cachedSummary` / `summaryGeneratedAt` from `personDao.getMe()`
+- [x] `summarizeMe()` — guard `isSummarizing`, collect `llm.summarizeMe()`, append tokens, persist on `LlmResult.Complete` via `personDao.updateSummary(me.value!!.id, ...)`
+- [x] `toggleTaskDone(task)` + `deleteTask(task)` — `viewModelScope.launch { db.taskDao().update/delete(...) }`
 
 ---
 
