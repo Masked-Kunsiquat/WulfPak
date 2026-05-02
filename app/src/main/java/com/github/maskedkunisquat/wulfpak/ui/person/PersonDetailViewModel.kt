@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.withTransaction
 import com.github.maskedkunisquat.wulfpak.AppApplication
 import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
 import com.github.maskedkunisquat.wulfpak.appDataStore
@@ -220,9 +221,12 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
 
     fun toggleMe() {
         val id = _personId.value ?: return
+        val shouldBeMe = person.value?.isMe != true
         viewModelScope.launch {
-            db.personDao().clearAllMe()
-            if (person.value?.isMe != true) db.personDao().setMe(id)
+            db.withTransaction {
+                db.personDao().clearAllMe()
+                if (shouldBeMe) db.personDao().setMe(id)
+            }
         }
     }
 
