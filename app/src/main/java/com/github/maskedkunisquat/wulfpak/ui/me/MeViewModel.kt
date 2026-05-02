@@ -72,10 +72,6 @@ class MeViewModel(app: Application) : AndroidViewModel(app) {
         }.sortedByDescending { it.timestamp }.take(50)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val personsById = db.personDao().getAll()
-        .map { it.associateBy { p -> p.id } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap<UUID, Person>())
-
     val rankedContacts = db.personDao().getAll()
         .map { persons ->
             persons.filter { !it.isMe }
@@ -110,22 +106,27 @@ class MeViewModel(app: Application) : AndroidViewModel(app) {
 
     fun summarizeMe() {
         if (isSummarizing) return
+        val currentMeId = me.value?.id ?: return
         isSummarizing = true
         meSummaryText = ""
         viewModelScope.launch {
-            llm.summarizeMe().collect { result ->
-                when (result) {
-                    is LlmResult.Token -> meSummaryText += result.text
-                    is LlmResult.Complete -> {
-                        isSummarizing = false
-                        val now = System.currentTimeMillis()
-                        summaryGeneratedAt = now
-                        me.value?.let { db.personDao().updateSummary(it.id, meSummaryText, now) }
+            try {
+                llm.summarizeMe().collect { result ->
+                    when (result) {
+                        is LlmResult.Token -> meSummaryText += result.text
+                        is LlmResult.Complete -> {
+                            isSummarizing = false
+                            val now = System.currentTimeMillis()
+                            summaryGeneratedAt = now
+                            db.personDao().updateSummary(currentMeId, meSummaryText, now)
+                        }
+                        is LlmResult.Error -> isSummarizing = false
+                        is LlmResult.ToolCall -> Unit
+                        is LlmResult.PendingWrite -> Unit
                     }
-                    is LlmResult.Error -> isSummarizing = false
-                    is LlmResult.ToolCall -> Unit
-                    is LlmResult.PendingWrite -> Unit
                 }
+            } catch (_: Exception) {
+                isSummarizing = false
             }
         }
     }

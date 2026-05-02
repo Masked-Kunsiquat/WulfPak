@@ -15,7 +15,7 @@ fun observeMe(): Flow<Person?>
 
 - [x] **`LlmOrchestrator.kt`** — add `fun summarizeMe(): Flow<LlmResult>` at bottom of class
   - Guard: `personDao.getMe() ?: emit error + return`
-  - Build aggregate facts string: contact count, interactions last 30 days (`interactionDao.getAllOnce()`), pending task count (`taskDao.getPending().first()`), top-5 by `closenessScore`
+  - Build aggregate facts string: contact count, interactions last 30 days (`interactionDao.countSince(thirtyDaysAgo)`), pending task count (`taskDao.getPending().first()`), top-5 by `closenessScore`
   - `emitAll(provider.process(prompt, Prompts.SUMMARIZE_SYSTEM))` — stream only; ViewModel persists on `LlmResult.Complete` (same split as `summarize(personId)`)
 
 ---
@@ -30,13 +30,13 @@ fun observeMe(): Flow<Person?>
 - [x] `totalContacts: StateFlow<Int>` — `personDao.getAll().map { it.count { p -> !p.isMe } }`
 - [x] `interactionsThisMonth: StateFlow<Int>` — `interactionDao.getAll().map { filter by Calendar month-start timestamp }`
 - [x] `feed: StateFlow<List<FeedItem>>` — `combine(interactionDao.getAll(), activityDao.getAll())` sorted desc, capped at 50; reuse `FeedItem` from `ActivityFeedViewModel.kt` (already public)
-- [x] `personsById: StateFlow<Map<UUID, Person>>` — `personDao.getAll().map { it.associateBy { p -> p.id } }` (for resolving names in feed rows)
+- ~~`personsById: StateFlow<Map<UUID, Person>>`~~ — removed; `Interaction` has no `personId` (participants use a join table), so name lookup from feed rows isn't possible without extra queries
 - [x] `rankedContacts: StateFlow<List<Person>>` — `personDao.getAll().map { filter !isMe, sort by closenessScore desc nulls last }`
 - [x] `lapsingContacts: StateFlow<List<Person>>` — `personDao.getAll().map { filter !isMe && (lastContactedAt == null || lastContactedAt < now - 60d) }`
 - [x] `allOpenTasks: StateFlow<List<TaskWithPerson>>` — `combine(taskDao.getPending(), allPersons)`; re-declare `data class TaskWithPerson(val task: Task, val person: Person?)` locally (don't import from `TasksViewModel`)
 - [x] `meSummaryText`, `isSummarizing`, `summaryGeneratedAt` — `mutableStateOf`, same pattern as `PersonDetailViewModel`
 - [x] `init` block — pre-load `cachedSummary` / `summaryGeneratedAt` from `personDao.getMe()`
-- [x] `summarizeMe()` — guard `isSummarizing`, collect `llm.summarizeMe()`, append tokens, persist on `LlmResult.Complete` via `personDao.updateSummary(me.value!!.id, ...)`
+- [x] `summarizeMe()` — guard `isSummarizing`, capture `me.value?.id` before launch (return early if null), collect `llm.summarizeMe()` inside `try/catch` (resets `isSummarizing` on exception), persist on `LlmResult.Complete` via `personDao.updateSummary(currentMeId, ...)`
 - [x] `toggleTaskDone(task)` + `deleteTask(task)` — `viewModelScope.launch { db.taskDao().update/delete(...) }`
 
 ---
@@ -87,7 +87,7 @@ fun observeMe(): Flow<Person?>
 - [ ] "me" contact set → header shows name, age, nickname, job
 - [ ] All 4 tabs render without crash
 - [ ] Overview: counts are accurate; AI blurb generates on tap
-- [ ] Activity: items in recency order; interaction rows show person name
+- [ ] Activity: items in recency order; interaction rows show type + note only
 - [ ] Relationships: ranked list + lapsing section both render
 - [ ] Tasks: open tasks listed; checkbox toggles; delete works; FAB → AddEditTask
 
