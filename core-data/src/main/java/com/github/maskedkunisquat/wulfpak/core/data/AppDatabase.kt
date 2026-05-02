@@ -130,6 +130,10 @@ abstract class AppDatabase : RoomDatabase() {
                     "CREATE TABLE IF NOT EXISTS session_memories " +
                     "(id TEXT NOT NULL PRIMARY KEY, timestamp INTEGER NOT NULL, summary TEXT NOT NULL)"
                 )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_session_memories_timestamp " +
+                    "ON session_memories(timestamp)"
+                )
             }
         }
 

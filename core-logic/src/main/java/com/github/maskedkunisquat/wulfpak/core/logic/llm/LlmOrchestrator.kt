@@ -142,7 +142,7 @@ class LlmOrchestrator(
                     appendLine(); appendLine()
                     appendLine("RECENT SESSIONS:")
                     recentMemories.forEach { m ->
-                        appendLine("- ${dateFmt.format(m.timestamp)}: ${m.summary}")
+                        appendLine("- ${dateFmt.format(m.timestamp)}: ${sanitizeMemory(m.summary)}")
                     }
                 }
                 appendLine(); appendLine(); append(roster.trimEnd())
@@ -181,6 +181,12 @@ class LlmOrchestrator(
 
     fun extractSessionMemory(conversationText: String): Flow<LlmResult> =
         provider.process(conversationText, Prompts.SESSION_MEMORY_SYSTEM)
+
+    private fun sanitizeMemory(raw: String): String =
+        raw.replace(Regex("[\\p{Cntrl}]"), " ")
+           .replace(Regex("\\s+"), " ")
+           .trim()
+           .take(200)
 
     fun summarizeMe(): Flow<LlmResult> = flow {
         val me = personDao.getMe() ?: run {

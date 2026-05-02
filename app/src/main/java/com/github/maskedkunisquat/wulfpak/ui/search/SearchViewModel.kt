@@ -90,7 +90,7 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
             toSave.forEach { msg ->
                 when (msg) {
                     is ChatMessage.User      -> appendLine("User: ${msg.text}")
-                    is ChatMessage.Assistant -> if (msg.text.isNotBlank()) appendLine("Assistant: ${msg.text.take(300)}")
+                    is ChatMessage.Assistant -> if (!msg.isStreaming && msg.text.isNotBlank()) appendLine("Assistant: ${msg.text.take(300)}")
                     else                     -> Unit
                 }
             }
@@ -98,14 +98,21 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val text = StringBuilder()
+                var hadError = false
                 llmOrchestrator.extractSessionMemory(conversationText).collect { result ->
-                    if (result is LlmResult.Token) text.append(result.text)
+                    when (result) {
+                        is LlmResult.Token -> text.append(result.text)
+                        is LlmResult.Error -> hadError = true
+                        else               -> Unit
+                    }
                 }
-                val summary = text.toString().trim()
-                if (summary.isNotEmpty()) {
-                    db.sessionMemoryDao().insert(
-                        SessionMemory(timestamp = System.currentTimeMillis(), summary = summary)
-                    )
+                if (!hadError) {
+                    val summary = text.toString().trim()
+                    if (summary.isNotEmpty()) {
+                        db.sessionMemoryDao().insert(
+                            SessionMemory(timestamp = System.currentTimeMillis(), summary = summary)
+                        )
+                    }
                 }
             } catch (_: Exception) { }
         }

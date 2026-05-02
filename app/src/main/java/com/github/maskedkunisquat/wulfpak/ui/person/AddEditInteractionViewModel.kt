@@ -77,9 +77,11 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
     fun save(onDone: () -> Unit) {
         viewModelScope.launch {
             val effectiveIds = selectedIds.filterNot { it == UUID(0L, 0L) }.toSet()
-            val durationSec = durationMins.trim().toIntOrNull()?.times(60)
             val id = existingId
+            if (id == null && effectiveIds.isEmpty()) return@launch
+            val durationSec = durationMins.trim().toIntOrNull()?.times(60)
             val interactionId: UUID
+            val wm = WorkManager.getInstance(getApplication())
             if (id == null) {
                 val interaction = Interaction(
                     timestamp       = timestampMs,
@@ -121,9 +123,9 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
                     }
                 }
                 removedIds.forEach { rid -> recomputeScore(rid) }
+                removedIds.forEach { rid -> SummaryWorker.enqueue(wm, rid) }
             }
             effectiveIds.forEach { sid -> recomputeScore(sid) }
-            val wm = WorkManager.getInstance(getApplication())
             EmbeddingWorker.enqueue(wm)
             effectiveIds.forEach { sid -> SummaryWorker.enqueue(wm, sid) }
             onDone()
