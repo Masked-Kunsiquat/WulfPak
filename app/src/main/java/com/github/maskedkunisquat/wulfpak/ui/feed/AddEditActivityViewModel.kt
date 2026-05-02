@@ -11,6 +11,7 @@ import com.github.maskedkunisquat.wulfpak.AppApplication
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ActivityParticipant
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
+import com.github.maskedkunisquat.wulfpak.core.logic.worker.SummaryWorker
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -87,7 +88,9 @@ class AddEditActivityViewModel(app: Application) : AndroidViewModel(app) {
             selectedIds.forEach { personId ->
                 db.activityDao().insertParticipant(ActivityParticipant(activityId, personId))
             }
-            EmbeddingWorker.enqueue(WorkManager.getInstance(getApplication()))
+            val wm = WorkManager.getInstance(getApplication())
+            EmbeddingWorker.enqueue(wm)
+            selectedIds.forEach { SummaryWorker.enqueue(wm, it) }
             onDone()
         }
     }
