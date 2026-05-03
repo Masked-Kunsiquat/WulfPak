@@ -1,0 +1,2838 @@
+{
+  "version": 8,
+  "exportedAt": 1777821218240,
+  "persons": [
+    {
+      "id": "1ac487bb-a41f-425f-8a81-fe9e59c32c99",
+      "firstName": "Demo",
+      "lastName": "User",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "friend",
+      "isFavorite": false,
+      "lastContactedAt": null,
+      "interactionCount": 0,
+      "closenessRating": null,
+      "company": null,
+      "jobTitle": null,
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": null,
+      "isMe": true
+    },
+    {
+      "id": "9881e3e4-3ceb-48c5-abe4-652202c184ae",
+      "firstName": "Elena",
+      "lastName": "Rodriguez",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "mother",
+      "isFavorite": true,
+      "lastContactedAt": 1776870960979,
+      "interactionCount": 10,
+      "closenessRating": 5,
+      "company": null,
+      "jobTitle": null,
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.7678,
+      "isMe": false
+    },
+    {
+      "id": "13a245d3-8929-4c39-9250-a5044cf586d5",
+      "firstName": "Kai",
+      "lastName": "Chen",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "sibling",
+      "isFavorite": false,
+      "lastContactedAt": 1776870960979,
+      "interactionCount": 10,
+      "closenessRating": 4,
+      "company": null,
+      "jobTitle": null,
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.6442,
+      "isMe": false
+    },
+    {
+      "id": "8f05037a-b11f-4c64-8e47-0596753b5b8d",
+      "firstName": "Liam",
+      "lastName": "Miller",
+      "nickname": "Lee",
+      "photoUri": null,
+      "relationLabel": "romantic_partner",
+      "isFavorite": true,
+      "lastContactedAt": 1768317360979,
+      "interactionCount": 10,
+      "closenessRating": 5,
+      "company": "Bright Future Solutions",
+      "jobTitle": "Software Engineer",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.9143,
+      "isMe": false
+    },
+    {
+      "id": "70dd2c89-c668-4a64-b9e5-8994ab0b3199",
+      "firstName": "Aisha",
+      "lastName": "Khan",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "friend",
+      "isFavorite": true,
+      "lastContactedAt": 1775574960979,
+      "interactionCount": 6,
+      "closenessRating": 4,
+      "company": "Apex Marketing Group",
+      "jobTitle": "Marketing Strategist",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.4861,
+      "isMe": false
+    },
+    {
+      "id": "14c3791a-439f-40d2-ba03-ecb1d75c00c6",
+      "firstName": "David",
+      "lastName": "Kim",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "friend",
+      "isFavorite": false,
+      "lastContactedAt": 1764515760979,
+      "interactionCount": 6,
+      "closenessRating": 3,
+      "company": "Tech Innovations Inc.",
+      "jobTitle": "Product Manager",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.5341,
+      "isMe": false
+    },
+    {
+      "id": "407d40b5-b34f-4ba4-83af-e7a72f069818",
+      "firstName": "Sophie",
+      "lastName": "Dubois",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "friend",
+      "isFavorite": false,
+      "lastContactedAt": 1775661360979,
+      "interactionCount": 5,
+      "closenessRating": 4,
+      "company": null,
+      "jobTitle": null,
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.5654,
+      "isMe": false
+    },
+    {
+      "id": "b713724f-0ce6-448f-90e2-7aed0323fa44",
+      "firstName": "Marcus",
+      "lastName": "Johnson",
+      "nickname": "MJ",
+      "photoUri": null,
+      "relationLabel": "friend",
+      "isFavorite": false,
+      "lastContactedAt": 1771427760979,
+      "interactionCount": 6,
+      "closenessRating": 3,
+      "company": "Green Living Co.",
+      "jobTitle": "Sustainability Consultant",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.5559,
+      "isMe": false
+    },
+    {
+      "id": "0c58eb6e-ba13-476c-b658-7b645cd94646",
+      "firstName": "Maya",
+      "lastName": "Singh",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "friend",
+      "isFavorite": false,
+      "lastContactedAt": 1764515760979,
+      "interactionCount": 6,
+      "closenessRating": 2,
+      "company": null,
+      "jobTitle": null,
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.4854,
+      "isMe": false
+    },
+    {
+      "id": "30322f52-21b6-4263-8657-5e05b27b69b1",
+      "firstName": "John",
+      "lastName": "Smith",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "acquaintance",
+      "isFavorite": false,
+      "lastContactedAt": 1765552560979,
+      "interactionCount": 1,
+      "closenessRating": 2,
+      "company": "Local Gym",
+      "jobTitle": "Fitness Instructor",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.2661,
+      "isMe": false
+    },
+    {
+      "id": "7587aa4d-6c05-4f27-8672-60d155e86326",
+      "firstName": "Isabella",
+      "lastName": "Rossi",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "acquaintance",
+      "isFavorite": false,
+      "lastContactedAt": 1751210160979,
+      "interactionCount": 1,
+      "closenessRating": 1,
+      "company": null,
+      "jobTitle": null,
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.1393,
+      "isMe": false
+    },
+    {
+      "id": "20bc5ceb-97f9-4e3d-b1fc-e740e3f37054",
+      "firstName": "Hiroshi",
+      "lastName": "Tanaka",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "acquaintance",
+      "isFavorite": false,
+      "lastContactedAt": 1769872560979,
+      "interactionCount": 2,
+      "closenessRating": null,
+      "company": "Community Library",
+      "jobTitle": "Librarian",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.2368,
+      "isMe": false
+    },
+    {
+      "id": "2f33d0f6-284d-4e70-a261-ea676ed39592",
+      "firstName": "Sarah",
+      "lastName": "Peterson",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "colleague",
+      "isFavorite": false,
+      "lastContactedAt": 1768749360979,
+      "interactionCount": 4,
+      "closenessRating": 3,
+      "company": "Innovate Corp",
+      "jobTitle": "Senior Analyst",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.2247,
+      "isMe": false
+    },
+    {
+      "id": "37f14188-1e0d-4f5a-9f92-de582e23cf2e",
+      "firstName": "Miguel",
+      "lastName": "Santos",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "colleague",
+      "isFavorite": false,
+      "lastContactedAt": 1775488560979,
+      "interactionCount": 4,
+      "closenessRating": 3,
+      "company": "Innovate Corp",
+      "jobTitle": "Data Scientist",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.3303,
+      "isMe": false
+    },
+    {
+      "id": "ba5ad7d0-5eb1-41b5-9cc6-d0ff5a64a0e2",
+      "firstName": "Rebecca",
+      "lastName": "White",
+      "nickname": "Becky",
+      "photoUri": null,
+      "relationLabel": "manager",
+      "isFavorite": false,
+      "lastContactedAt": 1758554160979,
+      "interactionCount": 4,
+      "closenessRating": 4,
+      "company": "Innovate Corp",
+      "jobTitle": "Department Head",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.3347,
+      "isMe": false
+    },
+    {
+      "id": "b1b6be71-9c29-4745-9de9-b67d639bcc6f",
+      "firstName": "Thomas",
+      "lastName": "Nguyen",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "manager",
+      "isFavorite": false,
+      "lastContactedAt": 1769699760979,
+      "interactionCount": 3,
+      "closenessRating": null,
+      "company": "Innovate Corp",
+      "jobTitle": "VP of Engineering",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.2911,
+      "isMe": false
+    },
+    {
+      "id": "30ecf5dc-99a2-42de-b205-d0cc89f7b758",
+      "firstName": "Chloe",
+      "lastName": "Davis",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "report",
+      "isFavorite": false,
+      "lastContactedAt": 1762096560979,
+      "interactionCount": 4,
+      "closenessRating": 3,
+      "company": "Innovate Corp",
+      "jobTitle": "Junior Developer",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.2532,
+      "isMe": false
+    },
+    {
+      "id": "342553f2-f5a1-4937-9372-6bfb065f88b9",
+      "firstName": "Omar",
+      "lastName": "Hassan",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "report",
+      "isFavorite": false,
+      "lastContactedAt": 1762442160979,
+      "interactionCount": 3,
+      "closenessRating": null,
+      "company": "Innovate Corp",
+      "jobTitle": "QA Specialist",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.2811,
+      "isMe": false
+    },
+    {
+      "id": "cafb7b92-3eea-4802-853b-156c367748bf",
+      "firstName": "Susan",
+      "lastName": "Chen",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "mentor",
+      "isFavorite": true,
+      "lastContactedAt": 1762096560980,
+      "interactionCount": 4,
+      "closenessRating": null,
+      "company": "Global Tech Solutions",
+      "jobTitle": "Chief Technology Officer",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.4033,
+      "isMe": false
+    },
+    {
+      "id": "d441ca39-12fb-45b3-adc0-23a55c488226",
+      "firstName": "Robert",
+      "lastName": "Evans",
+      "nickname": "Bob",
+      "photoUri": null,
+      "relationLabel": "client",
+      "isFavorite": false,
+      "lastContactedAt": 1775661360980,
+      "interactionCount": 3,
+      "closenessRating": null,
+      "company": "Enterprise Solutions LLC",
+      "jobTitle": "Project Lead",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.1644,
+      "isMe": false
+    },
+    {
+      "id": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d",
+      "firstName": "Patricia",
+      "lastName": "O'Connell",
+      "nickname": "Patsy",
+      "photoUri": null,
+      "relationLabel": "aunt",
+      "isFavorite": false,
+      "lastContactedAt": 1776352560980,
+      "interactionCount": 11,
+      "closenessRating": null,
+      "company": null,
+      "jobTitle": null,
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.4981,
+      "isMe": false
+    },
+    {
+      "id": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4",
+      "firstName": "Jin",
+      "lastName": "Lee",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "cousin",
+      "isFavorite": false,
+      "lastContactedAt": 1776352560980,
+      "interactionCount": 11,
+      "closenessRating": null,
+      "company": "Digital Arts Studio",
+      "jobTitle": "Graphic Designer",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.4198,
+      "isMe": false
+    },
+    {
+      "id": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7",
+      "firstName": "Elena",
+      "lastName": "Petrova",
+      "nickname": null,
+      "photoUri": null,
+      "relationLabel": "best_friend",
+      "isFavorite": true,
+      "lastContactedAt": 1775574960980,
+      "interactionCount": 9,
+      "closenessRating": null,
+      "company": "Freelance Creative",
+      "jobTitle": "Illustrator",
+      "cachedSummary": null,
+      "summaryGeneratedAt": null,
+      "closenessScore": 0.7922,
+      "isMe": false
+    }
+  ],
+  "personRelationships": [
+    {
+      "personAId": "13a245d3-8929-4c39-9250-a5044cf586d5",
+      "personBId": "14c3791a-439f-40d2-ba03-ecb1d75c00c6",
+      "label": "sibling",
+      "category": "FAMILY",
+      "relType": null
+    },
+    {
+      "personAId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199",
+      "personBId": "8f05037a-b11f-4c64-8e47-0596753b5b8d",
+      "label": "romantic_partner",
+      "category": "SOCIAL",
+      "relType": null
+    },
+    {
+      "personAId": "2f33d0f6-284d-4e70-a261-ea676ed39592",
+      "personBId": "37f14188-1e0d-4f5a-9f92-de582e23cf2e",
+      "label": "colleague",
+      "category": "WORK",
+      "relType": null
+    },
+    {
+      "personAId": "30ecf5dc-99a2-42de-b205-d0cc89f7b758",
+      "personBId": "ba5ad7d0-5eb1-41b5-9cc6-d0ff5a64a0e2",
+      "label": "colleague",
+      "category": "WORK",
+      "relType": null
+    },
+    {
+      "personAId": "407d40b5-b34f-4ba4-83af-e7a72f069818",
+      "personBId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199",
+      "label": "friend",
+      "category": "SOCIAL",
+      "relType": null
+    },
+    {
+      "personAId": "b713724f-0ce6-448f-90e2-7aed0323fa44",
+      "personBId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7",
+      "label": "best_friend",
+      "category": "SOCIAL",
+      "relType": null
+    },
+    {
+      "personAId": "20bc5ceb-97f9-4e3d-b1fc-e740e3f37054",
+      "personBId": "30322f52-21b6-4263-8657-5e05b27b69b1",
+      "label": "acquaintance",
+      "category": "SOCIAL",
+      "relType": null
+    },
+    {
+      "personAId": "13a245d3-8929-4c39-9250-a5044cf586d5",
+      "personBId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4",
+      "label": "cousin",
+      "category": "FAMILY",
+      "relType": null
+    }
+  ],
+  "contactDetails": [
+    {
+      "id": "49917803-6b08-42f0-ba97-741ca50cc29d",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae",
+      "type": "PHONE",
+      "label": "mobile",
+      "value": "(555) 755-6385"
+    },
+    {
+      "id": "89432dcb-f697-4282-9132-a7a0b2f920ec",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae",
+      "type": "EMAIL",
+      "label": "personal",
+      "value": "elena.rodriguez@outlook.com"
+    },
+    {
+      "id": "b7a584de-05fb-4fb1-850b-8a78d36b1b61",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5",
+      "type": "PHONE",
+      "label": "mobile",
+      "value": "(555) 304-7067"
+    },
+    {
+      "id": "fd419e95-93f6-4a7e-a2f9-79ca5c51533a",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5",
+      "type": "EMAIL",
+      "label": "personal",
+      "value": "kchen@outlook.com"
+    },
+    {
+      "id": "ed8ae0a8-7b3c-4105-837d-8bfdcda7c52f",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d",
+      "type": "PHONE",
+      "label": "mobile",
+      "value": "(555) 437-9753"
+    },
+    {
+      "id": "889cedc0-ebca-45a6-8341-0f744d3960df",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199",
+      "type": "PHONE",
+      "label": "mobile",
+      "value": "(555) 868-6045"
+    },
+    {
+      "id": "ee60a48e-f213-40a5-abed-79a951cf6ad9",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199",
+      "type": "EMAIL",
+      "label": "personal",
+      "value": "akhan@mail.com"
+    },
+    {
+      "id": "befa96e1-b683-481f-92fb-3d332dbde80d",
+      "personId": "14c3791a-439f-40d2-ba03-ecb1d75c00c6",
+      "type": "PHONE",
+      "label": "mobile",
+      "value": "(555) 809-5489"
+    },
+    {
+      "id": "21c15d55-dbd3-4ade-aaf0-9903e6d01de6",
+      "personId": "407d40b5-b34f-4ba4-83af-e7a72f069818",
+      "type": "PHONE",
+      "label": "mobile",
+      "value": "(555) 919-6138"
+    },
+    {
+      "id": "167b7f0e-b7e2-446f-96ad-3a96780585a4",
+      "personId": "407d40b5-b34f-4ba4-83af-e7a72f069818",
+      "type": "EMAIL",
+      "label": "personal",
+      "value": "sophie.dubois@gmail.com"
+    },
+    {
+      "id": "e3846066-f684-4936-8a65-42307f83b1b0",
+      "personId": "b713724f-0ce6-448f-90e2-7aed0323fa44",
+      "type": "PHONE",
+      "label": "mobile",
+      "value": "(555) 797-2953"
+    },
+    {
+      "id": "4fd08ef5-5b9e-402e-ab2c-66f9e4e29525",
+      "personId": "0c58eb6e-ba13-476c-b658-7b645cd94646",
+      "type": "PHONE",
+      "label": "mobile",
+      "value": "(555) 914-7264"
+    },
+    {
+      "id": "e6b08be0-4d30-4f39-8c27-ab9569ad156a",
+      "personId": "30322f52-21b6-4263-8657-5e05b27b69b1",
+      "type": "EMAIL",
+      "label": "personal",
+      "value": "john.smith@yahoo.com"
+    },
+    {
+      "id": "42c4ffe0-73dc-4c56-a131-6d9685539806",
+      "personId": "7587aa4d-6c05-4f27-8672-60d155e86326",
+      "type": "PHONE",
+      "label": "mobile",
+      "value": "(555) 958-7557"
+    },
+    {
+      "id": "633a5728-0984-4e09-8f7b-6c945b080fdf",
+      "personId": "20bc5ceb-97f9-4e3d-b1fc-e740e3f37054",
+      "type": "EMAIL",
+      "label": "personal",
+      "value": "htanaka@gmail.com"
+    },
+    {
+      "id": "82ae48e5-e234-4750-ba9a-7ad48b6cc079",
+      "personId": "2f33d0f6-284d-4e70-a261-ea676ed39592",
+      "type": "EMAIL",
+      "label": "work email",
+      "value": "sarah.peterson@corpdomain.com"
+    },
+    {
+      "id": "91cfa286-8e83-424a-a559-eb75d741c29a",
+      "personId": "2f33d0f6-284d-4e70-a261-ea676ed39592",
+      "type": "PHONE",
+      "label": "work",
+      "value": "(555) 867-5309"
+    },
+    {
+      "id": "68607a63-1fac-4927-8da4-baa2e97223ef",
+      "personId": "37f14188-1e0d-4f5a-9f92-de582e23cf2e",
+      "type": "EMAIL",
+      "label": "work email",
+      "value": "miguelsantos@techsolutions.co"
+    },
+    {
+      "id": "cdbdde5e-b431-469c-b2b6-550c023c5e3d",
+      "personId": "37f14188-1e0d-4f5a-9f92-de582e23cf2e",
+      "type": "PHONE",
+      "label": "work",
+      "value": "(555) 755-6385"
+    },
+    {
+      "id": "057baf99-b8d2-4d0c-976e-c3d18b932383",
+      "personId": "37f14188-1e0d-4f5a-9f92-de582e23cf2e",
+      "type": "SOCIAL",
+      "label": "linkedin",
+      "value": "https://www.linkedin.com/in/miguel-santos"
+    },
+    {
+      "id": "92f7005e-b21e-492e-aa8b-75715c8f363d",
+      "personId": "ba5ad7d0-5eb1-41b5-9cc6-d0ff5a64a0e2",
+      "type": "EMAIL",
+      "label": "work email",
+      "value": "rwhite@globalinc.org"
+    },
+    {
+      "id": "1c433f70-7e9d-4264-96f8-a998e4d4e807",
+      "personId": "ba5ad7d0-5eb1-41b5-9cc6-d0ff5a64a0e2",
+      "type": "PHONE",
+      "label": "work",
+      "value": "(555) 304-7067"
+    },
+    {
+      "id": "161bf607-02ce-436d-a1f4-52c89d169628",
+      "personId": "b1b6be71-9c29-4745-9de9-b67d639bcc6f",
+      "type": "EMAIL",
+      "label": "work email",
+      "value": "thomasnguyen@companyx.com"
+    },
+    {
+      "id": "e5ef8dcc-5668-4eea-9268-fc87d2a21cab",
+      "personId": "b1b6be71-9c29-4745-9de9-b67d639bcc6f",
+      "type": "SOCIAL",
+      "label": "linkedin",
+      "value": "https://www.linkedin.com/in/thomas-nguyen"
+    },
+    {
+      "id": "7908e876-4e29-4118-a149-cc23d0ea71b7",
+      "personId": "30ecf5dc-99a2-42de-b205-d0cc89f7b758",
+      "type": "EMAIL",
+      "label": "work email",
+      "value": "chloe.davis@corpdomain.com"
+    },
+    {
+      "id": "0328c42a-5244-46b3-b93f-117c5685c75e",
+      "personId": "342553f2-f5a1-4937-9372-6bfb065f88b9",
+      "type": "EMAIL",
+      "label": "work email",
+      "value": "omarhassan@enterprises.net"
+    },
+    {
+      "id": "55772dd0-89b0-431c-b3e3-1a3acc2b2d31",
+      "personId": "342553f2-f5a1-4937-9372-6bfb065f88b9",
+      "type": "PHONE",
+      "label": "work",
+      "value": "(555) 437-9753"
+    },
+    {
+      "id": "fd96e242-d416-4a8d-b188-c2cdd54a659a",
+      "personId": "cafb7b92-3eea-4802-853b-156c367748bf",
+      "type": "EMAIL",
+      "label": "work email",
+      "value": "s.chen@enterprises.net"
+    },
+    {
+      "id": "e6b9ae17-3af1-466e-a05b-1b2331745f63",
+      "personId": "cafb7b92-3eea-4802-853b-156c367748bf",
+      "type": "SOCIAL",
+      "label": "linkedin",
+      "value": "https://www.linkedin.com/in/susan-chen"
+    },
+    {
+      "id": "9fd6d9ea-f8c1-41ad-b006-35f2678092d9",
+      "personId": "d441ca39-12fb-45b3-adc0-23a55c488226",
+      "type": "EMAIL",
+      "label": "work email",
+      "value": "robertevans@companyx.com"
+    },
+    {
+      "id": "6cf8924c-7b8c-4e70-bb2f-edfdfaf86867",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d",
+      "type": "PHONE",
+      "label": "mobile",
+      "value": "(555) 868-6045"
+    },
+    {
+      "id": "926013c8-9813-4706-855f-e7c987228896",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d",
+      "type": "EMAIL",
+      "label": "personal",
+      "value": "patricia.oconnell@gmail.com"
+    },
+    {
+      "id": "f4199e5c-084b-42c2-ac4a-85312d386b3f",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4",
+      "type": "PHONE",
+      "label": "mobile",
+      "value": "(555) 809-5489"
+    },
+    {
+      "id": "bdfa57ed-ca0c-4c7a-8f58-64a6ca0e72a8",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4",
+      "type": "EMAIL",
+      "label": "personal",
+      "value": "jinlee@outlook.com"
+    },
+    {
+      "id": "32a1cf26-e1ed-4f8d-a963-dc38940d5ea1",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7",
+      "type": "PHONE",
+      "label": "mobile",
+      "value": "(555) 919-6138"
+    },
+    {
+      "id": "610ecd53-29f0-4441-94a7-10549e7b5a6b",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7",
+      "type": "EMAIL",
+      "label": "personal",
+      "value": "elena.petrova@outlook.com"
+    }
+  ],
+  "interactions": [
+    {
+      "id": "037cbc04-799c-4113-98ef-b08eff5214a3",
+      "timestamp": 1755530160979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Kids' activities update"
+    },
+    {
+      "id": "61a1dbb0-c54c-44e2-99c6-bfa552985686",
+      "timestamp": 1776870960979,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "56ae5bfb-cf86-45b9-ac1f-15690c41494f",
+      "timestamp": 1775056560979,
+      "type": "video_call",
+      "durationSeconds": 1618,
+      "note": "Family news update"
+    },
+    {
+      "id": "7d38aafc-1e31-442d-b4bd-212126921c05",
+      "timestamp": 1754579760979,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "863ca2f3-027e-4b5c-a41f-a3008f7efea6",
+      "timestamp": 1759418160979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Holiday planning chat"
+    },
+    {
+      "id": "6ef3380c-fba9-4203-bf0e-44af4e988591",
+      "timestamp": 1756221360979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "006a03d3-e4b2-4883-b626-289fb1392c34",
+      "timestamp": 1775574960979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "7b9eeec2-4c85-4b91-9588-ab59c8fd09e9",
+      "timestamp": 1746976560979,
+      "type": "call",
+      "durationSeconds": 1400,
+      "note": null
+    },
+    {
+      "id": "60750d5e-f525-4782-8b77-ccc4bd68f50e",
+      "timestamp": 1760886960979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Exchanged a new recipe"
+    },
+    {
+      "id": "c3e4f620-67e4-47ca-a0d9-a936edb701d8",
+      "timestamp": 1749222960979,
+      "type": "video_call",
+      "durationSeconds": 1435,
+      "note": null
+    },
+    {
+      "id": "7b93bc95-8315-499c-bbed-7cbbf9f4d0fe",
+      "timestamp": 1766762160979,
+      "type": "social_media",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "017360e7-ec64-4ad8-9348-92a5f9a21b1b",
+      "timestamp": 1753888560979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "da068106-ecb7-48c1-99bf-f88898c5ec5b",
+      "timestamp": 1767194160979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Planned a visit"
+    },
+    {
+      "id": "9c33d01f-0e5e-4397-9c87-6c13bb919e4c",
+      "timestamp": 1754320560979,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": "Shared photos"
+    },
+    {
+      "id": "6e0db325-f379-4c34-b5b9-feff54acf7e8",
+      "timestamp": 1750778160979,
+      "type": "social_media",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "9cd04d3e-0c45-42d7-b50b-11fcfbc799ee",
+      "timestamp": 1748963760979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "411acda5-f2f5-49e4-b4e4-303073800825",
+      "timestamp": 1766675760979,
+      "type": "call",
+      "durationSeconds": 2404,
+      "note": null
+    },
+    {
+      "id": "55355408-8e6c-4cef-b4c1-3caeb3dbbe39",
+      "timestamp": 1753110960979,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": "Chat about future plans"
+    },
+    {
+      "id": "8a98e530-f9de-489a-ba47-a4d3a9f18596",
+      "timestamp": 1776870960979,
+      "type": "video_call",
+      "durationSeconds": 3165,
+      "note": null
+    },
+    {
+      "id": "8ead8cf6-0b09-4210-bb1f-bc15ad512e8c",
+      "timestamp": 1754493360979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "16e51234-f154-4e2a-9ce3-e65a89e7e3a3",
+      "timestamp": 1768230960979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Kids' activities update"
+    },
+    {
+      "id": "d94dfd7c-0cb0-4677-b9a1-8c48f8a7cdc5",
+      "timestamp": 1765811760979,
+      "type": "call",
+      "durationSeconds": 3288,
+      "note": null
+    },
+    {
+      "id": "6f7ae3ab-6a37-437a-bf7c-9918baf3bd06",
+      "timestamp": 1748704560979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "e214ea53-ec64-4bdb-a992-67f76d516286",
+      "timestamp": 1744384560979,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "26c7fe48-a5c8-48c2-8b55-347e68922025",
+      "timestamp": 1746198960979,
+      "type": "video_call",
+      "durationSeconds": 2490,
+      "note": "Holiday planning chat"
+    },
+    {
+      "id": "ed67ccef-1f11-4d50-81c5-9e3e0e1f68f3",
+      "timestamp": 1761059760979,
+      "type": "social_media",
+      "durationSeconds": null,
+      "note": "Shared photos"
+    },
+    {
+      "id": "d6c07ad7-cb76-463b-a7fd-956be6191453",
+      "timestamp": 1745680560979,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "e656bea5-940c-446d-a3f6-ddf35030c427",
+      "timestamp": 1755616560979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "28a45d2f-3c3c-40fd-ae8a-3b43250957e0",
+      "timestamp": 1768317360979,
+      "type": "video_call",
+      "durationSeconds": 240,
+      "note": null
+    },
+    {
+      "id": "b6128589-39fb-464a-b2a6-41e48408da43",
+      "timestamp": 1767798960979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "3a0fb017-d500-449e-9989-88169bfe7467",
+      "timestamp": 1744470960979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "a8a0b6b8-d29f-4162-8346-af96f55e741e",
+      "timestamp": 1760886960979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Caught up on mutual friends"
+    },
+    {
+      "id": "9fbd2b5b-fd49-4d59-be37-e9fe778bb9dd",
+      "timestamp": 1775574960979,
+      "type": "social_media",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "67b551f5-412b-4128-be30-519b3b7121aa",
+      "timestamp": 1755875760979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "3b73aed5-64f0-4db7-b83c-2e867faf7c83",
+      "timestamp": 1749136560979,
+      "type": "call",
+      "durationSeconds": 1394,
+      "note": "Planned movie night"
+    },
+    {
+      "id": "e2712e20-90ef-4c1d-9aca-02dc306f7a86",
+      "timestamp": 1747322160979,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "558e8449-c994-4f5c-b230-48ab34ebd360",
+      "timestamp": 1764342960979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Brainstormed gift ideas"
+    },
+    {
+      "id": "0262693f-30b1-46fe-8a06-f4290c3ce932",
+      "timestamp": 1762442160979,
+      "type": "social_media",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "8997891c-927e-4670-bb62-10c2c125ac0d",
+      "timestamp": 1752074160979,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "ccf58500-44a6-42ff-b134-3b3e4da06606",
+      "timestamp": 1764515760979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "05f81aef-ca89-46f4-916b-30f1c549fd30",
+      "timestamp": 1754320560979,
+      "type": "video_call",
+      "durationSeconds": 195,
+      "note": null
+    },
+    {
+      "id": "9251dd6a-4e5e-496d-a9b2-4083acb935da",
+      "timestamp": 1751469360979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "4f6f1395-9219-4508-bb9d-a7705a4953ea",
+      "timestamp": 1775661360979,
+      "type": "social_media",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "9fd4e379-da0f-4cef-b360-661b38e92c5a",
+      "timestamp": 1771686960979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Shared funny story"
+    },
+    {
+      "id": "b60a415a-705c-4f47-898c-492e60fbf880",
+      "timestamp": 1757603760979,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "e57bf12a-ec85-4c0c-85c0-9aa318e71ceb",
+      "timestamp": 1747408560979,
+      "type": "call",
+      "durationSeconds": 1475,
+      "note": null
+    },
+    {
+      "id": "7d615b57-96a6-422a-8411-33fe06de7ac1",
+      "timestamp": 1763219760979,
+      "type": "video_call",
+      "durationSeconds": 2404,
+      "note": null
+    },
+    {
+      "id": "9b4f5a3a-3036-48b7-a414-1a2acc0655b2",
+      "timestamp": 1744902960979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "96614d75-c9b9-443a-b316-73f94f317890",
+      "timestamp": 1754579760979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Talked about hobbies"
+    },
+    {
+      "id": "899f6e3b-e300-44b6-ba55-824dc7ac3a32",
+      "timestamp": 1756307760979,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "9837ef6b-a8df-4ed3-97e9-09416b084109",
+      "timestamp": 1771427760979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "c65d4e66-b88d-4769-bc0f-1a7c8e009ffc",
+      "timestamp": 1768922160979,
+      "type": "social_media",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "b1baf6c0-5641-4b18-9253-35c8d53f34be",
+      "timestamp": 1744298160979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "b4a7c1e9-0295-4294-aa42-ebb9313917c7",
+      "timestamp": 1764515760979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "ce9636bc-3afe-4411-9297-4fdc575c0e64",
+      "timestamp": 1753110960979,
+      "type": "social_media",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "b996fa74-9bb4-42f5-a4c1-9a7a7d4b9eed",
+      "timestamp": 1748531760979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Chat about new restaurant"
+    },
+    {
+      "id": "427005aa-d7e4-41bc-ada9-fa252b547bbd",
+      "timestamp": 1763219760979,
+      "type": "call",
+      "durationSeconds": 3326,
+      "note": null
+    },
+    {
+      "id": "bb01ede3-32ae-4242-acd7-0153d1c188e0",
+      "timestamp": 1748963760979,
+      "type": "video_call",
+      "durationSeconds": 1373,
+      "note": null
+    },
+    {
+      "id": "0fdcc509-9e7b-4700-a1c7-2d9303872484",
+      "timestamp": 1763392560979,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": "Discussed a recent trip"
+    },
+    {
+      "id": "12562bf8-14a6-4d9e-a231-11eb836a5548",
+      "timestamp": 1765552560979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Networking chat"
+    },
+    {
+      "id": "00147c78-cdee-4219-afce-119ae3d6001d",
+      "timestamp": 1751210160979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "8314d5ec-6f32-40fc-a485-c5739a8ce58a",
+      "timestamp": 1769872560979,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Brief catch-up"
+    },
+    {
+      "id": "0e24c3e4-3e1d-4a81-97b6-ef09286af5d6",
+      "timestamp": 1747322160979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "a8d0e46b-8f57-48cd-b821-5ded3108b3aa",
+      "timestamp": 1768749360979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "6267adc2-e1da-40c4-87c8-03dd604862a6",
+      "timestamp": 1746630960979,
+      "type": "call",
+      "durationSeconds": 2496,
+      "note": "Project update discussion"
+    },
+    {
+      "id": "d02ed53f-74b9-4300-b237-abb45cf9b5bf",
+      "timestamp": 1765293360979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "2c82a4d8-036d-4cb5-be72-74d8e3548c9f",
+      "timestamp": 1746458160979,
+      "type": "call",
+      "durationSeconds": 1391,
+      "note": null
+    },
+    {
+      "id": "f8be2aa0-e3c6-40d5-815b-748b4699064c",
+      "timestamp": 1754320560979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": "Reviewed Q3 report details"
+    },
+    {
+      "id": "ccd4518d-e134-4184-9a1b-6891414f9e81",
+      "timestamp": 1750778160979,
+      "type": "call",
+      "durationSeconds": 1297,
+      "note": null
+    },
+    {
+      "id": "78e6cfc5-c2f1-41a8-9318-74daa867f753",
+      "timestamp": 1768490160979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "c9092b54-8fe9-4de5-a563-ce86f589c48f",
+      "timestamp": 1775488560979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "ed1b3c07-f89d-4968-82e9-a19ce88fae8d",
+      "timestamp": 1745680560979,
+      "type": "call",
+      "durationSeconds": 196,
+      "note": null
+    },
+    {
+      "id": "a19871ab-a3a9-4ca3-8971-a37e94aff41d",
+      "timestamp": 1756998960979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "7cd3eb7f-e813-4203-9ed6-db51ff242614",
+      "timestamp": 1758554160979,
+      "type": "video_call",
+      "durationSeconds": 2697,
+      "note": "Discussed career development path"
+    },
+    {
+      "id": "7f4d8aca-8f30-4f4d-85fa-bdc9561b369b",
+      "timestamp": 1746112560979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "18d37004-1ea0-4d0b-bb1b-ec1ffd3944e5",
+      "timestamp": 1751642160979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "e3b10d21-21fd-46fb-a312-ac6c7d2bc754",
+      "timestamp": 1755530160979,
+      "type": "call",
+      "durationSeconds": 1916,
+      "note": "Team sync on sprint goals"
+    },
+    {
+      "id": "9ed73ed1-58af-4298-8cfa-af45e3656333",
+      "timestamp": 1769699760979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "032c1ea3-f5f3-4b7f-aee2-970a1414c85b",
+      "timestamp": 1762096560979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": "Feedback on design proposal"
+    },
+    {
+      "id": "d4b9f12f-6654-4083-aed5-877632fd1d6c",
+      "timestamp": 1747322160979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "ea5eff8b-754d-4f97-956c-cb32f5dbef2e",
+      "timestamp": 1749222960979,
+      "type": "call",
+      "durationSeconds": 2259,
+      "note": null
+    },
+    {
+      "id": "7ea821bf-b812-4d35-b9cd-72a0bd496975",
+      "timestamp": 1745680560979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "44d5180a-810b-43c0-8768-e24aaf27b821",
+      "timestamp": 1745853360979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "aae5d21b-6ebb-408d-8ead-193473073ed4",
+      "timestamp": 1762442160979,
+      "type": "call",
+      "durationSeconds": 3496,
+      "note": null
+    },
+    {
+      "id": "140144fe-7d0f-4f70-8e8d-838ec3dc9098",
+      "timestamp": 1760714160979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": "Budget review discussion"
+    },
+    {
+      "id": "bd0bf885-3b63-43b7-96b9-baf9dded6e2f",
+      "timestamp": 1748877360979,
+      "type": "email",
+      "durationSeconds": null,
+      "note": "Followed up on previous email"
+    },
+    {
+      "id": "157267e5-9193-43ba-9c6a-d4e768e1a6fe",
+      "timestamp": 1751210160980,
+      "type": "call",
+      "durationSeconds": 3341,
+      "note": null
+    },
+    {
+      "id": "098e7ae0-1a97-413c-8894-9f35849cc4d7",
+      "timestamp": 1761923760980,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "358a8797-8430-4f78-8a58-eb1269c225ca",
+      "timestamp": 1762096560980,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "1938d80a-9c5b-4b26-99bb-703f3a3e7b7b",
+      "timestamp": 1768922160980,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "a1b6aae1-3906-4aed-b9b9-b5b9f7305b96",
+      "timestamp": 1751469360980,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "1370fd9f-0e86-4513-a937-eaf7888e3d92",
+      "timestamp": 1775661360980,
+      "type": "call",
+      "durationSeconds": 3570,
+      "note": "Meeting agenda finalized"
+    },
+    {
+      "id": "7abe9871-b2ed-4d15-bc3e-3474ff252db0",
+      "timestamp": 1765811760980,
+      "type": "social_media",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "dac07699-5962-4711-ae09-285a3d5cba1c",
+      "timestamp": 1762010160980,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "0c81f4d0-7843-4a1b-986b-e7ee29625a3d",
+      "timestamp": 1774538160980,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "003a9a23-8dff-4cef-89a1-1a5aa045861f",
+      "timestamp": 1768058160980,
+      "type": "call",
+      "durationSeconds": 1374,
+      "note": null
+    },
+    {
+      "id": "28349951-3c23-4d79-a790-0b4717077a76",
+      "timestamp": 1776352560980,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "4512d972-5948-4911-bf0f-a41091b16207",
+      "timestamp": 1754320560980,
+      "type": "video_call",
+      "durationSeconds": 1421,
+      "note": "Discussed recent health matters"
+    },
+    {
+      "id": "7d4b53db-5d8d-4fb0-a780-843980b172d1",
+      "timestamp": 1754838960980,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "ac295da0-44b5-419c-90f5-3fb3eb93efb8",
+      "timestamp": 1753110960980,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "0733b010-261a-427a-ba38-9c9bd2d8fffd",
+      "timestamp": 1763219760980,
+      "type": "social_media",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "114bf0ba-88ea-4800-a2e5-837fe2612419",
+      "timestamp": 1750000560980,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": "Family news update"
+    },
+    {
+      "id": "3007bb93-c497-4a57-9790-65dfb320917b",
+      "timestamp": 1755616560980,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "e461852d-4fa2-4003-a948-6d0afd030040",
+      "timestamp": 1774538160980,
+      "type": "call",
+      "durationSeconds": 249,
+      "note": null
+    },
+    {
+      "id": "90d49ac6-6811-4d1d-a46d-d4a493a5d5bf",
+      "timestamp": 1765811760980,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Kids' activities update"
+    },
+    {
+      "id": "0173e1a9-9234-4d56-b76a-6310f50de0c2",
+      "timestamp": 1749482160980,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "2e75424a-c5ac-4c2f-a92a-ce6657f8835a",
+      "timestamp": 1752419760980,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "a18e34d3-a959-405c-9c40-b16c8b3b9a53",
+      "timestamp": 1762096560980,
+      "type": "social_media",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "81ad5a80-6df1-4dd8-8486-078103452cb4",
+      "timestamp": 1776352560980,
+      "type": "video_call",
+      "durationSeconds": 1341,
+      "note": "Chat about future plans"
+    },
+    {
+      "id": "dfb67e4d-4b85-4fd5-b555-da52f880fe13",
+      "timestamp": 1763133360980,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "9defa21b-52f9-4a37-a438-9304f9905f3b",
+      "timestamp": 1776179760980,
+      "type": "call",
+      "durationSeconds": 1968,
+      "note": null
+    },
+    {
+      "id": "7ea5aaeb-9804-429a-978b-77f4492730c7",
+      "timestamp": 1743866160980,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "114d80b1-5644-4bd5-8841-59c2dfe685a1",
+      "timestamp": 1743347760980,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "ae00be1b-f3f4-4367-b4bc-eea19c57cf42",
+      "timestamp": 1758986160980,
+      "type": "video_call",
+      "durationSeconds": 2420,
+      "note": "Shared photos"
+    },
+    {
+      "id": "9dfc0013-3a16-4f76-b66c-8e67a3c7b79d",
+      "timestamp": 1754320560980,
+      "type": "call",
+      "durationSeconds": 3390,
+      "note": null
+    },
+    {
+      "id": "630b5aad-58a0-4659-9866-b88e4274520e",
+      "timestamp": 1760195760980,
+      "type": "email",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "066b9f43-2be9-4525-81e8-ffe4491adbb8",
+      "timestamp": 1760627760980,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Kids' activities update"
+    },
+    {
+      "id": "f434a14c-0e45-4731-9b73-cc98e7d20f5a",
+      "timestamp": 1750778160980,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "6b94af19-814d-4588-b09f-a887d17a820d",
+      "timestamp": 1747322160980,
+      "type": "text",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "e2503c5b-39f0-41e7-ae9f-cc507452bbba",
+      "timestamp": 1775574960980,
+      "type": "social_media",
+      "durationSeconds": null,
+      "note": null
+    },
+    {
+      "id": "3e6643c6-5407-4b2d-b088-0abe4bb60e20",
+      "timestamp": 1745680560980,
+      "type": "text",
+      "durationSeconds": null,
+      "note": "Discussed recent health matters"
+    },
+    {
+      "id": "83e199d5-aa6f-4dee-871f-8450d82fdcd1",
+      "timestamp": 1753888560980,
+      "type": "video_call",
+      "durationSeconds": 1391,
+      "note": null
+    },
+    {
+      "id": "daec9025-3e39-46fc-b78d-cab61b6ad1aa",
+      "timestamp": 1748963760980,
+      "type": "in_person",
+      "durationSeconds": null,
+      "note": "Planned a visit"
+    }
+  ],
+  "interactionParticipants": [
+    {
+      "interactionId": "037cbc04-799c-4113-98ef-b08eff5214a3",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae"
+    },
+    {
+      "interactionId": "61a1dbb0-c54c-44e2-99c6-bfa552985686",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae"
+    },
+    {
+      "interactionId": "56ae5bfb-cf86-45b9-ac1f-15690c41494f",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae"
+    },
+    {
+      "interactionId": "7d38aafc-1e31-442d-b4bd-212126921c05",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae"
+    },
+    {
+      "interactionId": "863ca2f3-027e-4b5c-a41f-a3008f7efea6",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae"
+    },
+    {
+      "interactionId": "6ef3380c-fba9-4203-bf0e-44af4e988591",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae"
+    },
+    {
+      "interactionId": "006a03d3-e4b2-4883-b626-289fb1392c34",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae"
+    },
+    {
+      "interactionId": "7b9eeec2-4c85-4b91-9588-ab59c8fd09e9",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae"
+    },
+    {
+      "interactionId": "60750d5e-f525-4782-8b77-ccc4bd68f50e",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae"
+    },
+    {
+      "interactionId": "c3e4f620-67e4-47ca-a0d9-a936edb701d8",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae"
+    },
+    {
+      "interactionId": "7b93bc95-8315-499c-bbed-7cbbf9f4d0fe",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5"
+    },
+    {
+      "interactionId": "017360e7-ec64-4ad8-9348-92a5f9a21b1b",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5"
+    },
+    {
+      "interactionId": "da068106-ecb7-48c1-99bf-f88898c5ec5b",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5"
+    },
+    {
+      "interactionId": "9c33d01f-0e5e-4397-9c87-6c13bb919e4c",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5"
+    },
+    {
+      "interactionId": "6e0db325-f379-4c34-b5b9-feff54acf7e8",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5"
+    },
+    {
+      "interactionId": "9cd04d3e-0c45-42d7-b50b-11fcfbc799ee",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5"
+    },
+    {
+      "interactionId": "411acda5-f2f5-49e4-b4e4-303073800825",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5"
+    },
+    {
+      "interactionId": "55355408-8e6c-4cef-b4c1-3caeb3dbbe39",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5"
+    },
+    {
+      "interactionId": "8a98e530-f9de-489a-ba47-a4d3a9f18596",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5"
+    },
+    {
+      "interactionId": "8ead8cf6-0b09-4210-bb1f-bc15ad512e8c",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5"
+    },
+    {
+      "interactionId": "16e51234-f154-4e2a-9ce3-e65a89e7e3a3",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d"
+    },
+    {
+      "interactionId": "d94dfd7c-0cb0-4677-b9a1-8c48f8a7cdc5",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d"
+    },
+    {
+      "interactionId": "6f7ae3ab-6a37-437a-bf7c-9918baf3bd06",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d"
+    },
+    {
+      "interactionId": "e214ea53-ec64-4bdb-a992-67f76d516286",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d"
+    },
+    {
+      "interactionId": "26c7fe48-a5c8-48c2-8b55-347e68922025",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d"
+    },
+    {
+      "interactionId": "ed67ccef-1f11-4d50-81c5-9e3e0e1f68f3",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d"
+    },
+    {
+      "interactionId": "d6c07ad7-cb76-463b-a7fd-956be6191453",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d"
+    },
+    {
+      "interactionId": "e656bea5-940c-446d-a3f6-ddf35030c427",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d"
+    },
+    {
+      "interactionId": "28a45d2f-3c3c-40fd-ae8a-3b43250957e0",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d"
+    },
+    {
+      "interactionId": "b6128589-39fb-464a-b2a6-41e48408da43",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d"
+    },
+    {
+      "interactionId": "3a0fb017-d500-449e-9989-88169bfe7467",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199"
+    },
+    {
+      "interactionId": "a8a0b6b8-d29f-4162-8346-af96f55e741e",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199"
+    },
+    {
+      "interactionId": "9fbd2b5b-fd49-4d59-be37-e9fe778bb9dd",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199"
+    },
+    {
+      "interactionId": "67b551f5-412b-4128-be30-519b3b7121aa",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199"
+    },
+    {
+      "interactionId": "3b73aed5-64f0-4db7-b83c-2e867faf7c83",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199"
+    },
+    {
+      "interactionId": "e2712e20-90ef-4c1d-9aca-02dc306f7a86",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199"
+    },
+    {
+      "interactionId": "558e8449-c994-4f5c-b230-48ab34ebd360",
+      "personId": "14c3791a-439f-40d2-ba03-ecb1d75c00c6"
+    },
+    {
+      "interactionId": "0262693f-30b1-46fe-8a06-f4290c3ce932",
+      "personId": "14c3791a-439f-40d2-ba03-ecb1d75c00c6"
+    },
+    {
+      "interactionId": "8997891c-927e-4670-bb62-10c2c125ac0d",
+      "personId": "14c3791a-439f-40d2-ba03-ecb1d75c00c6"
+    },
+    {
+      "interactionId": "ccf58500-44a6-42ff-b134-3b3e4da06606",
+      "personId": "14c3791a-439f-40d2-ba03-ecb1d75c00c6"
+    },
+    {
+      "interactionId": "05f81aef-ca89-46f4-916b-30f1c549fd30",
+      "personId": "14c3791a-439f-40d2-ba03-ecb1d75c00c6"
+    },
+    {
+      "interactionId": "9251dd6a-4e5e-496d-a9b2-4083acb935da",
+      "personId": "14c3791a-439f-40d2-ba03-ecb1d75c00c6"
+    },
+    {
+      "interactionId": "4f6f1395-9219-4508-bb9d-a7705a4953ea",
+      "personId": "407d40b5-b34f-4ba4-83af-e7a72f069818"
+    },
+    {
+      "interactionId": "9fd4e379-da0f-4cef-b360-661b38e92c5a",
+      "personId": "407d40b5-b34f-4ba4-83af-e7a72f069818"
+    },
+    {
+      "interactionId": "b60a415a-705c-4f47-898c-492e60fbf880",
+      "personId": "407d40b5-b34f-4ba4-83af-e7a72f069818"
+    },
+    {
+      "interactionId": "e57bf12a-ec85-4c0c-85c0-9aa318e71ceb",
+      "personId": "407d40b5-b34f-4ba4-83af-e7a72f069818"
+    },
+    {
+      "interactionId": "7d615b57-96a6-422a-8411-33fe06de7ac1",
+      "personId": "407d40b5-b34f-4ba4-83af-e7a72f069818"
+    },
+    {
+      "interactionId": "9b4f5a3a-3036-48b7-a414-1a2acc0655b2",
+      "personId": "b713724f-0ce6-448f-90e2-7aed0323fa44"
+    },
+    {
+      "interactionId": "96614d75-c9b9-443a-b316-73f94f317890",
+      "personId": "b713724f-0ce6-448f-90e2-7aed0323fa44"
+    },
+    {
+      "interactionId": "899f6e3b-e300-44b6-ba55-824dc7ac3a32",
+      "personId": "b713724f-0ce6-448f-90e2-7aed0323fa44"
+    },
+    {
+      "interactionId": "9837ef6b-a8df-4ed3-97e9-09416b084109",
+      "personId": "b713724f-0ce6-448f-90e2-7aed0323fa44"
+    },
+    {
+      "interactionId": "c65d4e66-b88d-4769-bc0f-1a7c8e009ffc",
+      "personId": "b713724f-0ce6-448f-90e2-7aed0323fa44"
+    },
+    {
+      "interactionId": "b1baf6c0-5641-4b18-9253-35c8d53f34be",
+      "personId": "b713724f-0ce6-448f-90e2-7aed0323fa44"
+    },
+    {
+      "interactionId": "b4a7c1e9-0295-4294-aa42-ebb9313917c7",
+      "personId": "0c58eb6e-ba13-476c-b658-7b645cd94646"
+    },
+    {
+      "interactionId": "ce9636bc-3afe-4411-9297-4fdc575c0e64",
+      "personId": "0c58eb6e-ba13-476c-b658-7b645cd94646"
+    },
+    {
+      "interactionId": "b996fa74-9bb4-42f5-a4c1-9a7a7d4b9eed",
+      "personId": "0c58eb6e-ba13-476c-b658-7b645cd94646"
+    },
+    {
+      "interactionId": "427005aa-d7e4-41bc-ada9-fa252b547bbd",
+      "personId": "0c58eb6e-ba13-476c-b658-7b645cd94646"
+    },
+    {
+      "interactionId": "bb01ede3-32ae-4242-acd7-0153d1c188e0",
+      "personId": "0c58eb6e-ba13-476c-b658-7b645cd94646"
+    },
+    {
+      "interactionId": "0fdcc509-9e7b-4700-a1c7-2d9303872484",
+      "personId": "0c58eb6e-ba13-476c-b658-7b645cd94646"
+    },
+    {
+      "interactionId": "12562bf8-14a6-4d9e-a231-11eb836a5548",
+      "personId": "30322f52-21b6-4263-8657-5e05b27b69b1"
+    },
+    {
+      "interactionId": "00147c78-cdee-4219-afce-119ae3d6001d",
+      "personId": "7587aa4d-6c05-4f27-8672-60d155e86326"
+    },
+    {
+      "interactionId": "8314d5ec-6f32-40fc-a485-c5739a8ce58a",
+      "personId": "20bc5ceb-97f9-4e3d-b1fc-e740e3f37054"
+    },
+    {
+      "interactionId": "0e24c3e4-3e1d-4a81-97b6-ef09286af5d6",
+      "personId": "20bc5ceb-97f9-4e3d-b1fc-e740e3f37054"
+    },
+    {
+      "interactionId": "a8d0e46b-8f57-48cd-b821-5ded3108b3aa",
+      "personId": "2f33d0f6-284d-4e70-a261-ea676ed39592"
+    },
+    {
+      "interactionId": "6267adc2-e1da-40c4-87c8-03dd604862a6",
+      "personId": "2f33d0f6-284d-4e70-a261-ea676ed39592"
+    },
+    {
+      "interactionId": "d02ed53f-74b9-4300-b237-abb45cf9b5bf",
+      "personId": "2f33d0f6-284d-4e70-a261-ea676ed39592"
+    },
+    {
+      "interactionId": "2c82a4d8-036d-4cb5-be72-74d8e3548c9f",
+      "personId": "2f33d0f6-284d-4e70-a261-ea676ed39592"
+    },
+    {
+      "interactionId": "f8be2aa0-e3c6-40d5-815b-748b4699064c",
+      "personId": "37f14188-1e0d-4f5a-9f92-de582e23cf2e"
+    },
+    {
+      "interactionId": "ccd4518d-e134-4184-9a1b-6891414f9e81",
+      "personId": "37f14188-1e0d-4f5a-9f92-de582e23cf2e"
+    },
+    {
+      "interactionId": "78e6cfc5-c2f1-41a8-9318-74daa867f753",
+      "personId": "37f14188-1e0d-4f5a-9f92-de582e23cf2e"
+    },
+    {
+      "interactionId": "c9092b54-8fe9-4de5-a563-ce86f589c48f",
+      "personId": "37f14188-1e0d-4f5a-9f92-de582e23cf2e"
+    },
+    {
+      "interactionId": "ed1b3c07-f89d-4968-82e9-a19ce88fae8d",
+      "personId": "ba5ad7d0-5eb1-41b5-9cc6-d0ff5a64a0e2"
+    },
+    {
+      "interactionId": "a19871ab-a3a9-4ca3-8971-a37e94aff41d",
+      "personId": "ba5ad7d0-5eb1-41b5-9cc6-d0ff5a64a0e2"
+    },
+    {
+      "interactionId": "7cd3eb7f-e813-4203-9ed6-db51ff242614",
+      "personId": "ba5ad7d0-5eb1-41b5-9cc6-d0ff5a64a0e2"
+    },
+    {
+      "interactionId": "7f4d8aca-8f30-4f4d-85fa-bdc9561b369b",
+      "personId": "ba5ad7d0-5eb1-41b5-9cc6-d0ff5a64a0e2"
+    },
+    {
+      "interactionId": "18d37004-1ea0-4d0b-bb1b-ec1ffd3944e5",
+      "personId": "b1b6be71-9c29-4745-9de9-b67d639bcc6f"
+    },
+    {
+      "interactionId": "e3b10d21-21fd-46fb-a312-ac6c7d2bc754",
+      "personId": "b1b6be71-9c29-4745-9de9-b67d639bcc6f"
+    },
+    {
+      "interactionId": "9ed73ed1-58af-4298-8cfa-af45e3656333",
+      "personId": "b1b6be71-9c29-4745-9de9-b67d639bcc6f"
+    },
+    {
+      "interactionId": "032c1ea3-f5f3-4b7f-aee2-970a1414c85b",
+      "personId": "30ecf5dc-99a2-42de-b205-d0cc89f7b758"
+    },
+    {
+      "interactionId": "d4b9f12f-6654-4083-aed5-877632fd1d6c",
+      "personId": "30ecf5dc-99a2-42de-b205-d0cc89f7b758"
+    },
+    {
+      "interactionId": "ea5eff8b-754d-4f97-956c-cb32f5dbef2e",
+      "personId": "30ecf5dc-99a2-42de-b205-d0cc89f7b758"
+    },
+    {
+      "interactionId": "7ea821bf-b812-4d35-b9cd-72a0bd496975",
+      "personId": "30ecf5dc-99a2-42de-b205-d0cc89f7b758"
+    },
+    {
+      "interactionId": "44d5180a-810b-43c0-8768-e24aaf27b821",
+      "personId": "342553f2-f5a1-4937-9372-6bfb065f88b9"
+    },
+    {
+      "interactionId": "aae5d21b-6ebb-408d-8ead-193473073ed4",
+      "personId": "342553f2-f5a1-4937-9372-6bfb065f88b9"
+    },
+    {
+      "interactionId": "140144fe-7d0f-4f70-8e8d-838ec3dc9098",
+      "personId": "342553f2-f5a1-4937-9372-6bfb065f88b9"
+    },
+    {
+      "interactionId": "bd0bf885-3b63-43b7-96b9-baf9dded6e2f",
+      "personId": "cafb7b92-3eea-4802-853b-156c367748bf"
+    },
+    {
+      "interactionId": "157267e5-9193-43ba-9c6a-d4e768e1a6fe",
+      "personId": "cafb7b92-3eea-4802-853b-156c367748bf"
+    },
+    {
+      "interactionId": "098e7ae0-1a97-413c-8894-9f35849cc4d7",
+      "personId": "cafb7b92-3eea-4802-853b-156c367748bf"
+    },
+    {
+      "interactionId": "358a8797-8430-4f78-8a58-eb1269c225ca",
+      "personId": "cafb7b92-3eea-4802-853b-156c367748bf"
+    },
+    {
+      "interactionId": "1938d80a-9c5b-4b26-99bb-703f3a3e7b7b",
+      "personId": "d441ca39-12fb-45b3-adc0-23a55c488226"
+    },
+    {
+      "interactionId": "a1b6aae1-3906-4aed-b9b9-b5b9f7305b96",
+      "personId": "d441ca39-12fb-45b3-adc0-23a55c488226"
+    },
+    {
+      "interactionId": "1370fd9f-0e86-4513-a937-eaf7888e3d92",
+      "personId": "d441ca39-12fb-45b3-adc0-23a55c488226"
+    },
+    {
+      "interactionId": "7abe9871-b2ed-4d15-bc3e-3474ff252db0",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d"
+    },
+    {
+      "interactionId": "dac07699-5962-4711-ae09-285a3d5cba1c",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d"
+    },
+    {
+      "interactionId": "0c81f4d0-7843-4a1b-986b-e7ee29625a3d",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d"
+    },
+    {
+      "interactionId": "003a9a23-8dff-4cef-89a1-1a5aa045861f",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d"
+    },
+    {
+      "interactionId": "28349951-3c23-4d79-a790-0b4717077a76",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d"
+    },
+    {
+      "interactionId": "4512d972-5948-4911-bf0f-a41091b16207",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d"
+    },
+    {
+      "interactionId": "7d4b53db-5d8d-4fb0-a780-843980b172d1",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d"
+    },
+    {
+      "interactionId": "ac295da0-44b5-419c-90f5-3fb3eb93efb8",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d"
+    },
+    {
+      "interactionId": "0733b010-261a-427a-ba38-9c9bd2d8fffd",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d"
+    },
+    {
+      "interactionId": "114bf0ba-88ea-4800-a2e5-837fe2612419",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d"
+    },
+    {
+      "interactionId": "3007bb93-c497-4a57-9790-65dfb320917b",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d"
+    },
+    {
+      "interactionId": "e461852d-4fa2-4003-a948-6d0afd030040",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4"
+    },
+    {
+      "interactionId": "90d49ac6-6811-4d1d-a46d-d4a493a5d5bf",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4"
+    },
+    {
+      "interactionId": "0173e1a9-9234-4d56-b76a-6310f50de0c2",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4"
+    },
+    {
+      "interactionId": "2e75424a-c5ac-4c2f-a92a-ce6657f8835a",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4"
+    },
+    {
+      "interactionId": "a18e34d3-a959-405c-9c40-b16c8b3b9a53",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4"
+    },
+    {
+      "interactionId": "81ad5a80-6df1-4dd8-8486-078103452cb4",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4"
+    },
+    {
+      "interactionId": "dfb67e4d-4b85-4fd5-b555-da52f880fe13",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4"
+    },
+    {
+      "interactionId": "9defa21b-52f9-4a37-a438-9304f9905f3b",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4"
+    },
+    {
+      "interactionId": "7ea5aaeb-9804-429a-978b-77f4492730c7",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4"
+    },
+    {
+      "interactionId": "114d80b1-5644-4bd5-8841-59c2dfe685a1",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4"
+    },
+    {
+      "interactionId": "ae00be1b-f3f4-4367-b4bc-eea19c57cf42",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4"
+    },
+    {
+      "interactionId": "9dfc0013-3a16-4f76-b66c-8e67a3c7b79d",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7"
+    },
+    {
+      "interactionId": "630b5aad-58a0-4659-9866-b88e4274520e",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7"
+    },
+    {
+      "interactionId": "066b9f43-2be9-4525-81e8-ffe4491adbb8",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7"
+    },
+    {
+      "interactionId": "f434a14c-0e45-4731-9b73-cc98e7d20f5a",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7"
+    },
+    {
+      "interactionId": "6b94af19-814d-4588-b09f-a887d17a820d",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7"
+    },
+    {
+      "interactionId": "e2503c5b-39f0-41e7-ae9f-cc507452bbba",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7"
+    },
+    {
+      "interactionId": "3e6643c6-5407-4b2d-b088-0abe4bb60e20",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7"
+    },
+    {
+      "interactionId": "83e199d5-aa6f-4dee-871f-8450d82fdcd1",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7"
+    },
+    {
+      "interactionId": "daec9025-3e39-46fc-b78d-cab61b6ad1aa",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7"
+    }
+  ],
+  "notes": [
+    {
+      "id": "4640bbdf-2590-41df-a3cb-20c041f8f458",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae",
+      "timestamp": 1773933391113,
+      "body": "Elena mentioned her knee has been bothering her, especially in damp weather. She's looking forward to visiting the new local art gallery soon. Her favorite flowers are lilies."
+    },
+    {
+      "id": "580061ca-ddf0-4211-b774-15d5960adf36",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae",
+      "timestamp": 1759677391113,
+      "body": "Remembers my preference for dark chocolate over milk chocolate. She suggested a recipe for a new vegetarian lasagna last month. Needs help with her tablet sometimes."
+    },
+    {
+      "id": "a033b093-adfb-4725-8652-c3c7c88d5111",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae",
+      "timestamp": 1776784591113,
+      "body": "Called to check in after my long work week. She's still planning her garden redesign for spring. Avoids spicy foods due to a sensitive stomach."
+    },
+    {
+      "id": "e8fce3fe-1cb2-4248-b0ab-97da8120e8bc",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5",
+      "timestamp": 1771082191113,
+      "body": "Kai just started a new coding project for fun, focusing on a retro game emulator. He's trying to cut down on caffeine. His daughter Lily started kindergarten this year."
+    },
+    {
+      "id": "c8a9768a-9bcf-4b2e-a153-a7d50aee7aee",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5",
+      "timestamp": 1751037391113,
+      "body": "Loves hiking and camping, especially in national parks. Mentioned an interest in learning to play the ukulele. Always remembers my birthday with a thoughtful card."
+    },
+    {
+      "id": "847d6bc0-2a1f-4ac6-a93f-e3d2a04fabf3",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5",
+      "timestamp": 1764429391114,
+      "body": "Excited about an upcoming trip to Japan next year. He's been saving up for it for a while. Avoids shellfish due to an allergy."
+    },
+    {
+      "id": "5ede6f5a-955b-4303-9a3a-623517387bc1",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d",
+      "timestamp": 1776093391114,
+      "body": "Liam expressed interest in taking a cooking class together. He loves trying new craft beers. He's been stressed about his work project deadline."
+    },
+    {
+      "id": "83cc829c-620e-4f3e-bd81-0c64b60b9374",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d",
+      "timestamp": 1770045391114,
+      "body": "His cat, Mittens, is recovering well from her vet visit. He enjoys sci-fi movies and reading historical fiction. Always prefers experiences over material gifts."
+    },
+    {
+      "id": "525d79b8-6844-4529-acbd-26f67287ab6e",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d",
+      "timestamp": 1743261391114,
+      "body": "Mentioned his dream of eventually living in a cabin in the mountains. He's very supportive of my career goals. Sensitive to strong perfumes."
+    },
+    {
+      "id": "f8881fe5-f9e6-4626-be5d-2a9354b8b828",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d",
+      "timestamp": 1776957391114,
+      "body": "Liam just got a promotion at work, which he's very proud of. He's planning a small celebration next weekend. He enjoys spicy food, unlike my mother."
+    },
+    {
+      "id": "a9a97cd3-6d1e-4643-82be-93d6db6c6ea5",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199",
+      "timestamp": 1772637391114,
+      "body": "Aisha is planning a trip to Southeast Asia next year. She's a big fan of true crime podcasts. Her sister, Zara, recently got engaged."
+    },
+    {
+      "id": "2258569e-092a-4cb3-b5fa-78f9a2822e94",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199",
+      "timestamp": 1756221391114,
+      "body": "Prefers vegan options when dining out, if available. She is a talented amateur photographer and has an exhibition coming up. Loves board games."
+    },
+    {
+      "id": "af56c609-43bf-44b6-963e-7b4bfe145393",
+      "personId": "14c3791a-439f-40d2-ba03-ecb1d75c00c6",
+      "timestamp": 1768317391114,
+      "body": "David recently adopted a rescue dog named Buster. He's really into cycling these days. He's looking for recommendations for new fantasy novels."
+    },
+    {
+      "id": "03b8a2dd-9738-40c6-af32-06cc021fc926",
+      "personId": "14c3791a-439f-40d2-ba03-ecb1d75c00c6",
+      "timestamp": 1774797391114,
+      "body": "Expressed frustration with his current work-life balance. He enjoys trying new coffee shops. His birthday is in two months."
+    },
+    {
+      "id": "e1db0a98-197f-4ad7-aff8-742f7d5d82bb",
+      "personId": "407d40b5-b34f-4ba4-83af-e7a72f069818",
+      "timestamp": 1775661391114,
+      "body": "Sophie is volunteering at the local animal shelter on weekends. She has a peanut allergy, so be mindful when preparing food. She loves indie music concerts."
+    },
+    {
+      "id": "9116bded-9c83-4876-8e4b-c1fcb0385ec2",
+      "personId": "407d40b5-b34f-4ba4-83af-e7a72f069818",
+      "timestamp": 1762269391114,
+      "body": "She recently started a pottery class and is really enjoying it. Sophie prefers tea over coffee. Her younger brother is applying to colleges."
+    },
+    {
+      "id": "124b528b-142c-4640-82eb-1a45246f2ff0",
+      "personId": "b713724f-0ce6-448f-90e2-7aed0323fa44",
+      "timestamp": 1769613391114,
+      "body": "Marcus is a big fan of obscure documentaries. He's trying to learn Spanish. He mentioned wanting to get back into playing tennis."
+    },
+    {
+      "id": "466388a1-235c-413b-83ef-ebe1debcf6a6",
+      "personId": "b713724f-0ce6-448f-90e2-7aed0323fa44",
+      "timestamp": 1774365391114,
+      "body": "He just got a new job in marketing. Marcus prefers outdoor activities to indoor ones. His car broke down last week."
+    },
+    {
+      "id": "748522ac-4ba8-4820-afa2-9eac98f5a6dc",
+      "personId": "0c58eb6e-ba13-476c-b658-7b645cd94646",
+      "timestamp": 1771773391114,
+      "body": "Maya is an avid baker and loves experimenting with new recipes. She's planning a road trip along the coast this summer. Her dog, Charlie, is very energetic."
+    },
+    {
+      "id": "3883fe3a-fef0-49d5-963b-615f4550742f",
+      "personId": "0c58eb6e-ba13-476c-b658-7b645cd94646",
+      "timestamp": 1751901391114,
+      "body": "She mentioned an interest in sustainable living and reducing her carbon footprint. Maya dislikes overly sweet desserts. She likes historical dramas."
+    },
+    {
+      "id": "96a719e2-f65e-49f2-a30e-192b13964197",
+      "personId": "30322f52-21b6-4263-8657-5e05b27b69b1",
+      "timestamp": 1764861391114,
+      "body": "John recently moved to a new apartment in the downtown area. He's a casual golfer. Met him at a networking event."
+    },
+    {
+      "id": "bf83e670-8f3b-42aa-88ff-5b35fb94cd90",
+      "personId": "7587aa4d-6c05-4f27-8672-60d155e86326",
+      "timestamp": 1760541391114,
+      "body": "Isabella is passionate about environmental causes. She's a vegetarian. Briefly discussed local politics."
+    },
+    {
+      "id": "a83abe37-493f-4cc6-b054-9ff22362ba27",
+      "personId": "2f33d0f6-284d-4e70-a261-ea676ed39592",
+      "timestamp": 1776525391114,
+      "body": "Sarah is currently leading the new client onboarding project. She prefers concise emails over long meetings. Her son is applying for internships."
+    },
+    {
+      "id": "aaf6d1c0-3d8c-4da0-9271-aac0f7c20482",
+      "personId": "2f33d0f6-284d-4e70-a261-ea676ed39592",
+      "timestamp": 1762269391114,
+      "body": "Expressed interest in developing her presentation skills. She is an early riser. Enjoys gardening in her free time."
+    },
+    {
+      "id": "ea062b20-4c45-47c9-9e23-1249873e99eb",
+      "personId": "37f14188-1e0d-4f5a-9f92-de582e23cf2e",
+      "timestamp": 1773501391114,
+      "body": "Miguel is working on optimizing the backend database for the new platform. He enjoys playing chess during his lunch breaks. He's a fan of classical music."
+    },
+    {
+      "id": "285254ed-a94b-4c69-ae66-735131134c37",
+      "personId": "ba5ad7d0-5eb1-41b5-9cc6-d0ff5a64a0e2",
+      "timestamp": 1775229391114,
+      "body": "Rebecca is keen on cross-departmental collaboration for the upcoming quarter. She values clear, data-driven reports. She recently mentioned wanting to learn to sail."
+    },
+    {
+      "id": "cbee5808-6c60-4fca-b4f0-23f2c5def911",
+      "personId": "ba5ad7d0-5eb1-41b5-9cc6-d0ff5a64a0e2",
+      "timestamp": 1756221391114,
+      "body": "She has a strong interest in leadership development workshops. Rebecca prefers constructive feedback directly. Her son plays youth soccer."
+    },
+    {
+      "id": "2b9a4569-9345-410d-846f-87733f822c73",
+      "personId": "b1b6be71-9c29-4745-9de9-b67d639bcc6f",
+      "timestamp": 1769181391114,
+      "body": "Thomas is focused on improving team efficiency with new tools. He prefers morning meetings. He enjoys watching historical documentaries."
+    },
+    {
+      "id": "39c995f8-6c6e-4ad1-ac6e-dba0c2f9cb1e",
+      "personId": "30ecf5dc-99a2-42de-b205-d0cc89f7b758",
+      "timestamp": 1776093391114,
+      "body": "Chloe is eager to take on more responsibility in the marketing campaign. She's very organized. Her cat's name is Luna."
+    },
+    {
+      "id": "c44f688c-027c-43a5-ad80-016a8ee71a30",
+      "personId": "342553f2-f5a1-4937-9372-6bfb065f88b9",
+      "timestamp": 1774365391114,
+      "body": "Omar is looking for opportunities to expand his skill set in data analysis. He's very meticulous in his work. He enjoys playing video games in his free time."
+    },
+    {
+      "id": "fb12d48a-d6a1-4779-949e-54a8dcadf654",
+      "personId": "cafb7b92-3eea-4802-853b-156c367748bf",
+      "timestamp": 1772637391114,
+      "body": "Susan emphasized the importance of continuous learning and professional networking. She's a strong advocate for work-life balance. She enjoys meditation."
+    },
+    {
+      "id": "6f0ea391-d86a-41a6-bafc-9039079708ae",
+      "personId": "d441ca39-12fb-45b3-adc0-23a55c488226",
+      "timestamp": 1776957391114,
+      "body": "Robert is keen on seeing Q3 results for the new product launch. He prefers direct communication. He has an interest in sustainable business practices."
+    },
+    {
+      "id": "c7b5139d-021c-4bda-96f6-ab4e5732fb9b",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d",
+      "timestamp": 1770909391114,
+      "body": "Patricia just celebrated her big anniversary with her husband. She loves gardening and her roses are particularly beautiful this year. She enjoys historical romance novels."
+    },
+    {
+      "id": "1a37a15a-ddd6-4b6e-b3ed-05ac9d81c2dd",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d",
+      "timestamp": 1752765391114,
+      "body": "She prefers to receive handwritten cards for special occasions. Patricia mentioned her granddaughter, Emily, is starting high school soon. She's a fantastic cook."
+    },
+    {
+      "id": "07f6ee25-5a5a-4d2e-8590-9463f01a0bcd",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d",
+      "timestamp": 1776525391114,
+      "body": "Patricia offered to share her famous apple pie recipe. She's planning a small family get-together next month. Reminded me about the family reunion in summer."
+    },
+    {
+      "id": "7fa02424-4812-45db-ac04-240342422fe0",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4",
+      "timestamp": 1768317391114,
+      "body": "Jin is passionate about photography and recently won an award for his landscape work. He's trying to save up for a new camera lens. He has two cats, Miso and Sushi."
+    },
+    {
+      "id": "9ef51477-8e69-41a9-b343-96097a64f677",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4",
+      "timestamp": 1744989391114,
+      "body": "He always brings unique snacks to family gatherings. Jin is a big fan of live music, especially jazz. He's planning a trip to Yellowstone next year."
+    },
+    {
+      "id": "e2582680-429a-430b-856e-13e8585f3e5d",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4",
+      "timestamp": 1773501391114,
+      "body": "Jin mentioned he's been experimenting with fermenting foods. He prefers experiences over material gifts. He's good at remembering details about shared memories."
+    },
+    {
+      "id": "fd1cc426-430d-45c7-8d1e-98dd6aa3ed7f",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7",
+      "timestamp": 1775661391114,
+      "body": "Elena just finished her marathon and achieved a personal best. She loves trying new vegan restaurants. Her dog, Max, had a minor surgery recently and is recovering."
+    },
+    {
+      "id": "4c7d6d5c-ca1f-4184-971a-f7fc067e8b05",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7",
+      "timestamp": 1765725391114,
+      "body": "She mentioned an interest in learning a new language, possibly Italian. Elena is incredibly organized and keeps a detailed journal. She prefers early morning workouts."
+    },
+    {
+      "id": "2c48ce03-20d3-4d02-b0c1-b6dc02d3008b",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7",
+      "timestamp": 1777216591114,
+      "body": "Elena offered to help me move some boxes next weekend. She's looking forward to a quiet evening with a good book. She enjoys spicy food and strong coffee."
+    },
+    {
+      "id": "58e006ec-fb2b-4d35-8462-3bf56d27b959",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7",
+      "timestamp": 1736349391114,
+      "body": "She recommended a fantastic book on mindfulness last year. Elena has a great sense of humor. Her sister is expecting a baby next spring."
+    }
+  ],
+  "lifeEvents": [
+    {
+      "id": "8bb29c31-55b0-4645-82a5-77f79b030be3",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae",
+      "eventType": "birthday",
+      "date": -475200000000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "a4571497-0369-4c3f-967d-b35d2f0262ba",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5",
+      "eventType": "birthday",
+      "date": 589420800000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "d9042962-c0a0-4d0a-88b2-5a7bf9b310bc",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d",
+      "eventType": "birthday",
+      "date": 757987200000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "b8c6af38-0402-4af0-aa97-9bf8688fbf05",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199",
+      "eventType": "birthday",
+      "date": 1002672000000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "779541dc-a550-403a-9735-915e3cfdc953",
+      "personId": "14c3791a-439f-40d2-ba03-ecb1d75c00c6",
+      "eventType": "birthday",
+      "date": 352771200000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "d5fbd535-f691-43d6-a88f-726fd5e96bff",
+      "personId": "407d40b5-b34f-4ba4-83af-e7a72f069818",
+      "eventType": "birthday",
+      "date": 853632000000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "6e0321ff-4b4b-4baa-b653-41fc49e85bbb",
+      "personId": "b713724f-0ce6-448f-90e2-7aed0323fa44",
+      "eventType": "birthday",
+      "date": 419731200000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "4bb5dc52-74ac-45bd-97e1-1e5665f83220",
+      "personId": "0c58eb6e-ba13-476c-b658-7b645cd94646",
+      "eventType": "birthday",
+      "date": 621993600000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "aaa3a296-b99d-4f2a-9986-b1c5deae4eef",
+      "personId": "30322f52-21b6-4263-8657-5e05b27b69b1",
+      "eventType": "birthday",
+      "date": 398476800000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "c2e4b63e-0d36-44e6-95ba-680d50b95a83",
+      "personId": "7587aa4d-6c05-4f27-8672-60d155e86326",
+      "eventType": "birthday",
+      "date": 590025600000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "036c31ad-02c1-4ba5-b56d-65ea04b1f8e1",
+      "personId": "20bc5ceb-97f9-4e3d-b1fc-e740e3f37054",
+      "eventType": "birthday",
+      "date": 498700800000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "b55bdcde-612c-4b7f-8495-e9eba64c29db",
+      "personId": "2f33d0f6-284d-4e70-a261-ea676ed39592",
+      "eventType": "birthday",
+      "date": 826329600000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "8b455414-fe40-4b38-8354-0fdefa94ad60",
+      "personId": "37f14188-1e0d-4f5a-9f92-de582e23cf2e",
+      "eventType": "birthday",
+      "date": 741052800000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "621265ac-4c39-4b7e-8ca3-4dae97ec4297",
+      "personId": "ba5ad7d0-5eb1-41b5-9cc6-d0ff5a64a0e2",
+      "eventType": "birthday",
+      "date": 133142400000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "be1020c1-6731-415c-a3fa-0a0beee8dde2",
+      "personId": "b1b6be71-9c29-4745-9de9-b67d639bcc6f",
+      "eventType": "birthday",
+      "date": 367718400000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "14ab4897-83b7-4d57-b4b8-76458a827255",
+      "personId": "30ecf5dc-99a2-42de-b205-d0cc89f7b758",
+      "eventType": "birthday",
+      "date": 826761600000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "60a6def9-3664-4de4-b35e-5d28d6645848",
+      "personId": "342553f2-f5a1-4937-9372-6bfb065f88b9",
+      "eventType": "birthday",
+      "date": 744768000000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "60b57e8a-1a27-43b9-8586-5381b5691a0c",
+      "personId": "cafb7b92-3eea-4802-853b-156c367748bf",
+      "eventType": "birthday",
+      "date": 70416000000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "516458bf-72f5-41fd-8f20-5255ab6ed087",
+      "personId": "d441ca39-12fb-45b3-adc0-23a55c488226",
+      "eventType": "birthday",
+      "date": 511920000000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "dc67fd9c-d8f1-48e1-8733-cb82a4b5d2d1",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d",
+      "eventType": "birthday",
+      "date": -81302400000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "8642126e-4a9b-42d1-9c50-22f28d807b1d",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4",
+      "eventType": "birthday",
+      "date": 561340800000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "56b01a30-b87f-419e-9111-c1d9b3a04263",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7",
+      "eventType": "birthday",
+      "date": 566265600000,
+      "isRecurring": true,
+      "note": null
+    },
+    {
+      "id": "c3215ef8-cc42-4fcf-9d12-5369b0685297",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d",
+      "eventType": "anniversary",
+      "date": 1444876800000,
+      "isRecurring": true,
+      "note": "Wedding Anniversary"
+    },
+    {
+      "id": "9d815022-6530-4775-b2d8-fc401346bba0",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5",
+      "eventType": "graduation",
+      "date": 1527811200000,
+      "isRecurring": false,
+      "note": "Graduated college"
+    },
+    {
+      "id": "bbb198ed-1a84-45ea-a0a9-1527d49a1e46",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199",
+      "eventType": "moved",
+      "date": 1649548800000,
+      "isRecurring": false,
+      "note": "Moved to a new city"
+    },
+    {
+      "id": "c36cdd3e-966a-4fc5-9412-169ac92409a9",
+      "personId": "b713724f-0ce6-448f-90e2-7aed0323fa44",
+      "eventType": "job_change",
+      "date": 1611100800000,
+      "isRecurring": false,
+      "note": "Started new role at Tech Innovations"
+    },
+    {
+      "id": "cca4e05c-bacf-4a14-ad1e-42639d6c63b2",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4",
+      "eventType": "graduation",
+      "date": 1342224000000,
+      "isRecurring": false,
+      "note": "High school graduation"
+    },
+    {
+      "id": "fd145ea3-20a1-4c7e-9290-e7c5e9bda419",
+      "personId": "2f33d0f6-284d-4e70-a261-ea676ed39592",
+      "eventType": "job_change",
+      "date": 1567296000000,
+      "isRecurring": false,
+      "note": "Promoted to Senior Developer"
+    },
+    {
+      "id": "465fd609-f5d3-4824-8ede-c98a7785d9ba",
+      "personId": "ba5ad7d0-5eb1-41b5-9cc6-d0ff5a64a0e2",
+      "eventType": "job_change",
+      "date": 1677974400000,
+      "isRecurring": false,
+      "note": "Joined new company as Director"
+    },
+    {
+      "id": "eb9b44fc-93aa-4872-9d17-6ed27002e577",
+      "personId": "30ecf5dc-99a2-42de-b205-d0cc89f7b758",
+      "eventType": "job_change",
+      "date": 1581638400000,
+      "isRecurring": false,
+      "note": "Moved to a different department"
+    }
+  ],
+  "activities": [
+    {
+      "id": "bc10ea69-41a3-468f-ba61-a264f4714046",
+      "timestamp": 1777216616224,
+      "title": "Family Dinner at Home",
+      "body": "A cozy dinner night with homemade lasagna and good conversation."
+    },
+    {
+      "id": "64f7ef9a-b5b9-4bad-876d-5d7d6f23df73",
+      "timestamp": 1775661416224,
+      "title": "Board Game Marathon",
+      "body": "An epic night of board games, snacks, and lots of laughs."
+    },
+    {
+      "id": "2b4c8f15-d480-4e56-bd90-6953669ddd31",
+      "timestamp": 1767453416224,
+      "title": "Team Lunch Outing",
+      "body": "Lunch at the new Italian place downtown to celebrate project milestones."
+    },
+    {
+      "id": "515fc5b7-beb6-4dff-a17f-49eee05856db",
+      "timestamp": 1772637416224,
+      "title": "Morning Hike at Cedar Ridge",
+      "body": "An early start to conquer the Cedar Ridge trail, followed by brunch."
+    },
+    {
+      "id": "5e43e34f-bf4e-409d-93d5-b444485369a7",
+      "timestamp": 1762269416224,
+      "title": "Patricia's Birthday Celebration",
+      "body": "A surprise party for Patricia at her favorite restaurant."
+    },
+    {
+      "id": "345481d5-e7cd-46fd-8900-d606887ede15",
+      "timestamp": 1770045416224,
+      "title": "Q3 Project Brainstorm",
+      "body": "An intense but productive brainstorming session for the upcoming quarter's key projects."
+    },
+    {
+      "id": "60abc8d8-6470-49c6-8914-82013577ffe1",
+      "timestamp": 1777562216224,
+      "title": "Coffee and Catch-up",
+      "body": null
+    }
+  ],
+  "activityParticipants": [
+    {
+      "activityId": "bc10ea69-41a3-468f-ba61-a264f4714046",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae"
+    },
+    {
+      "activityId": "bc10ea69-41a3-468f-ba61-a264f4714046",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5"
+    },
+    {
+      "activityId": "bc10ea69-41a3-468f-ba61-a264f4714046",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d"
+    },
+    {
+      "activityId": "64f7ef9a-b5b9-4bad-876d-5d7d6f23df73",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199"
+    },
+    {
+      "activityId": "64f7ef9a-b5b9-4bad-876d-5d7d6f23df73",
+      "personId": "14c3791a-439f-40d2-ba03-ecb1d75c00c6"
+    },
+    {
+      "activityId": "64f7ef9a-b5b9-4bad-876d-5d7d6f23df73",
+      "personId": "407d40b5-b34f-4ba4-83af-e7a72f069818"
+    },
+    {
+      "activityId": "64f7ef9a-b5b9-4bad-876d-5d7d6f23df73",
+      "personId": "0c58eb6e-ba13-476c-b658-7b645cd94646"
+    },
+    {
+      "activityId": "2b4c8f15-d480-4e56-bd90-6953669ddd31",
+      "personId": "2f33d0f6-284d-4e70-a261-ea676ed39592"
+    },
+    {
+      "activityId": "2b4c8f15-d480-4e56-bd90-6953669ddd31",
+      "personId": "37f14188-1e0d-4f5a-9f92-de582e23cf2e"
+    },
+    {
+      "activityId": "2b4c8f15-d480-4e56-bd90-6953669ddd31",
+      "personId": "30ecf5dc-99a2-42de-b205-d0cc89f7b758"
+    },
+    {
+      "activityId": "515fc5b7-beb6-4dff-a17f-49eee05856db",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d"
+    },
+    {
+      "activityId": "515fc5b7-beb6-4dff-a17f-49eee05856db",
+      "personId": "b713724f-0ce6-448f-90e2-7aed0323fa44"
+    },
+    {
+      "activityId": "515fc5b7-beb6-4dff-a17f-49eee05856db",
+      "personId": "20e8d708-a57c-4051-9ec8-d2019dfeb6a4"
+    },
+    {
+      "activityId": "5e43e34f-bf4e-409d-93d5-b444485369a7",
+      "personId": "c8872fac-fcbd-4a38-b3bb-2b1dbb2f8b0d"
+    },
+    {
+      "activityId": "5e43e34f-bf4e-409d-93d5-b444485369a7",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5"
+    },
+    {
+      "activityId": "5e43e34f-bf4e-409d-93d5-b444485369a7",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae"
+    },
+    {
+      "activityId": "345481d5-e7cd-46fd-8900-d606887ede15",
+      "personId": "ba5ad7d0-5eb1-41b5-9cc6-d0ff5a64a0e2"
+    },
+    {
+      "activityId": "345481d5-e7cd-46fd-8900-d606887ede15",
+      "personId": "342553f2-f5a1-4937-9372-6bfb065f88b9"
+    },
+    {
+      "activityId": "345481d5-e7cd-46fd-8900-d606887ede15",
+      "personId": "cafb7b92-3eea-4802-853b-156c367748bf"
+    },
+    {
+      "activityId": "60abc8d8-6470-49c6-8914-82013577ffe1",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7"
+    },
+    {
+      "activityId": "60abc8d8-6470-49c6-8914-82013577ffe1",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199"
+    }
+  ],
+  "gifts": [
+    {
+      "id": "09ccd148-ff86-49eb-8bc5-d0ead6818e0c",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae",
+      "name": "Spa day voucher",
+      "occasion": "birthday",
+      "status": "IDEA",
+      "note": "For her upcoming birthday, loves relaxation"
+    },
+    {
+      "id": "d589204e-d581-47c3-81ff-07a287cb3e2c",
+      "personId": "9881e3e4-3ceb-48c5-abe4-652202c184ae",
+      "name": "Personalized photo album",
+      "occasion": "christmas",
+      "status": "GIVEN",
+      "note": "Filled with family photos from last year"
+    },
+    {
+      "id": "f1711069-467a-40e4-af40-4ef88a5f8b6b",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5",
+      "name": "Latest video game",
+      "occasion": "birthday",
+      "status": "IDEA",
+      "note": "He mentioned wanting 'Cyberpunk 2077 Phantom Liberty'"
+    },
+    {
+      "id": "61093ece-06e3-47d5-bb3f-6351750662fb",
+      "personId": "13a245d3-8929-4c39-9250-a5044cf586d5",
+      "name": "Concert tickets",
+      "occasion": "christmas",
+      "status": "GIVEN",
+      "note": "Tickets to his favorite band, 'The Lumineers'"
+    },
+    {
+      "id": "cae05085-d64e-498e-bcd7-064bf2150d9e",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d",
+      "name": "Weekend getaway to the mountains",
+      "occasion": "anniversary",
+      "status": "IDEA",
+      "note": "Look into booking a cabin for our anniversary"
+    },
+    {
+      "id": "23d94e3d-f4ca-49c2-ad1a-a02bf72c16cc",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d",
+      "name": "High-quality minimalist watch",
+      "occasion": "birthday",
+      "status": "PURCHASED",
+      "note": "Ordered the Seiko SNK809 from Amazon"
+    },
+    {
+      "id": "94c5e4d4-9670-4e4d-8384-50d46b471070",
+      "personId": "8f05037a-b11f-4c64-8e47-0596753b5b8d",
+      "name": "Custom star map of our first date",
+      "occasion": "anniversary",
+      "status": "GIVEN",
+      "note": null
+    },
+    {
+      "id": "3f02bc26-f80b-469c-ba63-4e9db8fc02f1",
+      "personId": "70dd2c89-c668-4a64-b9e5-8994ab0b3199",
+      "name": "Artisan coffee blend subscription",
+      "occasion": "birthday",
+      "status": "IDEA",
+      "note": "She loves trying new coffee roasts"
+    },
+    {
+      "id": "7232d073-156d-47af-a1a9-b598f4fc7d10",
+      "personId": "14c3791a-439f-40d2-ba03-ecb1d75c00c6",
+      "name": "Portable Bluetooth speaker",
+      "occasion": "christmas",
+      "status": "GIVEN",
+      "note": null
+    },
+    {
+      "id": "5de66dae-b9a8-4ef1-9b86-4da724575465",
+      "personId": "407d40b5-b34f-4ba4-83af-e7a72f069818",
+      "name": "Bestselling novel 'Lessons in Chemistry'",
+      "occasion": "birthday",
+      "status": "PURCHASED",
+      "note": "Picked it up from Barnes & Noble"
+    },
+    {
+      "id": "ea57fad5-2756-4382-83fe-d5828d200bcb",
+      "personId": "b713724f-0ce6-448f-90e2-7aed0323fa44",
+      "name": "Craft beer selection from local brewery",
+      "occasion": "birthday",
+      "status": "IDEA",
+      "note": "Marcus is a big fan of IPAs"
+    },
+    {
+      "id": "5e2f988c-afcc-48f8-acd9-0101afb10b4d",
+      "personId": "0c58eb6e-ba13-476c-b658-7b645cd94646",
+      "name": "Scented candle set",
+      "occasion": "christmas",
+      "status": "GIVEN",
+      "note": "Jo Malone inspired set"
+    },
+    {
+      "id": "b60f60f5-5d1d-475d-9aef-48f5c51fa5f2",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7",
+      "name": "Personalized sterling silver necklace",
+      "occasion": "birthday",
+      "status": "PURCHASED",
+      "note": "Engraved with her initial 'E'"
+    },
+    {
+      "id": "d6af0d7c-2bfc-41f7-a491-bf763a8712fb",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7",
+      "name": "Cooking class for two",
+      "occasion": "null",
+      "status": "IDEA",
+      "note": "We could go together, she mentioned wanting to learn Italian cooking"
+    },
+    {
+      "id": "30f443df-f4a3-414b-b09d-77ee6a174421",
+      "personId": "f32874c3-054f-4cf6-afc6-d370cb1e8cf7",
+      "name": "Photo collage frame with shared memories",
+      "occasion": "christmas",
+      "status": "GIVEN",
+      "note": "Included photos from our college days"
+    }
+  ],
+  "tasks": []
+}

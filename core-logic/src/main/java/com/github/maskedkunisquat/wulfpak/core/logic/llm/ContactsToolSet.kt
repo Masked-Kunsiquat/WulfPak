@@ -239,6 +239,14 @@ internal class ContactsToolSet(
         }
     }
 
+    @Tool(description = "Get the total number of contacts. Use this to verify or answer questions about how many contacts the user has.")
+    fun getContactCount(): String = runBlocking {
+        if (BuildConfig.DEBUG) Log.d(TAG, "getContactCount")
+        eventSink?.invoke(LlmResult.ToolCall("getContactCount", emptyMap()))
+        val count = personDao.getAllOnce().count { !it.isMe }
+        "You have $count contacts."
+    }
+
     @Tool(description = "Get a contact's profile — birthday, current age, relationship, job, and last contact date. Use this when asked about a contact's age, birthday, or general details.")
     fun getContactDetails(
         @ToolParam(description = "First name or nickname of the contact.") name: String,

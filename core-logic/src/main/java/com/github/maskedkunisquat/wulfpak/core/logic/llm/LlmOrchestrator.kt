@@ -183,13 +183,13 @@ class LlmOrchestrator(
         provider.process(conversationText, Prompts.SESSION_MEMORY_SYSTEM)
 
     private fun sanitizeCachedSummary(raw: String): String =
-        raw.replace(Regex("[\\p{Cntrl}]"), " ")
+        raw.replace(Regex("[\\p{Cntrl}]"), "")
            .replace(Regex("\\s+"), " ")
            .trim()
            .take(500)
 
     private fun sanitizeMemory(raw: String): String =
-        raw.replace(Regex("[\\p{Cntrl}]"), " ")
+        raw.replace(Regex("[\\p{Cntrl}]"), "")
            .replace(Regex("\\s+"), " ")
            .trim()
            .take(200)

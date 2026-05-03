@@ -77,6 +77,9 @@ interface PersonRelationshipDao {
     @Query("SELECT * FROM person_relationships WHERE relType IS NOT NULL")
     suspend fun getAllFamilyRelationshipsOnce(): List<PersonRelationship>
 
+    @Query("SELECT * FROM person_relationships")
+    suspend fun getAllOnce(): List<PersonRelationship>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(relationship: PersonRelationship)
 

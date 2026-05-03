@@ -151,7 +151,17 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun deleteActivity(activity: Activity) {
-        viewModelScope.launch { db.activityDao().delete(activity) }
+        viewModelScope.launch {
+            val affectedIds = db.activityDao().getParticipantIds(activity.id)
+            db.activityDao().delete(activity)
+            affectedIds.forEach { pid ->
+                val person = db.personDao().getById(pid) ?: return@forEach
+                val interactions = db.interactionDao().getForPersonOnce(pid)
+                val activityTimestamps = db.activityDao().getTimestampsForPerson(pid)
+                val score = ClosenessCalculator.compute(interactions, activityTimestamps, ClosenessCalculator.categoryFor(person.relationLabel))
+                db.personDao().updateClosenessScore(pid, score)
+            }
+        }
     }
 
     fun deleteInteraction(interaction: Interaction) {
@@ -162,7 +172,8 @@ class PersonDetailViewModel(app: Application) : AndroidViewModel(app) {
                 db.personDao().onInteractionDeleted(pid)
                 val person = db.personDao().getById(pid) ?: return@forEach
                 val interactions = db.interactionDao().getForPersonOnce(pid)
-                val score = ClosenessCalculator.compute(interactions, ClosenessCalculator.categoryFor(person.relationLabel))
+                val activityTimestamps = db.activityDao().getTimestampsForPerson(pid)
+                val score = ClosenessCalculator.compute(interactions, activityTimestamps, ClosenessCalculator.categoryFor(person.relationLabel))
                 db.personDao().updateClosenessScore(pid, score)
             }
         }

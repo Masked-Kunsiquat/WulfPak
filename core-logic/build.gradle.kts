@@ -37,4 +37,8 @@ dependencies {
 
     // Background embedding worker
     implementation(libs.androidx.work.runtime.ktx)
+
+    // Offset (geometry only — no Compose compiler needed for pure-Kotlin layout engine)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
 }

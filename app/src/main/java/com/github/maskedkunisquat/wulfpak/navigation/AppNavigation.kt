@@ -3,23 +3,33 @@ package com.github.maskedkunisquat.wulfpak.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.DynamicFeed
+import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.github.maskedkunisquat.wulfpak.AppApplication
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -56,6 +66,7 @@ import com.github.maskedkunisquat.wulfpak.ui.settings.DisplaySettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SecuritySettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsViewModel
+import com.github.maskedkunisquat.wulfpak.ui.graph.GraphScreen
 import com.github.maskedkunisquat.wulfpak.ui.me.MeScreen
 import com.github.maskedkunisquat.wulfpak.ui.tasks.TasksScreen
 import java.util.UUID
@@ -75,6 +86,7 @@ object Routes {
     const val INTERACTION_DETAIL    = "interaction_detail/{interactionId}"
     const val SEARCH                = "search"
     const val TASKS                 = "tasks"
+    const val GRAPH                 = "graph"
     const val ME                    = "me"
     const val SETTINGS              = "settings"
     const val CONTACT_PICK          = "contact_pick"
@@ -121,6 +133,7 @@ private val TOP_LEVEL_DESTS = listOf(
     TopLevelDest(Routes.ACTIVITY_FEED, Icons.Default.DynamicFeed, "Feed"),
     TopLevelDest(Routes.SEARCH,        Icons.Default.Chat,         "Chat"),
     TopLevelDest(Routes.ME,            Icons.Default.Person,       "Me"),
+    TopLevelDest(Routes.GRAPH,         Icons.Default.Hub,          "Graph"),
 )
 
 @Composable
@@ -131,26 +144,42 @@ fun AppNavHost(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute   = backStackEntry?.destination?.route
     val showBottomBar  = TOP_LEVEL_DESTS.any { it.route == currentRoute }
+    val isDemoProfile  = (LocalContext.current.applicationContext as AppApplication).isDemoProfile
 
     Scaffold(
         bottomBar = {
-            if (showBottomBar) {
-                NavigationBar {
-                    TOP_LEVEL_DESTS.forEach { dest ->
-                        NavigationBarItem(
-                            selected = currentRoute == dest.route,
-                            onClick = {
-                                navController.navigate(dest.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState    = true
-                                }
-                            },
-                            icon  = { Icon(dest.icon, contentDescription = dest.label) },
-                            label = { Text(dest.label) },
+            Column {
+                if (isDemoProfile) {
+                    Surface(
+                        color    = MaterialTheme.colorScheme.tertiaryContainer,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text      = "Demo mode — Settings to switch",
+                            style     = MaterialTheme.typography.labelSmall,
+                            textAlign = TextAlign.Center,
+                            modifier  = Modifier.padding(vertical = 4.dp),
                         )
+                    }
+                }
+                if (showBottomBar) {
+                    NavigationBar {
+                        TOP_LEVEL_DESTS.forEach { dest ->
+                            NavigationBarItem(
+                                selected = currentRoute == dest.route,
+                                onClick = {
+                                    navController.navigate(dest.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState    = true
+                                    }
+                                },
+                                icon  = { Icon(dest.icon, contentDescription = dest.label) },
+                                label = { Text(dest.label) },
+                            )
+                        }
                     }
                 }
             }
@@ -356,6 +385,10 @@ fun AppNavHost(
                 )
             }
 
+            composable(Routes.GRAPH) {
+                GraphScreen(onNavigateToPerson = { id -> navController.navigate(Routes.personDetail(id.toString())) })
+            }
+
             composable(Routes.TASKS) {
                 TasksScreen(
                     onAddTask  = { navController.navigate(Routes.addEditTask()) },
@@ -371,12 +404,19 @@ fun AppNavHost(
             }
 
             composable(Routes.SETTINGS) {
+                val context = LocalContext.current
                 SettingsScreen(
                     onNavigateBack     = { navController.popBackStack() },
                     onNavigateSecurity = { navController.navigate(Routes.SETTINGS_SECURITY) },
                     onNavigateDisplay  = { navController.navigate(Routes.SETTINGS_DISPLAY) },
                     onNavigateAi       = { navController.navigate(Routes.SETTINGS_AI) },
                     onNavigateContacts = { navController.navigate(Routes.SETTINGS_CONTACTS) },
+                    onSwitchProfile    = {
+                        val app = context.applicationContext as AppApplication
+                        val target = if (app.isDemoProfile) AppApplication.Profile.REAL
+                                     else AppApplication.Profile.DEMO
+                        AppApplication.switchProfile(context, target)
+                    },
                 )
             }
 

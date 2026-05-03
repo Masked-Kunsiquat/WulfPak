@@ -3,12 +3,15 @@ package com.github.maskedkunisquat.wulfpak.core.logic.llm
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import com.github.maskedkunisquat.wulfpak.core.logic.BuildConfig
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
+import com.google.ai.edge.litertlm.ExperimentalApi
+import com.google.ai.edge.litertlm.ExperimentalFlags
 import com.google.ai.edge.litertlm.ToolSet
 import com.google.ai.edge.litertlm.tool
 import kotlinx.coroutines.CoroutineDispatcher
@@ -157,7 +160,7 @@ class LocalFallbackProvider(
             }
             eng.createConversation(config).use { conversation ->
                 conversation.sendMessageAsync(prompt).collect { message ->
-                    val text = message.toString()
+                    val text = message.toString().stripLiteRtControlChars()
                     if (text.isNotEmpty()) emit(LlmResult.Token(text))
                 }
                 emit(LlmResult.Complete)
@@ -192,7 +195,13 @@ class LocalFallbackProvider(
                 "Model not loaded. ${initFailureReason ?: "Call initialize() first."}"
             )
             val conv = chatConversation ?: run {
+                // The LiteRT native layer sets convertCamelToSnakeCaseInToolDescription=true
+                // during engine init, which would register tools as get_contact_details etc.
+                // Force it off so Kotlin camelCase method names are used as-is.
+                @OptIn(ExperimentalApi::class)
+                ExperimentalFlags.convertCamelToSnakeCaseInToolDescription = false
                 val toolConfigs = tools.filterIsInstance<ToolSet>().map { tool(it) }
+                Log.d(TAG, "Creating conversation — toolSets=${tools.filterIsInstance<ToolSet>().size} toolProviders=${toolConfigs.size}")
                 val config = ConversationConfig(
                     systemInstruction = systemInstruction?.let { Contents.of(it) },
                     tools = toolConfigs,
@@ -200,7 +209,8 @@ class LocalFallbackProvider(
                 eng.createConversation(config).also { chatConversation = it }
             }
             conv.sendMessageAsync(prompt).collect { message ->
-                val text = message.toString()
+                val text = message.toString().stripLiteRtControlChars()
+                if (BuildConfig.DEBUG) Log.d(TAG, "chatSend token[${text.length}]: '${text.take(80)}'")
                 if (text.isNotEmpty()) emit(LlmResult.Token(text))
             }
             emit(LlmResult.Complete)
@@ -268,6 +278,12 @@ class LocalFallbackProvider(
 
     companion object {
         private const val TAG = "LocalFallbackProvider"
+
+        // LiteRT's token streamer injects null bytes mid-token (e.g. "14\x000" from tool responses).
+        // Strip non-whitespace control characters while preserving \n, \r, \t.
+        private val LITERT_CONTROL_CHARS = Regex("[\\p{Cntrl}&&[^\n\r\t]]")
+        private fun String.stripLiteRtControlChars(): String =
+            replace(LITERT_CONTROL_CHARS, "")
 
         private const val HF_BASE_URL =
             "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main"

@@ -44,6 +44,9 @@ interface ActivityDao {
     @Query("SELECT * FROM activities ORDER BY timestamp DESC")
     suspend fun getAllOnce(): List<Activity>
 
+    @Query("SELECT * FROM activity_participants")
+    suspend fun getAllParticipants(): List<ActivityParticipant>
+
     @Query("SELECT * FROM activities WHERE embedding IS NULL")
     suspend fun getUnembedded(): List<Activity>
 
@@ -67,6 +70,13 @@ interface ActivityDao {
 
     @Query("SELECT personId FROM activity_participants WHERE activityId = :activityId")
     suspend fun getParticipantIds(activityId: UUID): List<UUID>
+
+    @Query("""
+        SELECT a.timestamp FROM activities a
+        INNER JOIN activity_participants ap ON a.id = ap.activityId
+        WHERE ap.personId = :personId
+    """)
+    suspend fun getTimestampsForPerson(personId: UUID): List<Long>
 
     @Query("SELECT * FROM activity_participants WHERE activityId IN (:ids)")
     suspend fun getParticipantsForIds(ids: List<UUID>): List<ActivityParticipant>
