@@ -3,6 +3,7 @@ package com.github.maskedkunisquat.wulfpak.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.DynamicFeed
+import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Person
@@ -56,6 +57,7 @@ import com.github.maskedkunisquat.wulfpak.ui.settings.DisplaySettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SecuritySettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsViewModel
+import com.github.maskedkunisquat.wulfpak.ui.graph.GraphScreen
 import com.github.maskedkunisquat.wulfpak.ui.me.MeScreen
 import com.github.maskedkunisquat.wulfpak.ui.tasks.TasksScreen
 import java.util.UUID
@@ -75,6 +77,7 @@ object Routes {
     const val INTERACTION_DETAIL    = "interaction_detail/{interactionId}"
     const val SEARCH                = "search"
     const val TASKS                 = "tasks"
+    const val GRAPH                 = "graph"
     const val ME                    = "me"
     const val SETTINGS              = "settings"
     const val CONTACT_PICK          = "contact_pick"
@@ -121,6 +124,7 @@ private val TOP_LEVEL_DESTS = listOf(
     TopLevelDest(Routes.ACTIVITY_FEED, Icons.Default.DynamicFeed, "Feed"),
     TopLevelDest(Routes.SEARCH,        Icons.Default.Chat,         "Chat"),
     TopLevelDest(Routes.ME,            Icons.Default.Person,       "Me"),
+    TopLevelDest(Routes.GRAPH,         Icons.Default.Hub,          "Graph"),
 )
 
 @Composable
@@ -354,6 +358,10 @@ fun AppNavHost(
                     onViewActivity    = { id -> navController.navigate(Routes.activityDetail(id.toString())) },
                     onOpenPerson      = { id -> navController.navigate(Routes.personDetail(id.toString())) },
                 )
+            }
+
+            composable(Routes.GRAPH) {
+                GraphScreen(onNavigateToPerson = { id -> navController.navigate(Routes.personDetail(id.toString())) })
             }
 
             composable(Routes.TASKS) {

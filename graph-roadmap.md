@@ -138,16 +138,16 @@ No schema change, no migration needed.
 
 **File:** `app/src/main/java/.../navigation/AppNavigation.kt`
 
-- [ ] Add `const val GRAPH = "graph"` to `Routes` object
-- [ ] Add `import androidx.compose.material.icons.filled.Hub`
-- [ ] Add `TopLevelDest(Routes.GRAPH, Icons.Default.Hub, "Graph")` to `TOP_LEVEL_DESTS`
-- [ ] Add composable destination:
+- [x] Add `const val GRAPH = "graph"` to `Routes` object
+- [x] Add `import androidx.compose.material.icons.filled.Hub`
+- [x] Add `TopLevelDest(Routes.GRAPH, Icons.Default.Hub, "Graph")` to `TOP_LEVEL_DESTS`
+- [x] Add composable destination:
   ```kotlin
   composable(Routes.GRAPH) {
       GraphScreen(onNavigateToPerson = { id -> navController.navigate(Routes.personDetail(id)) })
   }
   ```
-- [ ] Add `import com.github.maskedkunisquat.wulfpak.ui.graph.GraphScreen`
+- [x] Add `import com.github.maskedkunisquat.wulfpak.ui.graph.GraphScreen`
 
 ---
 
