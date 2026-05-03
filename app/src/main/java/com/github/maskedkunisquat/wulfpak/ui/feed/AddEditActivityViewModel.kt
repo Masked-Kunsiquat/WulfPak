@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
 import com.github.maskedkunisquat.wulfpak.appDataStore
+import com.github.maskedkunisquat.wulfpak.core.logic.closeness.ClosenessCalculator
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -92,8 +93,19 @@ class AddEditActivityViewModel(app: Application) : AndroidViewModel(app) {
             }
             val wm = WorkManager.getInstance(getApplication())
             EmbeddingWorker.enqueue(wm)
-            (prevParticipantIds + selectedIds).forEach { SummaryWorker.enqueue(wm, it) }
+            (prevParticipantIds + selectedIds).forEach { pid ->
+                SummaryWorker.enqueue(wm, pid)
+                recomputeScore(pid)
+            }
             onDone()
         }
+    }
+
+    private suspend fun recomputeScore(personId: UUID) {
+        val person = db.personDao().getById(personId) ?: return
+        val interactions = db.interactionDao().getForPersonOnce(personId)
+        val activityTimestamps = db.activityDao().getTimestampsForPerson(personId)
+        val score = ClosenessCalculator.compute(interactions, activityTimestamps, ClosenessCalculator.categoryFor(person.relationLabel))
+        db.personDao().updateClosenessScore(personId, score)
     }
 }

@@ -68,6 +68,13 @@ interface ActivityDao {
     @Query("SELECT personId FROM activity_participants WHERE activityId = :activityId")
     suspend fun getParticipantIds(activityId: UUID): List<UUID>
 
+    @Query("""
+        SELECT a.timestamp FROM activities a
+        INNER JOIN activity_participants ap ON a.id = ap.activityId
+        WHERE ap.personId = :personId
+    """)
+    suspend fun getTimestampsForPerson(personId: UUID): List<Long>
+
     @Query("SELECT * FROM activity_participants WHERE activityId IN (:ids)")
     suspend fun getParticipantsForIds(ids: List<UUID>): List<ActivityParticipant>
 

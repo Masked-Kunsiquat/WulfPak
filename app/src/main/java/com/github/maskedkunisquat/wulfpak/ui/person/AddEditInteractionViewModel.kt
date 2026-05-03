@@ -48,7 +48,8 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun recomputeScore(personId: UUID) {
         val person = db.personDao().getById(personId) ?: return
         val interactions = db.interactionDao().getForPersonOnce(personId)
-        val score = ClosenessCalculator.compute(interactions, ClosenessCalculator.categoryFor(person.relationLabel))
+        val activityTimestamps = db.activityDao().getTimestampsForPerson(personId)
+        val score = ClosenessCalculator.compute(interactions, activityTimestamps, ClosenessCalculator.categoryFor(person.relationLabel))
         db.personDao().updateClosenessScore(personId, score)
     }
 
