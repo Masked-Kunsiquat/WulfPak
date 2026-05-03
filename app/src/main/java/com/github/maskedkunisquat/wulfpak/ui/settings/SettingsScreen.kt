@@ -45,7 +45,7 @@ fun SettingsScreen(
     onNavigateContacts: () -> Unit,
     onSwitchProfile: () -> Unit,
 ) {
-    val isDemoProfile = (LocalContext.current.applicationContext as AppApplication).isDemoProfile
+    val isDemoProfile = (LocalContext.current.applicationContext as? AppApplication)?.isDemoProfile ?: false
     var showProfileDialog by remember { mutableStateOf(false) }
 
     if (showProfileDialog) {
