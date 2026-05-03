@@ -3,10 +3,18 @@ package com.github.maskedkunisquat.wulfpak.ui.graph
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -19,6 +27,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,17 +50,64 @@ fun GraphScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val meId by viewModel.meId.collectAsStateWithLifecycle()
 
-    if (isLoading) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-    } else {
-        GraphCanvas(
-            nodes = nodes,
-            positions = positions,
-            meId = meId,
-            onNodeTap = onNavigateToPerson,
+    var activeCategories by remember { mutableStateOf(RelCategory.entries.toSet()) }
+
+    Column(Modifier.fillMaxSize()) {
+        CategoryFilterRow(
+            activeCategories = activeCategories,
+            onToggle = { cat ->
+                activeCategories = if (cat in activeCategories)
+                    activeCategories - cat else activeCategories + cat
+            },
         )
+        if (isLoading) {
+            Box(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            GraphCanvas(
+                nodes = nodes,
+                positions = positions,
+                meId = meId,
+                activeCategories = activeCategories,
+                onNodeTap = onNavigateToPerson,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun CategoryFilterRow(
+    activeCategories: Set<RelCategory>,
+    onToggle: (RelCategory) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        RelCategory.entries.forEach { cat ->
+            val catColor = when (cat) {
+                RelCategory.FAMILY -> MaterialTheme.colorScheme.tertiary
+                RelCategory.FRIEND -> MaterialTheme.colorScheme.primary
+                RelCategory.WORK   -> MaterialTheme.colorScheme.secondary
+                RelCategory.OTHER  -> MaterialTheme.colorScheme.outline
+            }
+            FilterChip(
+                selected = cat in activeCategories,
+                onClick = { onToggle(cat) },
+                label = { Text(cat.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = catColor.copy(alpha = 0.20f),
+                    selectedLabelColor = catColor,
+                ),
+            )
+        }
     }
 }
 
@@ -60,15 +116,17 @@ fun GraphCanvas(
     nodes: List<GraphNode>,
     positions: Map<UUID, Offset>,
     meId: UUID?,
+    activeCategories: Set<RelCategory>,
     onNodeTap: (UUID) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var panOffset by remember { mutableStateOf(Offset.Zero) }
     var scale by remember { mutableFloatStateOf(1f) }
+    var labelNodeId by remember { mutableStateOf<UUID?>(null) }
 
     val density = LocalDensity.current
-    val baseRadius  = with(density) { 8.dp.toPx() }
-    val ringStroke  = with(density) { 1.dp.toPx() }
+    val baseRadius = with(density) { 8.dp.toPx() }
+    val ringStroke = with(density) { 1.dp.toPx() }
 
     val familyColor = MaterialTheme.colorScheme.tertiary
     val friendColor = MaterialTheme.colorScheme.primary
@@ -76,19 +134,31 @@ fun GraphCanvas(
     val otherColor  = MaterialTheme.colorScheme.outline
     val meColor     = MaterialTheme.colorScheme.errorContainer
     val ringColor   = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
+    val onBackground = MaterialTheme.colorScheme.onBackground
 
-    val labelPaint = remember {
-        android.graphics.Paint().apply {
-            color = android.graphics.Color.WHITE
-            textSize = 28f
-            textAlign = android.graphics.Paint.Align.CENTER
-            isAntiAlias = true
-        }
-    }
+    val labelPaint = remember { android.graphics.Paint().apply {
+        textSize = 28f
+        textAlign = android.graphics.Paint.Align.CENTER
+        isAntiAlias = true
+    } }
+    labelPaint.color = onBackground.toArgb()
 
     val rBase = minOf(GraphLayoutEngine.LAYOUT_WIDTH, GraphLayoutEngine.LAYOUT_HEIGHT) / 2f
     val layoutCenter = positions[meId]
         ?: Offset(GraphLayoutEngine.LAYOUT_WIDTH / 2f, GraphLayoutEngine.LAYOUT_HEIGHT / 2f)
+
+    fun nodeRadius(node: GraphNode) =
+        baseRadius * (if (node.id == meId) 2f else 1f + (node.closenessScore ?: 0.3f) * 0.5f)
+
+    fun hitTest(canvasPos: Offset): GraphNode? {
+        val visible = nodes.filter { it.id == meId || it.category in activeCategories }
+        val nearest = visible.minByOrNull { node ->
+            val pos = positions[node.id] ?: return@minByOrNull Float.MAX_VALUE
+            (canvasPos - pos).getDistance()
+        } ?: return null
+        val pos = positions[nearest.id] ?: return null
+        return if ((canvasPos - pos).getDistance() <= nodeRadius(nearest) * 2) nearest else null
+    }
 
     Box(modifier.fillMaxSize()) {
         Canvas(
@@ -102,30 +172,31 @@ fun GraphCanvas(
                         scale = newScale
                     }
                 }
-                .pointerInput(positions) {
-                    detectTapGestures { tapPos ->
-                        val canvasPos = (tapPos - panOffset) / scale
-                        val tapped = nodes.minByOrNull { node ->
-                            val nodePos = positions[node.id] ?: return@minByOrNull Float.MAX_VALUE
-                            (canvasPos - nodePos).getDistance()
-                        }
-                        if (tapped != null) {
-                            val nodePos = positions[tapped.id]
-                            if (nodePos != null) {
-                                val nodeRadius = baseRadius * (if (tapped.id == meId) 2f else 1f + (tapped.closenessScore ?: 0.3f) * 0.5f)
-                                if ((canvasPos - nodePos).getDistance() <= nodeRadius * 2) {
-                                    onNodeTap(tapped.id)
-                                }
+                .pointerInput(positions, activeCategories) {
+                    detectTapGestures(
+                        onTap = { tapPos ->
+                            val hit = hitTest((tapPos - panOffset) / scale)
+                            if (hit != null) {
+                                labelNodeId = if (labelNodeId == hit.id) null else hit.id
+                            } else {
+                                labelNodeId = null
                             }
-                        }
-                    }
+                        },
+                        onLongPress = { tapPos ->
+                            val hit = hitTest((tapPos - panOffset) / scale)
+                            if (hit != null) {
+                                labelNodeId = null
+                                onNodeTap(hit.id)
+                            }
+                        },
+                    )
                 }
         ) {
             withTransform({
                 translate(panOffset.x, panOffset.y)
                 scale(scale, scale, Offset.Zero)
             }) {
-                // 1. Ring outlines (AirDrop-style concentric circles)
+                // 1. Ring outlines
                 for (frac in listOf(GraphLayoutEngine.INNER_FRAC, GraphLayoutEngine.MIDDLE_FRAC, GraphLayoutEngine.OUTER_FRAC)) {
                     drawCircle(
                         color = ringColor,
@@ -137,6 +208,7 @@ fun GraphCanvas(
 
                 // 2. Node circles
                 for (node in nodes) {
+                    if (node.id != meId && node.category !in activeCategories) continue
                     val pos = positions[node.id] ?: continue
                     val isMe = node.id == meId
                     val nodeColor = if (isMe) meColor else when (node.category) {
@@ -145,23 +217,21 @@ fun GraphCanvas(
                         RelCategory.WORK   -> workColor
                         RelCategory.OTHER  -> otherColor
                     }
-                    val nodeRadius = baseRadius * (if (isMe) 2f else 1f + (node.closenessScore ?: 0.3f) * 0.5f)
-                    drawCircle(color = nodeColor, radius = nodeRadius, center = pos)
+                    drawCircle(color = nodeColor, radius = nodeRadius(node), center = pos)
                 }
 
-                // 3. Name labels — skip at low zoom to avoid overlap
-                if (scale > 0.5f) {
-                    for (node in nodes) {
-                        val pos = positions[node.id] ?: continue
-                        val isMe = node.id == meId
-                        val nodeRadius = baseRadius * (if (isMe) 2f else 1f + (node.closenessScore ?: 0.3f) * 0.5f)
-                        drawContext.canvas.nativeCanvas.drawText(
-                            if (isMe) "You" else node.name,
-                            pos.x,
-                            pos.y + nodeRadius + labelPaint.textSize,
-                            labelPaint,
-                        )
-                    }
+                // 3. Labels — Me always visible; others only when long-pressed
+                for (node in nodes) {
+                    val isMe = node.id == meId
+                    if (!isMe && node.id != labelNodeId) continue
+                    if (!isMe && node.category !in activeCategories) continue
+                    val pos = positions[node.id] ?: continue
+                    drawContext.canvas.nativeCanvas.drawText(
+                        if (isMe) "You" else node.name,
+                        pos.x,
+                        pos.y + nodeRadius(node) + labelPaint.textSize,
+                        labelPaint,
+                    )
                 }
             }
         }
@@ -185,6 +255,12 @@ fun GraphCanvasPreview() {
     )
     val positions = GraphLayoutEngine.layout(nodes = nodes, meId = meId, width = 380f, height = 700f)
     WulfPakTheme {
-        GraphCanvas(nodes = nodes, positions = positions, meId = meId, onNodeTap = {})
+        GraphCanvas(
+            nodes = nodes,
+            positions = positions,
+            meId = meId,
+            activeCategories = RelCategory.entries.toSet(),
+            onNodeTap = {},
+        )
     }
 }

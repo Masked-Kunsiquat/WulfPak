@@ -178,6 +178,25 @@ No schema change, no migration needed.
 ## Deferred
 
 - **Edge labels** — show relationship label on hover/long-press (cluttered at scale)
-- **Filter by category** — toggle chips to show/hide Friend / Work / Family edges
 - **Inferred family edges** — optionally render dashed edges from `FamilyInferenceEngine`
 - **Node search** — highlight a specific contact's node by name
+
+---
+
+## Phase 6 — Polish
+
+### Visual / UX
+
+- [x] **Label on tap, navigate on long-press** — labels are off by default (cluttered at >8 contacts); tap a node to reveal/toggle its name, long-press to navigate. Accidental taps reveal a name rather than jumping screens. `onTap`/`onLongPress` in `detectTapGestures` share `labelNodeId: UUID?` state; tapping empty space clears it.
+- [ ] **Node size range** — make the closenessScore → radius mapping more dramatic so inner-ring nodes are noticeably larger than outer ones
+- [ ] **Drift indicator** — nodes whose score dropped >30% in the last 30 days get a subtle visual flag (desaturated / faded fill)
+
+### Filtering
+
+- [x] **Category filter chips** — `FilterChip` row at top of `GraphScreen` for FAMILY / FRIEND / WORK / OTHER; chips are colored to match their ring color and double as a legend; hidden categories are excluded from hit-testing too
+- [ ] **Long-press context menu** — quick actions (Log interaction, View profile) without leaving the graph
+
+### Intelligence
+
+- [ ] **Drift warnings** — surface contacts who were inner-ring but have drifted outward; could be a subtle badge or separate "Drifting" section
+- [ ] **Neglected contacts** — highlight outer-ring contacts who have the highest historical peak score (close once, drifted since)
