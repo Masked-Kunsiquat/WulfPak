@@ -16,6 +16,7 @@ import com.github.maskedkunisquat.wulfpak.appDataStore
 import com.github.maskedkunisquat.wulfpak.core.data.entity.RelationLabel
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.ModelLoadState
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
+import com.github.maskedkunisquat.wulfpak.sync.BackupRepository
 import com.github.maskedkunisquat.wulfpak.sync.CalendarBridge
 import com.github.maskedkunisquat.wulfpak.sync.ContactSyncManager
 import com.github.maskedkunisquat.wulfpak.sync.VCardImporter
@@ -34,6 +35,7 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     private val contactSyncManager = ContactSyncManager(appApp.db)
     private val vCardImporter      = VCardImporter(appApp.db)
     private val calendarBridge     = CalendarBridge(appApp.db)
+    private val backupRepository   = BackupRepository(appApp.db)
 
     // ── Sync / import states ──────────────────────────────────────────────
 
@@ -56,6 +58,15 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         object Loading : CalendarState()
         data class Done(val added: Int, val skipped: Int) : CalendarState()
         data class Error(val message: String)              : CalendarState()
+    }
+
+    sealed class BackupState {
+        object Idle      : BackupState()
+        object Exporting : BackupState()
+        object ExportDone : BackupState()
+        object Importing : BackupState()
+        data class ImportDone(val personCount: Int) : BackupState()
+        data class Error(val message: String)       : BackupState()
     }
 
     // ── In-app contact picker state ───────────────────────────────────────
@@ -86,6 +97,7 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     var syncState          by mutableStateOf<SyncState>(SyncState.Idle)                       ; private set
     var importState        by mutableStateOf<ImportState>(ImportState.Idle)                   ; private set
     var calendarState      by mutableStateOf<CalendarState>(CalendarState.Idle)               ; private set
+    var backupState        by mutableStateOf<BackupState>(BackupState.Idle)                   ; private set
     var candidatePickState by mutableStateOf<CandidatePickState>(CandidatePickState.Idle)     ; private set
     var carouselState      by mutableStateOf<CarouselState>(CarouselState.Idle)               ; private set
     var downloadProgress   by mutableStateOf<Int?>(null)                                      ; private set
@@ -331,4 +343,33 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun clearCalendarState()  { calendarState   = CalendarState.Idle }
     fun clearDownloadError()  { downloadError   = null }
     fun clearCarouselMessage() { carouselMessage = null }
+    fun clearBackupState()    { backupState     = BackupState.Idle }
+
+    // ── Backup / restore ──────────────────────────────────────────────────
+
+    fun exportBackup(uri: Uri) {
+        if (backupState is BackupState.Exporting) return
+        backupState = BackupState.Exporting
+        viewModelScope.launch(Dispatchers.IO) {
+            backupState = try {
+                backupRepository.export(getApplication(), uri)
+                BackupState.ExportDone
+            } catch (e: Exception) {
+                BackupState.Error(e.message ?: "Export failed")
+            }
+        }
+    }
+
+    fun importBackup(uri: Uri) {
+        if (backupState is BackupState.Importing) return
+        backupState = BackupState.Importing
+        viewModelScope.launch(Dispatchers.IO) {
+            backupState = try {
+                val result = backupRepository.import(getApplication(), uri)
+                BackupState.ImportDone(result.personCount)
+            } catch (e: Exception) {
+                BackupState.Error(e.message ?: "Import failed")
+            }
+        }
+    }
 }

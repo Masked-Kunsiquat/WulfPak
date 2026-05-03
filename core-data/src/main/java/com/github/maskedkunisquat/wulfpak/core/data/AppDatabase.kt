@@ -47,7 +47,7 @@ import net.sqlcipher.database.SupportFactory
         PersonRelationship::class,
         SessionMemory::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 @TypeConverters(AppTypeConverters::class)
@@ -137,14 +137,25 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        fun create(context: Context, key: ByteArray): AppDatabase =
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Index already created in MIGRATION_6_7; IF NOT EXISTS makes this a safe no-op
+                // on existing devices. Version bump was needed to regenerate the schema export.
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_session_memories_timestamp " +
+                    "ON session_memories(timestamp)"
+                )
+            }
+        }
+
+        fun create(context: Context, key: ByteArray, name: String = "wulfpak.db"): AppDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java,
-                "wulfpak.db"
+                name
             )
                 .openHelperFactory(SupportFactory(key))
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                 .build()
     }
 }

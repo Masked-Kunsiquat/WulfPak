@@ -3,6 +3,8 @@ package com.github.maskedkunisquat.wulfpak
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.work.Configuration
 import androidx.work.DelegatingWorkerFactory
@@ -17,18 +19,48 @@ import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchRepository
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.SummaryWorker
 import com.github.maskedkunisquat.wulfpak.download.DownloadManagerModelDownloader
+import com.github.maskedkunisquat.wulfpak.sync.BackupRepository
 import com.github.maskedkunisquat.wulfpak.worker.ContactReminderWorker
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import com.github.maskedkunisquat.wulfpak.core.logic.closeness.ClosenessCalculator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class AppApplication : Application(), Configuration.Provider {
 
+    // ── Profile ───────────────────────────────────────────────────────────
+
+    enum class Profile { REAL, DEMO }
+
+    val activeProfile: Profile by lazy {
+        val raw = profilePrefs().getString(PREF_ACTIVE_PROFILE, null)
+        raw?.let { runCatching { Profile.valueOf(it) }.getOrDefault(Profile.REAL) } ?: Profile.REAL
+    }
+
+    val isDemoProfile: Boolean get() = activeProfile == Profile.DEMO
+
+    // ── Core singletons ───────────────────────────────────────────────────
+
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val db: AppDatabase by lazy {
-        AppDatabase.create(this, KeyProvider.getOrCreateKey(this))
+        val name = if (isDemoProfile) "wulfpak_demo.db" else "wulfpak.db"
+        AppDatabase.create(this, KeyProvider.getOrCreateKey(this), name)
+    }
+
+    // Seeds the demo DB from the bundled asset on first demo launch.
+    suspend fun seedDemoIfNeeded() {
+        if (!isDemoProfile) return
+        if (db.personDao().getAllOnce().isNotEmpty()) return
+        resources.openRawResource(R.raw.seed_data).use { stream ->
+            BackupRepository(db).importFromStream(stream)
+        }
+        // enqueue() in onCreate() ran before the DB was populated — force a fresh pass now.
+        EmbeddingWorker.enqueueNow(WorkManager.getInstance(this))
     }
 
     val familyInferenceEngine: FamilyInferenceEngine by lazy { FamilyInferenceEngine(db) }
@@ -89,7 +121,28 @@ class AppApplication : Application(), Configuration.Provider {
         val wm = WorkManager.getInstance(this)
         ContactReminderWorker.schedule(wm)
         EmbeddingWorker.enqueue(wm)    // backfill any rows written before model was ready
+        appScope.launch(Dispatchers.IO) { backfillActivityClosenessScores() }
     }
+
+    private suspend fun backfillActivityClosenessScores() {
+        // Key is profile-scoped so REAL and DEMO backfills are tracked independently.
+        val key = booleanPreferencesKey("closeness_activity_backfill_v1_${activeProfile.name.lowercase()}")
+        if (appDataStore.data.first()[key] == true) return
+        val people = db.personDao().getAllOnce().filter { !it.isMe }
+        if (people.isEmpty()) return  // DB empty (demo not yet seeded) — don't set the flag
+        people.forEach { person ->
+            val interactions = db.interactionDao().getForPersonOnce(person.id)
+            val activityTimestamps = db.activityDao().getTimestampsForPerson(person.id)
+            val score = ClosenessCalculator.compute(
+                interactions, activityTimestamps, ClosenessCalculator.categoryFor(person.relationLabel)
+            )
+            db.personDao().updateClosenessScore(person.id, score)
+        }
+        appDataStore.edit { it[key] = true }
+    }
+
+    private fun profilePrefs() =
+        getSharedPreferences("profile_prefs", Context.MODE_PRIVATE)
 
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -101,6 +154,20 @@ class AppApplication : Application(), Configuration.Provider {
                 description = "Reminds you to reach out to people you haven't contacted recently"
             }
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        }
+    }
+
+    companion object {
+        private const val PREF_ACTIVE_PROFILE = "active_profile"
+
+        fun switchProfile(context: Context, target: Profile) {
+            context.getSharedPreferences("profile_prefs", Context.MODE_PRIVATE)
+                .edit().putString(PREF_ACTIVE_PROFILE, target.name).commit()
+            val intent = context.packageManager
+                .getLaunchIntentForPackage(context.packageName)!!
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            Runtime.getRuntime().exit(0)
         }
     }
 }
