@@ -95,9 +95,11 @@ fun GraphCanvas(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
-                    detectTransformGestures { _, pan, zoom, _ ->
-                        panOffset += pan
-                        scale = (scale * zoom).coerceIn(0.3f, 3f)
+                    detectTransformGestures { centroid, pan, zoom, _ ->
+                        val newScale = (scale * zoom).coerceIn(0.3f, 3f)
+                        val effectiveZoom = newScale / scale
+                        panOffset = centroid + (panOffset - centroid) * effectiveZoom + pan
+                        scale = newScale
                     }
                 }
                 .pointerInput(positions) {
