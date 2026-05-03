@@ -7,6 +7,8 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.EmbeddingRow
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
+import com.github.maskedkunisquat.wulfpak.core.logic.debug.DebugEvent
+import com.github.maskedkunisquat.wulfpak.core.logic.debug.DebugLogger
 import com.github.maskedkunisquat.wulfpak.core.logic.embedding.EmbeddingProvider
 import java.util.UUID
 
@@ -22,12 +24,23 @@ class SearchRepository(
     private val noteDao: NoteDao,
     private val interactionDao: InteractionDao,
     private val activityDao: ActivityDao,
+    private val debugLogger: DebugLogger? = null,
 ) {
     private enum class HitKind { NOTE, INTERACTION, ACTIVITY }
 
     suspend fun search(query: String, limit: Int = 20): List<SearchHit> {
+        val startMs = System.currentTimeMillis()
         val queryVec = embeddingProvider.generateEmbedding(query)
-        if (!queryVec.any { it != 0f }) return emptyList()
+        if (!queryVec.any { it != 0f }) {
+            debugLogger?.log(DebugEvent.SearchQuery(
+                queryLen = query.length,
+                candidates = 0,
+                results = 0,
+                durationMs = System.currentTimeMillis() - startMs,
+                zeroVector = true,
+            ))
+            return emptyList()
+        }
 
         data class Candidate(val id: UUID, val score: Float, val kind: HitKind)
         val candidates = mutableListOf<Candidate>()
@@ -44,7 +57,7 @@ class SearchRepository(
         collect(interactionDao.getEmbedded(), HitKind.INTERACTION)
         collect(activityDao.getEmbedded(), HitKind.ACTIVITY)
 
-        return candidates
+        val results = candidates
             .sortedByDescending { it.score }
             .take(limit)
             .mapNotNull { (id, score, kind) ->
@@ -54,5 +67,14 @@ class SearchRepository(
                     HitKind.ACTIVITY     -> activityDao.getById(id)?.let { SearchHit.ActivityHit(it, score) }
                 }
             }
+
+        debugLogger?.log(DebugEvent.SearchQuery(
+            queryLen = query.length,
+            candidates = candidates.size,
+            results = results.size,
+            durationMs = System.currentTimeMillis() - startMs,
+            zeroVector = false,
+        ))
+        return results
     }
 }

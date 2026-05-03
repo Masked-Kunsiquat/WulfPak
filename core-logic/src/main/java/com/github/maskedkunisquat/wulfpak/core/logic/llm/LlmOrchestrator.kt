@@ -10,6 +10,8 @@ import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.PersonRelationshipDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.SessionMemoryDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.TaskDao
+import com.github.maskedkunisquat.wulfpak.core.logic.debug.DebugEvent
+import com.github.maskedkunisquat.wulfpak.core.logic.debug.DebugLogger
 import com.github.maskedkunisquat.wulfpak.core.logic.family.FamilyInferenceEngine
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchHit
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchRepository
@@ -34,6 +36,7 @@ class LlmOrchestrator(
     private val personRelationshipDao: PersonRelationshipDao,
     private val familyInferenceEngine: FamilyInferenceEngine,
     private val sessionMemoryDao: SessionMemoryDao,
+    private val debugLogger: DebugLogger? = null,
 ) {
     private val contactsToolSet = ContactsToolSet(
         personDao, interactionDao, noteDao, activityDao, lifeEventDao, giftDao, taskDao,
@@ -58,6 +61,9 @@ class LlmOrchestrator(
     }
 
     fun query(naturalLanguage: String): Flow<LlmResult> = flow {
+        val startMs = System.currentTimeMillis()
+        val sessionId = UUID.randomUUID().toString()
+        val toolsUsed = mutableListOf<String>()
         val dateFmt = SimpleDateFormat("MMM d", Locale.ENGLISH)
         val persons = personDao.getAllOnce()
         val me = personDao.getMe()
@@ -132,7 +138,7 @@ class LlmOrchestrator(
         // Buffer tool/write events (emitted from LiteRT's thread inside @Tool methods).
         // Flushed just before the first token so they appear inline in the chat above the response.
         val pendingBuffer = ArrayList<LlmResult>()
-        contactsToolSet.eventSink = { pendingBuffer.add(it) }
+        contactsToolSet.eventSink = { result -> pendingBuffer.add(result); toolsUsed.add(result.name) }
         contactsToolSet.writeSink  = { pendingBuffer.add(it) }
         try {
             val systemPrompt = buildString {
@@ -158,6 +164,12 @@ class LlmOrchestrator(
         } finally {
             contactsToolSet.eventSink = null
             contactsToolSet.writeSink  = null
+            debugLogger?.log(DebugEvent.LlmQuery(
+                sessionId = sessionId,
+                durationMs = System.currentTimeMillis() - startMs,
+                toolCallCount = toolsUsed.size,
+                toolsUsed = toolsUsed.toList(),
+            ))
         }
     }
 
@@ -195,6 +207,8 @@ class LlmOrchestrator(
            .take(200)
 
     fun summarizeMe(): Flow<LlmResult> = flow {
+        val startMs = System.currentTimeMillis()
+        var success = true
         val me = personDao.getMe() ?: run {
             emit(LlmResult.Error(IllegalArgumentException("No 'me' contact set")))
             return@flow
@@ -227,6 +241,17 @@ class LlmOrchestrator(
                 })
             }
         }
-        emitAll(provider.process(facts, Prompts.SUMMARIZE_SYSTEM))
+        try {
+            emitAll(provider.process(facts, Prompts.SUMMARIZE_SYSTEM))
+        } catch (e: Exception) {
+            success = false
+            throw e
+        } finally {
+            debugLogger?.log(DebugEvent.LlmSummarize(
+                subject = "me",
+                durationMs = System.currentTimeMillis() - startMs,
+                success = success,
+            ))
+        }
     }
 }
