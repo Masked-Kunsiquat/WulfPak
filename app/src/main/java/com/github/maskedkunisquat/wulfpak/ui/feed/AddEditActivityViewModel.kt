@@ -11,6 +11,7 @@ import com.github.maskedkunisquat.wulfpak.AppApplication
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ActivityParticipant
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
+import com.github.maskedkunisquat.wulfpak.core.logic.worker.SummaryWorker
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -63,6 +64,7 @@ class AddEditActivityViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val id = existingId
             val activityId: UUID
+            var prevParticipantIds = emptySet<UUID>()
             if (id == null) {
                 val activity = Activity(
                     timestamp = timestampMs,
@@ -80,14 +82,17 @@ class AddEditActivityViewModel(app: Application) : AndroidViewModel(app) {
                     ))
                 }
                 activityId = id
-                db.activityDao().getParticipantIds(activityId).forEach { pid ->
+                prevParticipantIds = db.activityDao().getParticipantIds(activityId).toSet()
+                prevParticipantIds.forEach { pid ->
                     db.activityDao().deleteParticipant(ActivityParticipant(activityId, pid))
                 }
             }
             selectedIds.forEach { personId ->
                 db.activityDao().insertParticipant(ActivityParticipant(activityId, personId))
             }
-            EmbeddingWorker.enqueue(WorkManager.getInstance(getApplication()))
+            val wm = WorkManager.getInstance(getApplication())
+            EmbeddingWorker.enqueue(wm)
+            (prevParticipantIds + selectedIds).forEach { SummaryWorker.enqueue(wm, it) }
             onDone()
         }
     }
