@@ -86,13 +86,11 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
             toSave.any { it is ChatMessage.Assistant && !(it as ChatMessage.Assistant).isStreaming && (it as ChatMessage.Assistant).text.isNotBlank() }
         if (!hasExchange) return
         memorySaved = true
+        // Only include user messages — assistant messages may contain hallucinations
+        // that would be baked into session memory and fed back as facts next session.
         val conversationText = buildString {
             toSave.forEach { msg ->
-                when (msg) {
-                    is ChatMessage.User      -> appendLine("User: ${msg.text}")
-                    is ChatMessage.Assistant -> if (!msg.isStreaming && msg.text.isNotBlank()) appendLine("Assistant: ${msg.text.take(300)}")
-                    else                     -> Unit
-                }
+                if (msg is ChatMessage.User) appendLine("User: ${msg.text}")
             }
         }.take(2000)
         CoroutineScope(Dispatchers.IO).launch {
