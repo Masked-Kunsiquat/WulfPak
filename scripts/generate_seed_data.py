@@ -37,7 +37,7 @@ if not GEMINI_API_KEY:
 
 import google.generativeai as genai
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-2.0-flash")
+model = genai.GenerativeModel("gemini-2.5-flash")
 
 DB_VERSION = 8
 NOW_MS = int(datetime.now(timezone.utc).timestamp() * 1000)
