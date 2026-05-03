@@ -78,24 +78,24 @@ No schema change, no migration needed.
 
 **New file:** `app/src/main/java/.../ui/graph/GraphScreen.kt`
 
-- [ ] Split into two composables so AS Preview works without a ViewModel:
+- [x] Split into two composables so AS Preview works without a ViewModel:
   - **`GraphCanvas`** — stateless, takes `nodes`, `edges`, `positions`, `onNodeTap` as params; contains all Canvas drawing logic
   - **`GraphScreen`** — thin wrapper: collects VM state, passes it into `GraphCanvas`
-- [ ] `fun GraphScreen(onNavigateToPerson: (UUID) -> Unit, viewModel: GraphViewModel = viewModel())`
-- [ ] Show `CircularProgressIndicator` while `isLoading`
-- [ ] `fun GraphCanvas(nodes: List<GraphNode>, edges: List<GraphEdge>, positions: Map<UUID, Offset>, onNodeTap: (UUID) -> Unit, modifier: Modifier = Modifier)`
-- [ ] `Box(Modifier.fillMaxSize())` wrapping the Canvas
-- [ ] `Modifier.pointerInput` — two gestures:
+- [x] `fun GraphScreen(onNavigateToPerson: (UUID) -> Unit, viewModel: GraphViewModel = viewModel())`
+- [x] Show `CircularProgressIndicator` while `isLoading`
+- [x] `fun GraphCanvas(nodes: List<GraphNode>, edges: List<GraphEdge>, positions: Map<UUID, Offset>, onNodeTap: (UUID) -> Unit, modifier: Modifier = Modifier)`
+- [x] `Box(Modifier.fillMaxSize())` wrapping the Canvas
+- [x] `Modifier.pointerInput` — two gestures:
   - **Pan:** `detectDragGestures` → accumulate `panOffset: Offset`
   - **Pinch-to-zoom:** `detectTransformGestures` → accumulate `scale: Float` (clamp `0.3f..3f`)
-- [ ] Draw order inside Canvas (apply `translate(panOffset)` + `scale(scale)` via `withTransform`):
+- [x] Draw order inside Canvas (apply `translate(panOffset)` + `scale(scale)` via `withTransform`):
   1. Edges — `drawLine(color = outline, strokeWidth = 1.5f.dp)` between position pairs
   2. Node circles — `drawCircle(color = categoryColor, radius = nodeRadius)`
   3. Name labels — `drawContext.canvas.nativeCanvas.drawText(name, x, y, paint)` (clipped to avoid overlap at low zoom)
-- [ ] Tap detection: `detectTapGestures` → find nearest node within `nodeRadius * 2` of tap point (in canvas coords after un-transforming), call `onNodeTap(node.id)`
-- [ ] Node radius: `8.dp` base; scale up slightly by `(closenessScore ?: 0.3f)` so closer contacts appear larger
-- [ ] Category colors resolve from `MaterialTheme.colorScheme` — pass them into the Canvas draw block as `val`s before entering Canvas scope (can't call `@Composable` inside Canvas)
-- [ ] Add `@Preview` at the bottom of `GraphScreen.kt`:
+- [x] Tap detection: `detectTapGestures` → find nearest node within `nodeRadius * 2` of tap point (in canvas coords after un-transforming), call `onNodeTap(node.id)`
+- [x] Node radius: `8.dp` base; scale up slightly by `(closenessScore ?: 0.3f)` so closer contacts appear larger
+- [x] Category colors resolve from `MaterialTheme.colorScheme` — pass them into the Canvas draw block as `val`s before entering Canvas scope (can't call `@Composable` inside Canvas)
+- [x] Add `@Preview` at the bottom of `GraphScreen.kt`:
   ```kotlin
   @Preview(showBackground = true, widthDp = 380, heightDp = 700)
   @Composable
