@@ -60,17 +60,17 @@ No schema change, no migration needed.
 
 **New file:** `app/src/main/java/.../ui/graph/GraphViewModel.kt`
 
-- [ ] `AndroidViewModel`, DB + `familyInferenceEngine` via `getApplication<AppApplication>()`
-- [ ] Load all non-me persons + all relationship rows in `init`
-- [ ] Build `List<GraphNode>` — dominant category per person = most frequent `RelCategory` across their connections; fall back to `OTHER`
-- [ ] Build `List<GraphEdge>` — one edge per raw `PersonRelationship` row
-- [ ] Run `GraphLayoutEngine.layout()` in `viewModelScope.launch(Dispatchers.Default)` — emits to `layoutState`
-- [ ] Expose:
+- [x] `AndroidViewModel`, DB + `familyInferenceEngine` via `getApplication<AppApplication>()`
+- [x] Load all non-me persons + all relationship rows in `init`
+- [x] Build `List<GraphNode>` — dominant category per person = most frequent `RelCategory` across their connections; fall back to `OTHER`
+- [x] Build `List<GraphEdge>` — one edge per raw `PersonRelationship` row
+- [x] Run `GraphLayoutEngine.layout()` in `viewModelScope.launch(Dispatchers.Default)` — emits to `layoutState`
+- [x] Expose:
   - `nodes: StateFlow<List<GraphNode>>`
   - `edges: StateFlow<List<GraphEdge>>`
   - `positions: StateFlow<Map<UUID, Offset>>` — empty until layout finishes
   - `isLoading: StateFlow<Boolean>`
-- [ ] Viewport state (pan offset + scale) lives in the Composable as `remember` state — not in ViewModel
+- [x] Viewport state (pan offset + scale) lives in the Composable as `remember` state — not in ViewModel
 
 ---
 
