@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -52,7 +53,7 @@ fun GraphScreen(
 
     var activeCategories by remember { mutableStateOf(RelCategory.entries.toSet()) }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().statusBarsPadding()) {
         CategoryFilterRow(
             activeCategories = activeCategories,
             onToggle = { cat ->
@@ -160,6 +161,18 @@ fun GraphCanvas(
         return if ((canvasPos - pos).getDistance() <= nodeRadius(nearest) * 2) nearest else null
     }
 
+    // 0 = inner, 1 = middle, 2 = outer — determined by distance from layout center
+    fun positionRing(pos: Offset): Int {
+        val dist = (pos - layoutCenter).getDistance()
+        val innerEdge  = rBase * (GraphLayoutEngine.INNER_FRAC  + GraphLayoutEngine.MIDDLE_FRAC) / 2f
+        val middleEdge = rBase * (GraphLayoutEngine.MIDDLE_FRAC + GraphLayoutEngine.OUTER_FRAC)  / 2f
+        return when {
+            dist <= innerEdge  -> 0
+            dist <= middleEdge -> 1
+            else               -> 2
+        }
+    }
+
     Box(modifier.fillMaxSize()) {
         Canvas(
             modifier = Modifier
@@ -220,12 +233,19 @@ fun GraphCanvas(
                     drawCircle(color = nodeColor, radius = nodeRadius(node), center = pos)
                 }
 
-                // 3. Labels — Me always visible; others only when long-pressed
+                // 3. Labels — zoom-based: inner always, middle at 1.2×, outer at 1.8×
+                //    Tap on any node also pins its label regardless of zoom level
                 for (node in nodes) {
                     val isMe = node.id == meId
-                    if (!isMe && node.id != labelNodeId) continue
                     if (!isMe && node.category !in activeCategories) continue
                     val pos = positions[node.id] ?: continue
+                    val ring = if (isMe) -1 else positionRing(pos)
+                    val showLabel = isMe
+                        || ring == 0
+                        || (ring == 1 && scale >= 1.2f)
+                        || (ring == 2 && scale >= 1.8f)
+                        || node.id == labelNodeId
+                    if (!showLabel) continue
                     drawContext.canvas.nativeCanvas.drawText(
                         if (isMe) "You" else node.name,
                         pos.x,
