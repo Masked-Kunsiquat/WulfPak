@@ -3,6 +3,7 @@ package com.github.maskedkunisquat.wulfpak.sync
 import android.content.Context
 import android.net.Uri
 import androidx.room.withTransaction
+import java.io.InputStream
 import com.github.maskedkunisquat.wulfpak.core.data.AppDatabase
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ActivityParticipant
@@ -47,9 +48,15 @@ class BackupRepository(private val db: AppDatabase) {
         } ?: error("Cannot open output stream for backup")
     }
 
-    suspend fun import(context: Context, uri: Uri): ImportResult = withContext(Dispatchers.IO) {
-        val json = context.contentResolver.openInputStream(uri)?.use { it.bufferedReader().readText() }
-            ?: error("Cannot open backup file")
+    suspend fun import(context: Context, uri: Uri): ImportResult {
+        val stream = withContext(Dispatchers.IO) {
+            context.contentResolver.openInputStream(uri) ?: error("Cannot open backup file")
+        }
+        return stream.use { importFromStream(it) }
+    }
+
+    suspend fun importFromStream(stream: InputStream): ImportResult = withContext(Dispatchers.IO) {
+        val json = stream.bufferedReader().readText()
         val root = JSONObject(json)
 
         val persons        = root.getJSONArray("persons").mapObjects            { it.toPerson() }

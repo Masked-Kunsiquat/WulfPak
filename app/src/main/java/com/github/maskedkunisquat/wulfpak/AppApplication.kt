@@ -3,6 +3,8 @@ package com.github.maskedkunisquat.wulfpak
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.work.Configuration
 import androidx.work.DelegatingWorkerFactory
@@ -17,6 +19,7 @@ import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchRepository
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.SummaryWorker
 import com.github.maskedkunisquat.wulfpak.download.DownloadManagerModelDownloader
+import com.github.maskedkunisquat.wulfpak.sync.BackupRepository
 import com.github.maskedkunisquat.wulfpak.worker.ContactReminderWorker
 import androidx.datastore.preferences.core.edit
 import com.github.maskedkunisquat.wulfpak.core.logic.closeness.ClosenessCalculator
@@ -28,10 +31,33 @@ import kotlinx.coroutines.launch
 
 class AppApplication : Application(), Configuration.Provider {
 
+    // ── Profile ───────────────────────────────────────────────────────────
+
+    enum class Profile { REAL, DEMO }
+
+    val activeProfile: Profile by lazy {
+        val raw = profilePrefs().getString(PREF_ACTIVE_PROFILE, null)
+        runCatching { Profile.valueOf(raw!!) }.getOrDefault(Profile.REAL)
+    }
+
+    val isDemoProfile: Boolean get() = activeProfile == Profile.DEMO
+
+    // ── Core singletons ───────────────────────────────────────────────────
+
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val db: AppDatabase by lazy {
-        AppDatabase.create(this, KeyProvider.getOrCreateKey(this))
+        val name = if (isDemoProfile) "wulfpak_demo.db" else "wulfpak.db"
+        AppDatabase.create(this, KeyProvider.getOrCreateKey(this), name)
+    }
+
+    // Seeds the demo DB from the bundled asset on first demo launch.
+    suspend fun seedDemoIfNeeded() {
+        if (!isDemoProfile) return
+        if (db.personDao().getAllOnce().isNotEmpty()) return
+        resources.openRawResource(R.raw.seed_data).use { stream ->
+            BackupRepository(db).importFromStream(stream)
+        }
     }
 
     val familyInferenceEngine: FamilyInferenceEngine by lazy { FamilyInferenceEngine(db) }
@@ -109,6 +135,9 @@ class AppApplication : Application(), Configuration.Provider {
         appDataStore.edit { it[AppPrefsKeys.CLOSENESS_ACTIVITY_BACKFILL_V1] = true }
     }
 
+    private fun profilePrefs() =
+        getSharedPreferences("profile_prefs", Context.MODE_PRIVATE)
+
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -119,6 +148,20 @@ class AppApplication : Application(), Configuration.Provider {
                 description = "Reminds you to reach out to people you haven't contacted recently"
             }
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        }
+    }
+
+    companion object {
+        private const val PREF_ACTIVE_PROFILE = "active_profile"
+
+        fun switchProfile(context: Context, target: Profile) {
+            context.getSharedPreferences("profile_prefs", Context.MODE_PRIVATE)
+                .edit().putString(PREF_ACTIVE_PROFILE, target.name).apply()
+            val intent = context.packageManager
+                .getLaunchIntentForPackage(context.packageName)!!
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            Runtime.getRuntime().exit(0)
         }
     }
 }
