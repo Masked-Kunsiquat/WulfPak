@@ -39,6 +39,7 @@ fun GraphScreen(
     val edges by viewModel.edges.collectAsStateWithLifecycle()
     val positions by viewModel.positions.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val meId by viewModel.meId.collectAsStateWithLifecycle()
 
     if (isLoading) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -49,6 +50,7 @@ fun GraphScreen(
             nodes = nodes,
             edges = edges,
             positions = positions,
+            meId = meId,
             onNodeTap = onNavigateToPerson,
         )
     }
@@ -59,6 +61,7 @@ fun GraphCanvas(
     nodes: List<GraphNode>,
     edges: List<GraphEdge>,
     positions: Map<UUID, Offset>,
+    meId: UUID?,
     onNodeTap: (UUID) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -73,6 +76,7 @@ fun GraphCanvas(
     val friendColor = MaterialTheme.colorScheme.primary
     val workColor = MaterialTheme.colorScheme.secondary
     val otherColor = MaterialTheme.colorScheme.outline
+    val meColor = MaterialTheme.colorScheme.errorContainer
 
     val labelPaint = remember {
         android.graphics.Paint().apply {
@@ -131,13 +135,14 @@ fun GraphCanvas(
                 // 2. Node circles
                 for (node in nodes) {
                     val pos = positions[node.id] ?: continue
-                    val nodeColor = when (node.category) {
+                    val isMe = node.id == meId
+                    val nodeColor = if (isMe) meColor else when (node.category) {
                         RelCategory.FAMILY -> familyColor
                         RelCategory.FRIEND -> friendColor
                         RelCategory.WORK   -> workColor
                         RelCategory.OTHER  -> otherColor
                     }
-                    val nodeRadius = baseRadius * (1f + (node.closenessScore ?: 0.3f) * 0.5f)
+                    val nodeRadius = baseRadius * (if (isMe) 2f else 1f + (node.closenessScore ?: 0.3f) * 0.5f)
                     drawCircle(color = nodeColor, radius = nodeRadius, center = pos)
                 }
 
@@ -145,9 +150,11 @@ fun GraphCanvas(
                 if (scale > 0.5f) {
                     for (node in nodes) {
                         val pos = positions[node.id] ?: continue
-                        val nodeRadius = baseRadius * (1f + (node.closenessScore ?: 0.3f) * 0.5f)
+                        val isMe = node.id == meId
+                        val nodeRadius = baseRadius * (if (isMe) 2f else 1f + (node.closenessScore ?: 0.3f) * 0.5f)
+                        val label = if (isMe) "You" else node.name
                         drawContext.canvas.nativeCanvas.drawText(
-                            node.name,
+                            label,
                             pos.x,
                             pos.y + nodeRadius + labelPaint.textSize,
                             labelPaint,
@@ -188,6 +195,6 @@ fun GraphCanvasPreview() {
         ids[6] to Offset(330f, 280f), ids[7] to Offset(230f, 460f),
     )
     WulfPakTheme {
-        GraphCanvas(nodes = nodes, edges = edges, positions = positions, onNodeTap = {})
+        GraphCanvas(nodes = nodes, edges = edges, positions = positions, meId = ids[0], onNodeTap = {})
     }
 }
