@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -35,10 +36,11 @@ class GraphViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         viewModelScope.launch {
-            personDao.getAll().collectLatest { allPersons ->
-                val deceasedIds = withContext(Dispatchers.IO) {
-                    lifeEventDao.getDeceasedPersonIds().toSet()
-                }
+            combine(
+                personDao.getAll(),
+                lifeEventDao.getDeceasedPersonIdsFlow(),
+            ) { allPersons, deceasedIdsList -> allPersons to deceasedIdsList.toSet() }
+            .collectLatest { (allPersons, deceasedIds) ->
                 val persons = allPersons.filter { it.id !in deceasedIds }
                 val meId = persons.find { it.isMe }?.id
                 _meId.value = meId

@@ -281,8 +281,9 @@ class LocalFallbackProvider(
 
         // LiteRT's token streamer injects null bytes mid-token (e.g. "14\x000" from tool responses).
         // Strip non-whitespace control characters while preserving \n, \r, \t.
+        private val LITERT_CONTROL_CHARS = Regex("[\\p{Cntrl}&&[^\n\r\t]]")
         private fun String.stripLiteRtControlChars(): String =
-            replace(Regex("[\\p{Cntrl}&&[^\n\r\t]]"), "")
+            replace(LITERT_CONTROL_CHARS, "")
 
         private const val HF_BASE_URL =
             "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main"
