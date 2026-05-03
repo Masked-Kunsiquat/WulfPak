@@ -53,9 +53,12 @@ SOCIAL_LABELS = {"friend", "best_friend", "acquaintance", "romantic_partner"}
 WORK_LABELS   = {"colleague", "manager", "report", "mentor", "client"}
 
 def rel_category(label):
-    if label in FAMILY_LABELS: return "FAMILY"
-    if label in SOCIAL_LABELS: return "SOCIAL"
-    if label in WORK_LABELS:   return "WORK"
+    if label in FAMILY_LABELS:
+        return "FAMILY"
+    if label in SOCIAL_LABELS:
+        return "SOCIAL"
+    if label in WORK_LABELS:
+        return "WORK"
     return "OTHER"
 
 def make_uuid():

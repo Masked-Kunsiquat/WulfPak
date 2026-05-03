@@ -21,6 +21,7 @@ import com.github.maskedkunisquat.wulfpak.core.logic.worker.SummaryWorker
 import com.github.maskedkunisquat.wulfpak.download.DownloadManagerModelDownloader
 import com.github.maskedkunisquat.wulfpak.sync.BackupRepository
 import com.github.maskedkunisquat.wulfpak.worker.ContactReminderWorker
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import com.github.maskedkunisquat.wulfpak.core.logic.closeness.ClosenessCalculator
 import kotlinx.coroutines.CoroutineScope
@@ -124,9 +125,12 @@ class AppApplication : Application(), Configuration.Provider {
     }
 
     private suspend fun backfillActivityClosenessScores() {
-        val prefs = appDataStore.data.first()
-        if (prefs[AppPrefsKeys.CLOSENESS_ACTIVITY_BACKFILL_V1] == true) return
-        db.personDao().getAllOnce().filter { !it.isMe }.forEach { person ->
+        // Key is profile-scoped so REAL and DEMO backfills are tracked independently.
+        val key = booleanPreferencesKey("closeness_activity_backfill_v1_${activeProfile.name.lowercase()}")
+        if (appDataStore.data.first()[key] == true) return
+        val people = db.personDao().getAllOnce().filter { !it.isMe }
+        if (people.isEmpty()) return  // DB empty (demo not yet seeded) — don't set the flag
+        people.forEach { person ->
             val interactions = db.interactionDao().getForPersonOnce(person.id)
             val activityTimestamps = db.activityDao().getTimestampsForPerson(person.id)
             val score = ClosenessCalculator.compute(
@@ -134,7 +138,7 @@ class AppApplication : Application(), Configuration.Provider {
             )
             db.personDao().updateClosenessScore(person.id, score)
         }
-        appDataStore.edit { it[AppPrefsKeys.CLOSENESS_ACTIVITY_BACKFILL_V1] = true }
+        appDataStore.edit { it[key] = true }
     }
 
     private fun profilePrefs() =

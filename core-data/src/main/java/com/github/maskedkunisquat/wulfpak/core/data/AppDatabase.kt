@@ -139,6 +139,8 @@ abstract class AppDatabase : RoomDatabase() {
 
         val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
+                // Index already created in MIGRATION_6_7; IF NOT EXISTS makes this a safe no-op
+                // on existing devices. Version bump was needed to regenerate the schema export.
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_session_memories_timestamp " +
                     "ON session_memories(timestamp)"

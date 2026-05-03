@@ -83,6 +83,7 @@ class BackupRepository(private val db: AppDatabase) {
             sqlDb.execSQL("DELETE FROM tasks")
             sqlDb.execSQL("DELETE FROM interactions")
             sqlDb.execSQL("DELETE FROM activities")
+            sqlDb.execSQL("DELETE FROM session_memories")
             sqlDb.execSQL("DELETE FROM persons")
 
             persons.forEach        { db.personDao().insert(it) }
@@ -122,6 +123,7 @@ class BackupRepository(private val db: AppDatabase) {
                 put("firstName", p.firstName)
                 putOpt("lastName", p.lastName)
                 putOpt("nickname", p.nickname)
+                putOpt("photoUri", p.photoUri)
                 put("relationLabel", p.relationLabel)
                 put("isFavorite", p.isFavorite)
                 putOpt("lastContactedAt", p.lastContactedAt)
@@ -261,6 +263,7 @@ class BackupRepository(private val db: AppDatabase) {
         firstName          = getString("firstName"),
         lastName           = strOrNull("lastName"),
         nickname           = strOrNull("nickname"),
+        photoUri           = strOrNull("photoUri"),
         relationLabel      = getString("relationLabel"),
         isFavorite         = optBoolean("isFavorite", false),
         lastContactedAt    = longOrNull("lastContactedAt"),
