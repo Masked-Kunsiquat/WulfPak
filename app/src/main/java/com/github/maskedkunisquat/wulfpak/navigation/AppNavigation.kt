@@ -28,8 +28,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.NavController
 import com.github.maskedkunisquat.wulfpak.AppApplication
+import com.github.maskedkunisquat.wulfpak.core.logic.debug.DebugEvent
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -66,6 +69,7 @@ import com.github.maskedkunisquat.wulfpak.ui.settings.DisplaySettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SecuritySettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsViewModel
+import com.github.maskedkunisquat.wulfpak.ui.debug.DebugSummaryScreen
 import com.github.maskedkunisquat.wulfpak.ui.graph.GraphScreen
 import com.github.maskedkunisquat.wulfpak.ui.me.MeScreen
 import com.github.maskedkunisquat.wulfpak.ui.tasks.TasksScreen
@@ -95,6 +99,7 @@ object Routes {
     const val SETTINGS_DISPLAY      = "settings_display"
     const val SETTINGS_AI           = "settings_ai"
     const val SETTINGS_CONTACTS     = "settings_contacts"
+    const val DEBUG_SUMMARY         = "debug_summary"
 
     fun personDetail(personId: String) = "person_detail/$personId"
     fun addEditPerson(personId: String? = null) =
@@ -144,7 +149,19 @@ fun AppNavHost(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute   = backStackEntry?.destination?.route
     val showBottomBar  = TOP_LEVEL_DESTS.any { it.route == currentRoute }
-    val isDemoProfile  = (LocalContext.current.applicationContext as AppApplication).isDemoProfile
+    val app            = LocalContext.current.applicationContext as AppApplication
+    val isDemoProfile  = app.isDemoProfile
+
+    DisposableEffect(navController) {
+        var prevRoute: String? = null
+        val listener = NavController.OnDestinationChangedListener { _, dest, _ ->
+            val to = dest.route ?: return@OnDestinationChangedListener
+            app.debugEventLogger.log(DebugEvent.Nav(to = to, from = prevRoute))
+            prevRoute = to
+        }
+        navController.addOnDestinationChangedListener(listener)
+        onDispose { navController.removeOnDestinationChangedListener(listener) }
+    }
 
     Scaffold(
         bottomBar = {
@@ -406,18 +423,23 @@ fun AppNavHost(
             composable(Routes.SETTINGS) {
                 val context = LocalContext.current
                 SettingsScreen(
-                    onNavigateBack     = { navController.popBackStack() },
-                    onNavigateSecurity = { navController.navigate(Routes.SETTINGS_SECURITY) },
-                    onNavigateDisplay  = { navController.navigate(Routes.SETTINGS_DISPLAY) },
-                    onNavigateAi       = { navController.navigate(Routes.SETTINGS_AI) },
-                    onNavigateContacts = { navController.navigate(Routes.SETTINGS_CONTACTS) },
-                    onSwitchProfile    = {
-                        val app = context.applicationContext as AppApplication
-                        val target = if (app.isDemoProfile) AppApplication.Profile.REAL
+                    onNavigateBack         = { navController.popBackStack() },
+                    onNavigateSecurity     = { navController.navigate(Routes.SETTINGS_SECURITY) },
+                    onNavigateDisplay      = { navController.navigate(Routes.SETTINGS_DISPLAY) },
+                    onNavigateAi           = { navController.navigate(Routes.SETTINGS_AI) },
+                    onNavigateContacts     = { navController.navigate(Routes.SETTINGS_CONTACTS) },
+                    onNavigateDebugSummary = { navController.navigate(Routes.DEBUG_SUMMARY) },
+                    onSwitchProfile        = {
+                        val localApp = context.applicationContext as AppApplication
+                        val target = if (localApp.isDemoProfile) AppApplication.Profile.REAL
                                      else AppApplication.Profile.DEMO
                         AppApplication.switchProfile(context, target)
                     },
                 )
+            }
+
+            composable(Routes.DEBUG_SUMMARY) {
+                DebugSummaryScreen(onNavigateBack = { navController.popBackStack() })
             }
 
             composable(Routes.SETTINGS_SECURITY) {
