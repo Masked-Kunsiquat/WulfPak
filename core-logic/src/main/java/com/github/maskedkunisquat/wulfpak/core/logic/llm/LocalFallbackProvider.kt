@@ -9,6 +9,8 @@ import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
+import com.google.ai.edge.litertlm.ExperimentalApi
+import com.google.ai.edge.litertlm.ExperimentalFlags
 import com.google.ai.edge.litertlm.ToolSet
 import com.google.ai.edge.litertlm.tool
 import kotlinx.coroutines.CoroutineDispatcher
@@ -192,6 +194,11 @@ class LocalFallbackProvider(
                 "Model not loaded. ${initFailureReason ?: "Call initialize() first."}"
             )
             val conv = chatConversation ?: run {
+                // The LiteRT native layer sets convertCamelToSnakeCaseInToolDescription=true
+                // during engine init, which would register tools as get_contact_details etc.
+                // Force it off so Kotlin camelCase method names are used as-is.
+                @OptIn(ExperimentalApi::class)
+                ExperimentalFlags.convertCamelToSnakeCaseInToolDescription = false
                 val toolConfigs = tools.filterIsInstance<ToolSet>().map { tool(it) }
                 Log.d(TAG, "Creating conversation — toolSets=${tools.filterIsInstance<ToolSet>().size} toolProviders=${toolConfigs.size}")
                 val config = ConversationConfig(
