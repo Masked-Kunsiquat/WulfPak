@@ -14,8 +14,8 @@ object GraphLayoutEngine {
     const val MIDDLE_FRAC   = 0.42f
     const val OUTER_FRAC    = 0.62f
 
-    private const val INNER_THRESHOLD  = 0.7f
-    private const val MIDDLE_THRESHOLD = 0.3f
+    private const val INNER_THRESHOLD  = 0.15f
+    private const val MIDDLE_THRESHOLD = 0.005f
 
     fun layout(
         nodes: List<GraphNode>,
