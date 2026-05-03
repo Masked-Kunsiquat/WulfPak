@@ -167,7 +167,7 @@ fun GraphCanvas(
         targetValue  = (2.0 * PI).toFloat(),
         animationSpec = infiniteRepeatable(
             animation  = tween(durationMillis = 6000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
+            repeatMode = RepeatMode.Reverse,
         ),
         label = "floatProgress",
     )
