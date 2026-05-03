@@ -11,10 +11,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -66,7 +71,8 @@ fun GraphScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val meId by viewModel.meId.collectAsStateWithLifecycle()
 
-    var activeCategories by remember { mutableStateOf(RelCategory.entries.toSet()) }
+    var activeCategories  by remember { mutableStateOf(RelCategory.entries.toSet()) }
+    var animationEnabled  by remember { mutableStateOf(true) }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         CategoryFilterRow(
@@ -84,14 +90,31 @@ fun GraphScreen(
                 CircularProgressIndicator()
             }
         } else {
-            GraphCanvas(
-                nodes = nodes,
-                positions = positions,
-                meId = meId,
-                activeCategories = activeCategories,
-                onNodeTap = onNavigateToPerson,
-                modifier = Modifier.weight(1f),
-            )
+            Box(modifier = Modifier.weight(1f)) {
+                GraphCanvas(
+                    nodes            = nodes,
+                    positions        = positions,
+                    meId             = meId,
+                    activeCategories = activeCategories,
+                    animationEnabled = animationEnabled,
+                    onNodeTap        = onNavigateToPerson,
+                    modifier         = Modifier.fillMaxSize(),
+                )
+                SmallFloatingActionButton(
+                    onClick = { animationEnabled = !animationEnabled },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp),
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ) {
+                    Icon(
+                        imageVector = if (animationEnabled) Icons.Default.Pause
+                                      else Icons.Default.PlayArrow,
+                        contentDescription = if (animationEnabled) "Pause animation"
+                                             else "Resume animation",
+                    )
+                }
+            }
         }
     }
 }
@@ -133,6 +156,7 @@ fun GraphCanvas(
     positions: Map<UUID, Offset>,
     meId: UUID?,
     activeCategories: Set<RelCategory>,
+    animationEnabled: Boolean,
     onNodeTap: (UUID) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -285,7 +309,7 @@ fun GraphCanvas(
                     if (node.id != meId && node.category !in activeCategories) return@forEachIndexed
                     val pos = positions[node.id] ?: return@forEachIndexed
                     val phase = idx * 1.1f
-                    val drawPos = pos + Offset(
+                    val drawPos = if (!animationEnabled || node.id == meId) pos else pos + Offset(
                         sin(floatProgress + phase) * floatAmplitude,
                         cos(floatProgress * 0.73f + phase) * floatAmplitude,
                     )
@@ -346,7 +370,7 @@ fun GraphCanvas(
                         || node.id == labelNodeId
                     if (!showLabel) return@forEachIndexed
                     val phase = idx * 1.1f
-                    val drawPos = pos + Offset(
+                    val drawPos = if (!animationEnabled || node.id == meId) pos else pos + Offset(
                         sin(floatProgress + phase) * floatAmplitude,
                         cos(floatProgress * 0.73f + phase) * floatAmplitude,
                     )
@@ -380,11 +404,12 @@ fun GraphCanvasPreview() {
     val positions = GraphLayoutEngine.layout(nodes = nodes, meId = meId, width = 380f, height = 700f)
     WulfPakTheme {
         GraphCanvas(
-            nodes = nodes,
-            positions = positions,
-            meId = meId,
+            nodes            = nodes,
+            positions        = positions,
+            meId             = meId,
             activeCategories = RelCategory.entries.toSet(),
-            onNodeTap = {},
+            animationEnabled = true,
+            onNodeTap        = {},
         )
     }
 }
