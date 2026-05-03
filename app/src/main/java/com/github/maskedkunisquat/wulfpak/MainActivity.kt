@@ -48,8 +48,11 @@ private fun AppRoot(activity: FragmentActivity) {
     var seeding by remember { mutableStateOf(app.isDemoProfile) }
     LaunchedEffect(Unit) {
         if (app.isDemoProfile) {
-            withContext(Dispatchers.IO) { app.seedDemoIfNeeded() }
-            seeding = false
+            try {
+                withContext(Dispatchers.IO) { app.seedDemoIfNeeded() }
+            } finally {
+                seeding = false
+            }
         }
     }
     if (seeding) {
