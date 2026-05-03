@@ -39,10 +39,15 @@ class GraphViewModel(app: Application) : AndroidViewModel(app) {
 
             val nodes = persons.map { person ->
                 GraphNode(
-                    id = person.id,
-                    name = person.firstName,
-                    category = labelToCategory(person.relationLabel),
+                    id             = person.id,
+                    name           = person.firstName,
+                    category       = labelToCategory(person.relationLabel),
                     closenessScore = person.closenessScore,
+                    initials       = buildString {
+                        person.firstName.firstOrNull()?.let { append(it) }
+                        person.lastName?.firstOrNull()?.let  { append(it) }
+                    }.uppercase().ifEmpty { "?" },
+                    photoUri       = person.photoUri,
                 )
             }
 
