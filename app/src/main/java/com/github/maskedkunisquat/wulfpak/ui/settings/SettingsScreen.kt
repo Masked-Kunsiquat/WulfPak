@@ -2,6 +2,7 @@ package com.github.maskedkunisquat.wulfpak.ui.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,6 +20,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -28,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import com.github.maskedkunisquat.wulfpak.AppApplication
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,11 +113,26 @@ fun SettingsScreen(
                 modifier          = Modifier.clickable(onClick = onNavigateContacts),
             )
             ListItem(
-                headlineContent   = { Text(if (isDemoProfile) "Exit demo mode" else "Try demo mode") },
-                supportingContent = { Text(if (isDemoProfile) "Return to your real data" else "Explore with realistic fake contacts") },
+                headlineContent   = { Text("Profile") },
+                supportingContent = { Text("Switch between your data and demo mode") },
                 leadingContent    = { Icon(Icons.Default.Science, contentDescription = null) },
-                modifier          = Modifier.clickable { showProfileDialog = true },
             )
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+            ) {
+                SegmentedButton(
+                    selected = !isDemoProfile,
+                    onClick  = { if (isDemoProfile) showProfileDialog = true },
+                    shape    = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                ) { Text("Real data") }
+                SegmentedButton(
+                    selected = isDemoProfile,
+                    onClick  = { if (!isDemoProfile) showProfileDialog = true },
+                    shape    = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                ) { Text("Demo") }
+            }
         }
     }
 }
