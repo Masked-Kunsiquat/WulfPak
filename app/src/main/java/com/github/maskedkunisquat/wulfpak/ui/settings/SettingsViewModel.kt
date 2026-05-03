@@ -35,7 +35,7 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     private val contactSyncManager = ContactSyncManager(appApp.db)
     private val vCardImporter      = VCardImporter(appApp.db)
     private val calendarBridge     = CalendarBridge(appApp.db)
-    private val backupRepository   = BackupRepository(appApp.db)
+    private val backupRepository   = BackupRepository(appApp.db, appApp.debugEventLogger)
 
     // ── Sync / import states ──────────────────────────────────────────────
 

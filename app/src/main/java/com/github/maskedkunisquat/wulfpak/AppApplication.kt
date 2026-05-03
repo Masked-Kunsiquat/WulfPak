@@ -18,6 +18,7 @@ import com.github.maskedkunisquat.wulfpak.core.logic.llm.LlmOrchestrator
 import com.github.maskedkunisquat.wulfpak.core.logic.search.SearchRepository
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.SummaryWorker
+import com.github.maskedkunisquat.wulfpak.debug.DebugEventLogger
 import com.github.maskedkunisquat.wulfpak.download.DownloadManagerModelDownloader
 import com.github.maskedkunisquat.wulfpak.sync.BackupRepository
 import com.github.maskedkunisquat.wulfpak.worker.ContactReminderWorker
@@ -28,6 +29,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class AppApplication : Application(), Configuration.Provider {
@@ -46,6 +48,8 @@ class AppApplication : Application(), Configuration.Provider {
     // ── Core singletons ───────────────────────────────────────────────────
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    val debugEventLogger: DebugEventLogger by lazy { DebugEventLogger(this) }
 
     val db: AppDatabase by lazy {
         val name = if (isDemoProfile) "wulfpak_demo.db" else "wulfpak.db"
@@ -80,6 +84,7 @@ class AppApplication : Application(), Configuration.Provider {
             noteDao = db.noteDao(),
             interactionDao = db.interactionDao(),
             activityDao = db.activityDao(),
+            debugLogger = debugEventLogger,
         )
     }
 
@@ -97,13 +102,14 @@ class AppApplication : Application(), Configuration.Provider {
             personRelationshipDao   = db.personRelationshipDao(),
             familyInferenceEngine   = familyInferenceEngine,
             sessionMemoryDao        = db.sessionMemoryDao(),
+            debugLogger             = debugEventLogger,
         )
     }
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(DelegatingWorkerFactory().also { factory ->
-                factory.addFactory(EmbeddingWorker.Factory(db, embeddingProvider))
+                factory.addFactory(EmbeddingWorker.Factory(db, embeddingProvider, debugEventLogger))
                 factory.addFactory(SummaryWorker.Factory(db, llmOrchestrator))
                 factory.addFactory(ContactReminderWorker.Factory(db, llmOrchestrator))
             })
@@ -112,6 +118,10 @@ class AppApplication : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannels()
+        appScope.launch {
+            appDataStore.data.map { it[AppPrefsKeys.DEBUG_CAPTURE_ENABLED] ?: false }
+                .collect { debugEventLogger.updateCaptureEnabled(it) }
+        }
         appScope.launch {
             embeddingProvider.initialize(this@AppApplication)
         }
