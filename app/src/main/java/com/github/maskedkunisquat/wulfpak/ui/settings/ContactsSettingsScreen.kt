@@ -2,6 +2,7 @@ package com.github.maskedkunisquat.wulfpak.ui.settings
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -20,7 +21,10 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -53,6 +57,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.github.maskedkunisquat.wulfpak.core.data.entity.RelationLabel
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,6 +71,17 @@ fun ContactsSettingsScreen(
 ) {
     val context           = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+
+    var pendingImportUri    by remember { mutableStateOf<Uri?>(null) }
+    var showImportConfirm   by remember { mutableStateOf(false) }
+
+    val backupExportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri -> uri?.let { viewModel.exportBackup(it) } }
+
+    val backupImportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let { pendingImportUri = it; showImportConfirm = true } }
 
     val contactPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -134,6 +152,43 @@ fun ContactsSettingsScreen(
         }
     }
 
+    LaunchedEffect(viewModel.backupState) {
+        when (val s = viewModel.backupState) {
+            is SettingsViewModel.BackupState.ExportDone -> {
+                snackbarHostState.showSnackbar("Backup exported successfully")
+                viewModel.clearBackupState()
+            }
+            is SettingsViewModel.BackupState.ImportDone -> {
+                snackbarHostState.showSnackbar(
+                    "Restored ${s.personCount} people from backup"
+                )
+                viewModel.clearBackupState()
+            }
+            is SettingsViewModel.BackupState.Error -> {
+                snackbarHostState.showSnackbar("Backup error: ${s.message}")
+                viewModel.clearBackupState()
+            }
+            else -> Unit
+        }
+    }
+
+    if (showImportConfirm) {
+        AlertDialog(
+            onDismissRequest = { showImportConfirm = false },
+            title = { Text("Replace all data?") },
+            text  = { Text("This will permanently delete all current data and replace it with the backup. This cannot be undone.") },
+            confirmButton = {
+                Button(onClick = {
+                    showImportConfirm = false
+                    pendingImportUri?.let { viewModel.importBackup(it) }
+                }) { Text("Replace") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showImportConfirm = false }) { Text("Cancel") }
+            },
+        )
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
@@ -149,6 +204,33 @@ fun ContactsSettingsScreen(
             snackbarHost = { SnackbarHost(snackbarHostState) },
         ) { padding ->
             Column(modifier = Modifier.padding(padding)) {
+                val isExporting = viewModel.backupState is SettingsViewModel.BackupState.Exporting
+                ListItem(
+                    headlineContent   = { Text("Export backup") },
+                    supportingContent = { Text("Save all your data to a JSON file") },
+                    leadingContent    = { Icon(Icons.Default.SaveAlt, contentDescription = null) },
+                    trailingContent   = {
+                        if (isExporting) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    },
+                    modifier = Modifier.clickable(enabled = !isExporting) {
+                        val ts = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+                        backupExportLauncher.launch("wulfpak_backup_$ts.json")
+                    },
+                )
+
+                val isRestoring = viewModel.backupState is SettingsViewModel.BackupState.Importing
+                ListItem(
+                    headlineContent   = { Text("Import backup") },
+                    supportingContent = { Text("Restore data from a backup file") },
+                    leadingContent    = { Icon(Icons.Default.Restore, contentDescription = null) },
+                    trailingContent   = {
+                        if (isRestoring) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    },
+                    modifier = Modifier.clickable(enabled = !isRestoring) {
+                        backupImportLauncher.launch(arrayOf("application/json", "*/*"))
+                    },
+                )
+
                 ListItem(
                     headlineContent   = { Text("Resolve duplicate contacts") },
                     supportingContent = { Text("Merge contacts that were imported with the same name") },

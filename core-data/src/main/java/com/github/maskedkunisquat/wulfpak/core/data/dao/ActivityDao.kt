@@ -44,6 +44,9 @@ interface ActivityDao {
     @Query("SELECT * FROM activities ORDER BY timestamp DESC")
     suspend fun getAllOnce(): List<Activity>
 
+    @Query("SELECT * FROM activity_participants")
+    suspend fun getAllParticipants(): List<ActivityParticipant>
+
     @Query("SELECT * FROM activities WHERE embedding IS NULL")
     suspend fun getUnembedded(): List<Activity>
 
