@@ -28,6 +28,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE id = :id")
     suspend fun getById(id: UUID): Task?
 
+    @Query("SELECT * FROM tasks ORDER BY isDone ASC, dueAt ASC NULLS LAST")
+    suspend fun getAllOnce(): List<Task>
+
     @Query("UPDATE tasks SET personId = :toId WHERE personId = :fromId")
     suspend fun reassignToPerson(fromId: UUID, toId: UUID)
 

@@ -52,6 +52,9 @@ interface InteractionDao {
     @Query("SELECT * FROM interactions ORDER BY timestamp DESC")
     suspend fun getAllOnce(): List<Interaction>
 
+    @Query("SELECT * FROM interaction_participants")
+    suspend fun getAllParticipants(): List<InteractionParticipant>
+
     @Query("SELECT COUNT(*) FROM interactions WHERE timestamp >= :since")
     suspend fun countSince(since: Long): Int
 
