@@ -46,8 +46,11 @@ object ClosenessCalculator {
         return sum
     }
 
-    fun compute(interactions: List<Interaction>, category: String): Float {
-        if (interactions.isEmpty()) return 0f
+    fun compute(interactions: List<Interaction>, category: String): Float =
+        compute(interactions, emptyList(), category)
+
+    fun compute(interactions: List<Interaction>, activityTimestamps: List<Long>, category: String): Float {
+        if (interactions.isEmpty() && activityTimestamps.isEmpty()) return 0f
 
         val halfLife = halfLifeDays(category)
         val nowMs = System.currentTimeMillis()
@@ -56,10 +59,16 @@ object ClosenessCalculator {
         for (interaction in interactions) {
             val daysAgo = TimeUnit.MILLISECONDS.toDays(nowMs - interaction.timestamp).toDouble()
             if (daysAgo < 0.0) continue
-
             val weight = typeWeight(interaction.type)
             val durationBonus = minOf((interaction.durationSeconds ?: 0) / 3600.0, 1.0)
             rawScore += (weight + durationBonus) * 2.0.pow(-daysAgo / halfLife)
+        }
+
+        // Activities count as IN_PERSON (weight 1.0), no duration bonus
+        for (timestamp in activityTimestamps) {
+            val daysAgo = TimeUnit.MILLISECONDS.toDays(nowMs - timestamp).toDouble()
+            if (daysAgo < 0.0) continue
+            rawScore += 1.0 * 2.0.pow(-daysAgo / halfLife)
         }
 
         return (rawScore / theoreticalMax(halfLife)).coerceIn(0.0, 1.0).toFloat()

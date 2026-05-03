@@ -18,9 +18,12 @@ import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.SummaryWorker
 import com.github.maskedkunisquat.wulfpak.download.DownloadManagerModelDownloader
 import com.github.maskedkunisquat.wulfpak.worker.ContactReminderWorker
+import androidx.datastore.preferences.core.edit
+import com.github.maskedkunisquat.wulfpak.core.logic.closeness.ClosenessCalculator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class AppApplication : Application(), Configuration.Provider {
@@ -89,6 +92,21 @@ class AppApplication : Application(), Configuration.Provider {
         val wm = WorkManager.getInstance(this)
         ContactReminderWorker.schedule(wm)
         EmbeddingWorker.enqueue(wm)    // backfill any rows written before model was ready
+        appScope.launch(Dispatchers.IO) { backfillActivityClosenessScores() }
+    }
+
+    private suspend fun backfillActivityClosenessScores() {
+        val prefs = appDataStore.data.first()
+        if (prefs[AppPrefsKeys.CLOSENESS_ACTIVITY_BACKFILL_V1] == true) return
+        db.personDao().getAllOnce().filter { !it.isMe }.forEach { person ->
+            val interactions = db.interactionDao().getForPersonOnce(person.id)
+            val activityTimestamps = db.activityDao().getTimestampsForPerson(person.id)
+            val score = ClosenessCalculator.compute(
+                interactions, activityTimestamps, ClosenessCalculator.categoryFor(person.relationLabel)
+            )
+            db.personDao().updateClosenessScore(person.id, score)
+        }
+        appDataStore.edit { it[AppPrefsKeys.CLOSENESS_ACTIVITY_BACKFILL_V1] = true }
     }
 
     private fun createNotificationChannels() {
