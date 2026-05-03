@@ -33,9 +33,9 @@ No schema change, no migration needed.
 
 **New files:** `core-logic/src/main/java/.../graph/GraphNode.kt`, `GraphEdge.kt`, `GraphLayoutEngine.kt`
 
-- [ ] `GraphNode(id: UUID, name: String, category: RelCategory, closenessScore: Float?)`
-- [ ] `GraphEdge(fromId: UUID, toId: UUID, category: RelCategory, closenessScore: Float)` — ViewModel resolves this as `(fromPerson.closenessScore ?: 0.3f)`
-- [ ] `GraphLayoutEngine` — pure `object`, no Compose deps
+- [x] `GraphNode(id: UUID, name: String, category: RelCategory, closenessScore: Float?)`
+- [x] `GraphEdge(fromId: UUID, toId: UUID, category: RelCategory, closenessScore: Float)` — ViewModel resolves this as `(fromPerson.closenessScore ?: 0.3f)`
+- [x] `GraphLayoutEngine` — pure `object`, no Compose deps
 
   ```kotlin
   object GraphLayoutEngine {
