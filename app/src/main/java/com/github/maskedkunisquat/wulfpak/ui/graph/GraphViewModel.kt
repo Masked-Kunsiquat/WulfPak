@@ -32,10 +32,15 @@ class GraphViewModel(app: Application) : AndroidViewModel(app) {
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _meId = MutableStateFlow<UUID?>(null)
+    val meId: StateFlow<UUID?> = _meId
+
     init {
         viewModelScope.launch(Dispatchers.Default) {
-            val persons = personDao.getAllOnce().filter { !it.isMe }
+            val persons = personDao.getAllOnce()
             val relationships = relationshipDao.getAllOnce()
+
+            _meId.value = persons.find { it.isMe }?.id
 
             // dominant category per person = most frequent RelCategory across their connections
             val categoryFreq = mutableMapOf<UUID, MutableMap<RelCategory, Int>>()
@@ -59,18 +64,29 @@ class GraphViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
 
-            val edges = relationships.mapNotNull { rel ->
-                // skip edges where either person is not in our non-me set
+            val me = persons.find { it.isMe }
+
+            // Inter-contact edges from person_relationships rows
+            val relEdges = relationships.mapNotNull { rel ->
                 if (rel.personAId !in personMap || rel.personBId !in personMap) return@mapNotNull null
                 val cat = runCatching { RelCategory.valueOf(rel.category) }.getOrDefault(RelCategory.OTHER)
                 val score = personMap[rel.personAId]?.closenessScore ?: 0.3f
-                GraphEdge(
-                    fromId = rel.personAId,
-                    toId = rel.personBId,
-                    category = cat,
-                    closenessScore = score,
-                )
+                GraphEdge(fromId = rel.personAId, toId = rel.personBId, category = cat, closenessScore = score)
             }
+
+            // Synthesise Me → contact edges from Person.relationLabel (not in person_relationships)
+            val meEdges = if (me != null) {
+                persons.filter { !it.isMe }.map { contact ->
+                    GraphEdge(
+                        fromId = me.id,
+                        toId = contact.id,
+                        category = labelToCategory(contact.relationLabel),
+                        closenessScore = contact.closenessScore ?: 0.3f,
+                    )
+                }
+            } else emptyList()
+
+            val edges = relEdges + meEdges
 
             _nodes.value = nodes
             _edges.value = edges
@@ -87,5 +103,13 @@ class GraphViewModel(app: Application) : AndroidViewModel(app) {
             _positions.value = positions
             _isLoading.value = false
         }
+    }
+
+    private fun labelToCategory(label: String): RelCategory = when (label.lowercase()) {
+        "mother", "father", "sibling", "child", "grandparent", "grandchild",
+        "cousin", "aunt", "uncle", "step-parent", "step-child" -> RelCategory.FAMILY
+        "friend", "best_friend", "acquaintance", "romantic_partner" -> RelCategory.FRIEND
+        "colleague", "manager", "report", "mentor", "client" -> RelCategory.WORK
+        else -> RelCategory.OTHER
     }
 }
