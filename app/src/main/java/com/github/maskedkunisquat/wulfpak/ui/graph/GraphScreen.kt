@@ -15,6 +15,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -259,9 +265,23 @@ fun GraphCanvas(
     }
 
     Box(modifier.fillMaxSize()) {
+        // Accessible companion: hidden from sighted users, enumerable by TalkBack/keyboard
+        val accessibleNodes = nodes.filter { it.id == meId || it.category in activeCategories }
+        accessibleNodes.forEach { node ->
+            Box(
+                Modifier.semantics(mergeDescendants = true) {
+                    contentDescription = if (node.id == meId) "You"
+                        else "${node.name}, ${node.category.name.lowercase()}"
+                    role = Role.Button
+                    onClick(label = "Open") { onNodeTap(node.id); true }
+                }
+            )
+        }
+
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
+                .clearAndSetSemantics { contentDescription = "Social network graph" }
                 .pointerInput(Unit) {
                     detectTransformGestures { centroid, pan, zoom, _ ->
                         val newScale = (scale * zoom).coerceIn(0.3f, 3f)
