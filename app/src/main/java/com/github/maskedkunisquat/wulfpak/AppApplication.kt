@@ -38,7 +38,7 @@ class AppApplication : Application(), Configuration.Provider {
 
     val activeProfile: Profile by lazy {
         val raw = profilePrefs().getString(PREF_ACTIVE_PROFILE, null)
-        runCatching { Profile.valueOf(raw!!) }.getOrDefault(Profile.REAL)
+        raw?.let { runCatching { Profile.valueOf(it) }.getOrDefault(Profile.REAL) } ?: Profile.REAL
     }
 
     val isDemoProfile: Boolean get() = activeProfile == Profile.DEMO

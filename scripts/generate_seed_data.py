@@ -450,7 +450,7 @@ def main():
 
     print("Step 2/9: Generating 22 contacts …")
     persons = generate_persons()
-    all_persons = [me] + persons
+    all_persons = [me, *persons]
     non_me = [p for p in all_persons if not p["isMe"]]
     print(f"  → {len(persons)} contacts created")
 
@@ -514,7 +514,7 @@ def main():
     print(f"  Gifts          : {len(gifts)}")
     print(f"  Activities     : {len(activities)}")
     print(f"  Relationships  : {len(person_relationships)}")
-    print(f"\nImport via: Settings → Contacts → Import backup")
+    print("\nImport via: Settings → Contacts → Import backup")
 
     return backup
 
