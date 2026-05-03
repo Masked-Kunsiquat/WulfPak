@@ -13,6 +13,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionParticipan
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionType
 import com.github.maskedkunisquat.wulfpak.core.logic.closeness.ClosenessCalculator
 import com.github.maskedkunisquat.wulfpak.core.logic.worker.EmbeddingWorker
+import com.github.maskedkunisquat.wulfpak.core.logic.worker.SummaryWorker
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -75,8 +76,25 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun save(onDone: () -> Unit) {
         viewModelScope.launch {
-            val durationSec = durationMins.trim().toIntOrNull()?.times(60)
+            val effectiveIds = selectedIds.filterNot { it == UUID(0L, 0L) }.toSet()
             val id = existingId
+            if (id == null && effectiveIds.isEmpty()) return@launch
+            val wm = WorkManager.getInstance(getApplication())
+            if (id != null && effectiveIds.isEmpty()) {
+                var removedIds = emptySet<UUID>()
+                db.withTransaction {
+                    val oldIds = db.interactionDao().getParticipantIds(id).toSet()
+                    removedIds = oldIds
+                    db.interactionDao().getById(id)?.let { db.interactionDao().delete(it) }
+                    oldIds.forEach { pid -> db.personDao().onInteractionDeleted(pid) }
+                }
+                removedIds.forEach { rid -> recomputeScore(rid) }
+                removedIds.forEach { rid -> SummaryWorker.enqueue(wm, rid) }
+                EmbeddingWorker.enqueue(wm)
+                onDone()
+                return@launch
+            }
+            val durationSec = durationMins.trim().toIntOrNull()?.times(60)
             val interactionId: UUID
             if (id == null) {
                 val interaction = Interaction(
@@ -88,8 +106,8 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
                 interactionId = interaction.id
                 db.withTransaction {
                     db.interactionDao().insert(interaction)
-                    selectedIds.forEach { sid -> db.personDao().onInteractionAdded(sid, timestampMs) }
-                    selectedIds.forEach { sid ->
+                    effectiveIds.forEach { sid -> db.personDao().onInteractionAdded(sid, timestampMs) }
+                    effectiveIds.forEach { sid ->
                         db.interactionDao().insertParticipant(InteractionParticipant(interactionId, sid))
                     }
                 }
@@ -109,19 +127,21 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
                     oldIds.forEach { pid ->
                         db.interactionDao().deleteParticipant(InteractionParticipant(id, pid))
                     }
-                    val removed = oldIds - selectedIds
-                    val added   = selectedIds - oldIds
+                    val removed = oldIds - effectiveIds
+                    val added   = effectiveIds - oldIds
                     removedIds = removed
                     removed.forEach { pid -> db.personDao().onInteractionDeleted(pid) }
                     added.forEach   { pid -> db.personDao().onInteractionAdded(pid, timestampMs) }
-                    selectedIds.forEach { sid ->
+                    effectiveIds.forEach { sid ->
                         db.interactionDao().insertParticipant(InteractionParticipant(id, sid))
                     }
                 }
                 removedIds.forEach { rid -> recomputeScore(rid) }
+                removedIds.forEach { rid -> SummaryWorker.enqueue(wm, rid) }
             }
-            selectedIds.forEach { sid -> recomputeScore(sid) }
-            EmbeddingWorker.enqueue(WorkManager.getInstance(getApplication()))
+            effectiveIds.forEach { sid -> recomputeScore(sid) }
+            EmbeddingWorker.enqueue(wm)
+            effectiveIds.forEach { sid -> SummaryWorker.enqueue(wm, sid) }
             onDone()
         }
     }

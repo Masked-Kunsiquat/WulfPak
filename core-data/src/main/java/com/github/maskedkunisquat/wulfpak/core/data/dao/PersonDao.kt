@@ -65,6 +65,9 @@ interface PersonDao {
     @Query("SELECT * FROM persons WHERE isMe = 1 LIMIT 1")
     suspend fun getMe(): Person?
 
+    @Query("SELECT * FROM persons WHERE isMe = 1 LIMIT 1")
+    fun observeMe(): Flow<Person?>
+
     @Query("UPDATE persons SET isMe = 0")
     suspend fun clearAllMe()
 

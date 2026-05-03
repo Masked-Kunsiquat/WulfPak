@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
@@ -55,6 +56,7 @@ import com.github.maskedkunisquat.wulfpak.ui.settings.DisplaySettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SecuritySettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsViewModel
+import com.github.maskedkunisquat.wulfpak.ui.me.MeScreen
 import com.github.maskedkunisquat.wulfpak.ui.tasks.TasksScreen
 import java.util.UUID
 
@@ -73,6 +75,7 @@ object Routes {
     const val INTERACTION_DETAIL    = "interaction_detail/{interactionId}"
     const val SEARCH                = "search"
     const val TASKS                 = "tasks"
+    const val ME                    = "me"
     const val SETTINGS              = "settings"
     const val CONTACT_PICK          = "contact_pick"
     const val MERGE_CONTACTS        = "merge_contacts"
@@ -117,7 +120,7 @@ private val TOP_LEVEL_DESTS = listOf(
     TopLevelDest(Routes.PEOPLE_LIST,   Icons.Default.People,      "People"),
     TopLevelDest(Routes.ACTIVITY_FEED, Icons.Default.DynamicFeed, "Feed"),
     TopLevelDest(Routes.SEARCH,        Icons.Default.Chat,         "Chat"),
-    TopLevelDest(Routes.TASKS,         Icons.Default.Assignment,   "Tasks"),
+    TopLevelDest(Routes.ME,            Icons.Default.Person,       "Me"),
 )
 
 @Composable
@@ -331,6 +334,25 @@ fun AppNavHost(
             composable(Routes.SEARCH) {
                 SearchScreen(
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                )
+            }
+
+            composable(Routes.ME) {
+                MeScreen(
+                    onAddTask  = { navController.navigate(Routes.addEditTask()) },
+                    onEditTask = { task ->
+                        navController.navigate(
+                            Routes.addEditTask(
+                                personId = task.personId?.toString(),
+                                taskId   = task.id.toString(),
+                            )
+                        )
+                    },
+                    onEditMe          = { id -> navController.navigate(Routes.addEditPerson(id.toString())) },
+                    onLogInteraction  = { navController.navigate(Routes.addEditInteraction("00000000-0000-0000-0000-000000000000")) },
+                    onViewInteraction = { id -> navController.navigate(Routes.interactionDetail(id.toString())) },
+                    onViewActivity    = { id -> navController.navigate(Routes.activityDetail(id.toString())) },
+                    onOpenPerson      = { id -> navController.navigate(Routes.personDetail(id.toString())) },
                 )
             }
 
