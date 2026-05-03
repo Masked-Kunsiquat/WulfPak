@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -64,6 +66,7 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.RelCategory
 import com.github.maskedkunisquat.wulfpak.core.logic.graph.GraphLayoutEngine
 import com.github.maskedkunisquat.wulfpak.core.logic.graph.GraphNode
 import java.io.File
+import kotlin.math.roundToInt
 import com.github.maskedkunisquat.wulfpak.ui.theme.WulfPakTheme
 import java.util.UUID
 
@@ -172,12 +175,16 @@ fun GraphCanvas(
     var scale by remember { mutableFloatStateOf(1f) }
     var labelNodeId by remember { mutableStateOf<UUID?>(null) }
 
-    // Bitmaps loaded once per node; keyed by UUID so only new nodes trigger loads
-    val bitmaps = remember { mutableStateMapOf<UUID, android.graphics.Bitmap>() }
+    val bitmaps    = remember { mutableStateMapOf<UUID, android.graphics.Bitmap>() }
+    val loadedUris = remember { mutableStateMapOf<UUID, String>() }
     LaunchedEffect(nodes) {
         nodes.forEach { node ->
-            if (node.photoUri == null || bitmaps.containsKey(node.id)) return@forEach
-            val file = File(node.photoUri)
+            val uri = node.photoUri
+            if (uri == null) {
+                bitmaps.remove(node.id); loadedUris.remove(node.id); return@forEach
+            }
+            if (loadedUris[node.id] == uri) return@forEach
+            val file = File(uri)
             if (!file.exists()) return@forEach
             val result = context.imageLoader.execute(
                 ImageRequest.Builder(context)
@@ -187,7 +194,7 @@ fun GraphCanvas(
                     .build()
             )
             val bmp = (result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
-            if (bmp != null) bitmaps[node.id] = bmp
+            if (bmp != null) { bitmaps[node.id] = bmp; loadedUris[node.id] = uri }
         }
     }
 
@@ -265,16 +272,28 @@ fun GraphCanvas(
     }
 
     Box(modifier.fillMaxSize()) {
-        // Accessible companion: hidden from sighted users, enumerable by TalkBack/keyboard
+        // Accessible overlay: one sized+positioned Box per visible node so TalkBack/keyboard can focus them.
+        // Positions mirror the canvas transform (translate panOffset, then scale from origin).
         val accessibleNodes = nodes.filter { it.id == meId || it.category in activeCategories }
         accessibleNodes.forEach { node ->
+            val pos = positions[node.id] ?: return@forEach
+            val radiusPx = nodeRadius(node) * scale
+            val diameterDp = with(density) { (radiusPx * 2).toDp() }
             Box(
-                Modifier.semantics(mergeDescendants = true) {
-                    contentDescription = if (node.id == meId) "You"
-                        else "${node.name}, ${node.category.name.lowercase()}"
-                    role = Role.Button
-                    onClick(label = "Open") { onNodeTap(node.id); true }
-                }
+                Modifier
+                    .absoluteOffset {
+                        androidx.compose.ui.unit.IntOffset(
+                            (pos.x * scale + panOffset.x - radiusPx).roundToInt(),
+                            (pos.y * scale + panOffset.y - radiusPx).roundToInt(),
+                        )
+                    }
+                    .size(diameterDp)
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = if (node.id == meId) "You"
+                            else "${node.name}, ${node.category.name.lowercase()}"
+                        role = Role.Button
+                        onClick(label = "Open") { onNodeTap(node.id); true }
+                    }
             )
         }
 

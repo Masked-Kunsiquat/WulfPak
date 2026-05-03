@@ -28,6 +28,9 @@ interface LifeEventDao {
     @Query("SELECT personId FROM life_events WHERE eventType = 'death'")
     suspend fun getDeceasedPersonIds(): List<UUID>
 
+    @Query("SELECT personId FROM life_events WHERE eventType = 'death'")
+    fun getDeceasedPersonIdsFlow(): Flow<List<UUID>>
+
     @Query("SELECT * FROM life_events WHERE id = :id")
     suspend fun getById(id: UUID): LifeEvent?
 
