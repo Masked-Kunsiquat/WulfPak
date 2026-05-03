@@ -17,8 +17,10 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -30,14 +32,18 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.imageLoader
+import coil.request.ImageRequest
 import com.github.maskedkunisquat.wulfpak.core.data.entity.RelCategory
 import com.github.maskedkunisquat.wulfpak.core.logic.graph.GraphLayoutEngine
 import com.github.maskedkunisquat.wulfpak.core.logic.graph.GraphNode
+import java.io.File
 import com.github.maskedkunisquat.wulfpak.ui.theme.WulfPakTheme
 import java.util.UUID
 
@@ -121,21 +127,48 @@ fun GraphCanvas(
     onNodeTap: (UUID) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+
     var panOffset by remember { mutableStateOf(Offset.Zero) }
     var scale by remember { mutableFloatStateOf(1f) }
     var labelNodeId by remember { mutableStateOf<UUID?>(null) }
 
-    val density = LocalDensity.current
-    val baseRadius = with(density) { 8.dp.toPx() }
-    val ringStroke = with(density) { 1.dp.toPx() }
+    // Bitmaps loaded once per node; keyed by UUID so only new nodes trigger loads
+    val bitmaps = remember { mutableStateMapOf<UUID, android.graphics.Bitmap>() }
+    LaunchedEffect(nodes) {
+        nodes.forEach { node ->
+            if (node.photoUri == null || bitmaps.containsKey(node.id)) return@forEach
+            val file = File(node.photoUri)
+            if (!file.exists()) return@forEach
+            val result = context.imageLoader.execute(
+                ImageRequest.Builder(context)
+                    .data(file)
+                    .size(256, 256)
+                    .allowHardware(false)
+                    .build()
+            )
+            val bmp = (result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+            if (bmp != null) bitmaps[node.id] = bmp
+        }
+    }
 
-    val familyColor = MaterialTheme.colorScheme.tertiary
-    val friendColor = MaterialTheme.colorScheme.primary
-    val workColor   = MaterialTheme.colorScheme.secondary
-    val otherColor  = MaterialTheme.colorScheme.outline
-    val meColor     = MaterialTheme.colorScheme.errorContainer
-    val ringColor   = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
-    val onBackground = MaterialTheme.colorScheme.onBackground
+    val density = LocalDensity.current
+    val baseRadius  = with(density) { 8.dp.toPx() }
+    val ringStroke  = with(density) { 1.dp.toPx() }
+    val borderPx    = with(density) { 2.5.dp.toPx() }
+
+    val familyColor   = MaterialTheme.colorScheme.tertiary
+    val friendColor   = MaterialTheme.colorScheme.primary
+    val workColor     = MaterialTheme.colorScheme.secondary
+    val otherColor    = MaterialTheme.colorScheme.outline
+    val meColor       = MaterialTheme.colorScheme.errorContainer
+    val ringColor     = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
+    val onBackground  = MaterialTheme.colorScheme.onBackground
+    val onFamilyColor = MaterialTheme.colorScheme.onTertiary
+    val onFriendColor = MaterialTheme.colorScheme.onPrimary
+    val onWorkColor   = MaterialTheme.colorScheme.onSecondary
+    val onOtherColor  = MaterialTheme.colorScheme.onBackground
+    val onMeColor     = MaterialTheme.colorScheme.onErrorContainer
 
     val labelPaint = remember { android.graphics.Paint().apply {
         textSize = 28f
@@ -143,6 +176,13 @@ fun GraphCanvas(
         isAntiAlias = true
     } }
     labelPaint.color = onBackground.toArgb()
+
+    val initialsPaint = remember { android.graphics.Paint().apply {
+        textAlign = android.graphics.Paint.Align.CENTER
+        isAntiAlias = true
+        isFakeBoldText = true
+    } }
+    val photoPaint = remember { android.graphics.Paint().apply { isAntiAlias = true } }
 
     val rBase = minOf(GraphLayoutEngine.LAYOUT_WIDTH, GraphLayoutEngine.LAYOUT_HEIGHT) / 2f
     val layoutCenter = positions[meId]
@@ -219,18 +259,51 @@ fun GraphCanvas(
                     )
                 }
 
-                // 2. Node circles
+                // 2. Node circles — photo with colored border, or category fill with initials
                 for (node in nodes) {
                     if (node.id != meId && node.category !in activeCategories) continue
                     val pos = positions[node.id] ?: continue
                     val isMe = node.id == meId
+                    val r = nodeRadius(node)
                     val nodeColor = if (isMe) meColor else when (node.category) {
                         RelCategory.FAMILY -> familyColor
                         RelCategory.FRIEND -> friendColor
                         RelCategory.WORK   -> workColor
                         RelCategory.OTHER  -> otherColor
                     }
-                    drawCircle(color = nodeColor, radius = nodeRadius(node), center = pos)
+                    val bitmap = bitmaps[node.id]
+                    if (bitmap != null) {
+                        drawCircle(color = nodeColor, radius = r + borderPx, center = pos)
+                        drawContext.canvas.nativeCanvas.save()
+                        drawContext.canvas.nativeCanvas.clipPath(
+                            android.graphics.Path().apply {
+                                addCircle(pos.x, pos.y, r, android.graphics.Path.Direction.CW)
+                            }
+                        )
+                        drawContext.canvas.nativeCanvas.drawBitmap(
+                            bitmap, null,
+                            android.graphics.RectF(pos.x - r, pos.y - r, pos.x + r, pos.y + r),
+                            photoPaint,
+                        )
+                        drawContext.canvas.nativeCanvas.restore()
+                    } else {
+                        drawCircle(color = nodeColor, radius = r, center = pos)
+                        val onColor = if (isMe) onMeColor else when (node.category) {
+                            RelCategory.FAMILY -> onFamilyColor
+                            RelCategory.FRIEND -> onFriendColor
+                            RelCategory.WORK   -> onWorkColor
+                            RelCategory.OTHER  -> onOtherColor
+                        }
+                        initialsPaint.textSize = r * 0.75f
+                        initialsPaint.color = onColor.toArgb()
+                        val fm = initialsPaint.fontMetrics
+                        drawContext.canvas.nativeCanvas.drawText(
+                            node.initials,
+                            pos.x,
+                            pos.y - (fm.ascent + fm.descent) / 2f,
+                            initialsPaint,
+                        )
+                    }
                 }
 
                 // 3. Labels — zoom-based: inner always, middle at 1.2×, outer at 1.8×

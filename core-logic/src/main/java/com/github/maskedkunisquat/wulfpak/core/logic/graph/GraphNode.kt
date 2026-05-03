@@ -8,4 +8,6 @@ data class GraphNode(
     val name: String,
     val category: RelCategory,
     val closenessScore: Float?,
+    val initials: String = "",
+    val photoUri: String? = null,
 )
