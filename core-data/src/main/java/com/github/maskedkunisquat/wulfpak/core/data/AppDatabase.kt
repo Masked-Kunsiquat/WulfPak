@@ -146,11 +146,11 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        fun create(context: Context, key: ByteArray): AppDatabase =
+        fun create(context: Context, key: ByteArray, name: String = "wulfpak.db"): AppDatabase =
             Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java,
-                "wulfpak.db"
+                name
             )
                 .openHelperFactory(SupportFactory(key))
                 .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
