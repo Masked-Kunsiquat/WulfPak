@@ -193,6 +193,7 @@ class LocalFallbackProvider(
             )
             val conv = chatConversation ?: run {
                 val toolConfigs = tools.filterIsInstance<ToolSet>().map { tool(it) }
+                Log.d(TAG, "Creating conversation — toolSets=${tools.filterIsInstance<ToolSet>().size} toolProviders=${toolConfigs.size}")
                 val config = ConversationConfig(
                     systemInstruction = systemInstruction?.let { Contents.of(it) },
                     tools = toolConfigs,
