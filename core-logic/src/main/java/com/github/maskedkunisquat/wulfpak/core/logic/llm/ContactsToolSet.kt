@@ -244,7 +244,7 @@ internal class ContactsToolSet(
         if (BuildConfig.DEBUG) Log.d(TAG, "getContactCount")
         eventSink?.invoke(LlmResult.ToolCall("getContactCount", emptyMap()))
         val count = personDao.getAllOnce().count { !it.isMe }
-        "$count contacts"
+        "You have $count contacts."
     }
 
     @Tool(description = "Get a contact's profile — birthday, current age, relationship, job, and last contact date. Use this when asked about a contact's age, birthday, or general details.")
