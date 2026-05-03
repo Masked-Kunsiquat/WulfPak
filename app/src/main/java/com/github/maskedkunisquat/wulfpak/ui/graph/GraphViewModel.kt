@@ -16,7 +16,8 @@ import java.util.UUID
 
 class GraphViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val personDao = getApplication<AppApplication>().db.personDao()
+    private val personDao    = getApplication<AppApplication>().db.personDao()
+    private val lifeEventDao = getApplication<AppApplication>().db.lifeEventDao()
 
     private val _nodes = MutableStateFlow<List<GraphNode>>(emptyList())
     val nodes: StateFlow<List<GraphNode>> = _nodes
@@ -32,7 +33,8 @@ class GraphViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         viewModelScope.launch(Dispatchers.Default) {
-            val persons = personDao.getAllOnce()
+            val deceasedIds = lifeEventDao.getDeceasedPersonIds().toSet()
+            val persons = personDao.getAllOnce().filter { it.id !in deceasedIds }
 
             val meId = persons.find { it.isMe }?.id
             _meId.value = meId
