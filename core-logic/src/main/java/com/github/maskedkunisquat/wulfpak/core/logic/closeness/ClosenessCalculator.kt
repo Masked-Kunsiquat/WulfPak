@@ -57,8 +57,9 @@ object ClosenessCalculator {
         var rawScore = 0.0
 
         for (interaction in interactions) {
-            val daysAgo = TimeUnit.MILLISECONDS.toDays(nowMs - interaction.timestamp).toDouble()
-            if (daysAgo < 0.0) continue
+            val deltaMs = nowMs - interaction.timestamp
+            if (deltaMs < 0) continue
+            val daysAgo = TimeUnit.MILLISECONDS.toDays(deltaMs).toDouble()
             val weight = typeWeight(interaction.type)
             val durationBonus = minOf((interaction.durationSeconds ?: 0) / 3600.0, 1.0)
             rawScore += (weight + durationBonus) * 2.0.pow(-daysAgo / halfLife)
@@ -66,8 +67,9 @@ object ClosenessCalculator {
 
         // Activities count as IN_PERSON (weight 1.0), no duration bonus
         for (timestamp in activityTimestamps) {
-            val daysAgo = TimeUnit.MILLISECONDS.toDays(nowMs - timestamp).toDouble()
-            if (daysAgo < 0.0) continue
+            val deltaMs = nowMs - timestamp
+            if (deltaMs < 0) continue
+            val daysAgo = TimeUnit.MILLISECONDS.toDays(deltaMs).toDouble()
             rawScore += 1.0 * 2.0.pow(-daysAgo / halfLife)
         }
 

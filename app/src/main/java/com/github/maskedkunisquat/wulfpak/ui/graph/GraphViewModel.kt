@@ -11,7 +11,9 @@ import com.github.maskedkunisquat.wulfpak.core.logic.graph.GraphNode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 class GraphViewModel(app: Application) : AndroidViewModel(app) {
@@ -32,30 +34,36 @@ class GraphViewModel(app: Application) : AndroidViewModel(app) {
     val meId: StateFlow<UUID?> = _meId
 
     init {
-        viewModelScope.launch(Dispatchers.Default) {
-            val deceasedIds = lifeEventDao.getDeceasedPersonIds().toSet()
-            val persons = personDao.getAllOnce().filter { it.id !in deceasedIds }
+        viewModelScope.launch {
+            personDao.getAll().collectLatest { allPersons ->
+                val deceasedIds = withContext(Dispatchers.IO) {
+                    lifeEventDao.getDeceasedPersonIds().toSet()
+                }
+                val persons = allPersons.filter { it.id !in deceasedIds }
+                val meId = persons.find { it.isMe }?.id
+                _meId.value = meId
 
-            val meId = persons.find { it.isMe }?.id
-            _meId.value = meId
+                val nodes = persons.map { person ->
+                    GraphNode(
+                        id             = person.id,
+                        name           = person.firstName,
+                        category       = labelToCategory(person.relationLabel),
+                        closenessScore = person.closenessScore,
+                        initials       = buildString {
+                            person.firstName.firstOrNull()?.let { append(it) }
+                            person.lastName?.firstOrNull()?.let  { append(it) }
+                        }.uppercase().ifEmpty { "?" },
+                        photoUri       = person.photoUri,
+                    )
+                }
 
-            val nodes = persons.map { person ->
-                GraphNode(
-                    id             = person.id,
-                    name           = person.firstName,
-                    category       = labelToCategory(person.relationLabel),
-                    closenessScore = person.closenessScore,
-                    initials       = buildString {
-                        person.firstName.firstOrNull()?.let { append(it) }
-                        person.lastName?.firstOrNull()?.let  { append(it) }
-                    }.uppercase().ifEmpty { "?" },
-                    photoUri       = person.photoUri,
-                )
+                val positions = withContext(Dispatchers.Default) {
+                    GraphLayoutEngine.layout(nodes = nodes, meId = meId)
+                }
+                _nodes.value = nodes
+                _positions.value = positions
+                _isLoading.value = false
             }
-
-            _nodes.value = nodes
-            _positions.value = GraphLayoutEngine.layout(nodes = nodes, meId = meId)
-            _isLoading.value = false
         }
     }
 
