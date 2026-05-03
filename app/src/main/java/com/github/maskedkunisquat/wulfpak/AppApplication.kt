@@ -156,7 +156,7 @@ class AppApplication : Application(), Configuration.Provider {
 
         fun switchProfile(context: Context, target: Profile) {
             context.getSharedPreferences("profile_prefs", Context.MODE_PRIVATE)
-                .edit().putString(PREF_ACTIVE_PROFILE, target.name).apply()
+                .edit().putString(PREF_ACTIVE_PROFILE, target.name).commit()
             val intent = context.packageManager
                 .getLaunchIntentForPackage(context.packageName)!!
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
