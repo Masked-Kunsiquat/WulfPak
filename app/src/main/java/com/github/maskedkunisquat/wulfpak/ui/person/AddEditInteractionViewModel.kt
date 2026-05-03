@@ -79,9 +79,23 @@ class AddEditInteractionViewModel(app: Application) : AndroidViewModel(app) {
             val effectiveIds = selectedIds.filterNot { it == UUID(0L, 0L) }.toSet()
             val id = existingId
             if (id == null && effectiveIds.isEmpty()) return@launch
+            val wm = WorkManager.getInstance(getApplication())
+            if (id != null && effectiveIds.isEmpty()) {
+                var removedIds = emptySet<UUID>()
+                db.withTransaction {
+                    val oldIds = db.interactionDao().getParticipantIds(id).toSet()
+                    removedIds = oldIds
+                    db.interactionDao().getById(id)?.let { db.interactionDao().delete(it) }
+                    oldIds.forEach { pid -> db.personDao().onInteractionDeleted(pid) }
+                }
+                removedIds.forEach { rid -> recomputeScore(rid) }
+                removedIds.forEach { rid -> SummaryWorker.enqueue(wm, rid) }
+                EmbeddingWorker.enqueue(wm)
+                onDone()
+                return@launch
+            }
             val durationSec = durationMins.trim().toIntOrNull()?.times(60)
             val interactionId: UUID
-            val wm = WorkManager.getInstance(getApplication())
             if (id == null) {
                 val interaction = Interaction(
                     timestamp       = timestampMs,
