@@ -58,6 +58,8 @@ class AppApplication : Application(), Configuration.Provider {
         resources.openRawResource(R.raw.seed_data).use { stream ->
             BackupRepository(db).importFromStream(stream)
         }
+        // enqueue() in onCreate() ran before the DB was populated — force a fresh pass now.
+        EmbeddingWorker.enqueueNow(WorkManager.getInstance(this))
     }
 
     val familyInferenceEngine: FamilyInferenceEngine by lazy { FamilyInferenceEngine(db) }
