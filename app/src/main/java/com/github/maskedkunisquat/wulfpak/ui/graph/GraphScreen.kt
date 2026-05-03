@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
@@ -25,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.maskedkunisquat.wulfpak.core.data.entity.RelCategory
-import com.github.maskedkunisquat.wulfpak.core.logic.graph.GraphEdge
+import com.github.maskedkunisquat.wulfpak.core.logic.graph.GraphLayoutEngine
 import com.github.maskedkunisquat.wulfpak.core.logic.graph.GraphNode
 import com.github.maskedkunisquat.wulfpak.ui.theme.WulfPakTheme
 import java.util.UUID
@@ -36,7 +37,6 @@ fun GraphScreen(
     viewModel: GraphViewModel = viewModel(),
 ) {
     val nodes by viewModel.nodes.collectAsStateWithLifecycle()
-    val edges by viewModel.edges.collectAsStateWithLifecycle()
     val positions by viewModel.positions.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val meId by viewModel.meId.collectAsStateWithLifecycle()
@@ -48,7 +48,6 @@ fun GraphScreen(
     } else {
         GraphCanvas(
             nodes = nodes,
-            edges = edges,
             positions = positions,
             meId = meId,
             onNodeTap = onNavigateToPerson,
@@ -59,7 +58,6 @@ fun GraphScreen(
 @Composable
 fun GraphCanvas(
     nodes: List<GraphNode>,
-    edges: List<GraphEdge>,
     positions: Map<UUID, Offset>,
     meId: UUID?,
     onNodeTap: (UUID) -> Unit,
@@ -69,14 +67,15 @@ fun GraphCanvas(
     var scale by remember { mutableFloatStateOf(1f) }
 
     val density = LocalDensity.current
-    val baseRadius = with(density) { 8.dp.toPx() }
-    val strokeWidth = with(density) { 1.5f.dp.toPx() }
+    val baseRadius  = with(density) { 8.dp.toPx() }
+    val ringStroke  = with(density) { 1.dp.toPx() }
 
     val familyColor = MaterialTheme.colorScheme.tertiary
     val friendColor = MaterialTheme.colorScheme.primary
-    val workColor = MaterialTheme.colorScheme.secondary
-    val otherColor = MaterialTheme.colorScheme.outline
-    val meColor = MaterialTheme.colorScheme.errorContainer
+    val workColor   = MaterialTheme.colorScheme.secondary
+    val otherColor  = MaterialTheme.colorScheme.outline
+    val meColor     = MaterialTheme.colorScheme.errorContainer
+    val ringColor   = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
 
     val labelPaint = remember {
         android.graphics.Paint().apply {
@@ -86,6 +85,10 @@ fun GraphCanvas(
             isAntiAlias = true
         }
     }
+
+    val rBase = minOf(GraphLayoutEngine.LAYOUT_WIDTH, GraphLayoutEngine.LAYOUT_HEIGHT) / 2f
+    val layoutCenter = positions[meId]
+        ?: Offset(GraphLayoutEngine.LAYOUT_WIDTH / 2f, GraphLayoutEngine.LAYOUT_HEIGHT / 2f)
 
     Box(modifier.fillMaxSize()) {
         Canvas(
@@ -107,7 +110,7 @@ fun GraphCanvas(
                         if (tapped != null) {
                             val nodePos = positions[tapped.id]
                             if (nodePos != null) {
-                                val nodeRadius = baseRadius * (1f + (tapped.closenessScore ?: 0.3f) * 0.5f)
+                                val nodeRadius = baseRadius * (if (tapped.id == meId) 2f else 1f + (tapped.closenessScore ?: 0.3f) * 0.5f)
                                 if ((canvasPos - nodePos).getDistance() <= nodeRadius * 2) {
                                     onNodeTap(tapped.id)
                                 }
@@ -120,15 +123,13 @@ fun GraphCanvas(
                 translate(panOffset.x, panOffset.y)
                 scale(scale, scale, Offset.Zero)
             }) {
-                // 1. Edges
-                for (edge in edges) {
-                    val from = positions[edge.fromId] ?: continue
-                    val to = positions[edge.toId] ?: continue
-                    drawLine(
-                        color = otherColor.copy(alpha = 0.4f),
-                        start = from,
-                        end = to,
-                        strokeWidth = strokeWidth,
+                // 1. Ring outlines (AirDrop-style concentric circles)
+                for (frac in listOf(GraphLayoutEngine.INNER_FRAC, GraphLayoutEngine.MIDDLE_FRAC, GraphLayoutEngine.OUTER_FRAC)) {
+                    drawCircle(
+                        color = ringColor,
+                        radius = rBase * frac,
+                        center = layoutCenter,
+                        style = Stroke(width = ringStroke),
                     )
                 }
 
@@ -152,9 +153,8 @@ fun GraphCanvas(
                         val pos = positions[node.id] ?: continue
                         val isMe = node.id == meId
                         val nodeRadius = baseRadius * (if (isMe) 2f else 1f + (node.closenessScore ?: 0.3f) * 0.5f)
-                        val label = if (isMe) "You" else node.name
                         drawContext.canvas.nativeCanvas.drawText(
-                            label,
+                            if (isMe) "You" else node.name,
                             pos.x,
                             pos.y + nodeRadius + labelPaint.textSize,
                             labelPaint,
@@ -169,32 +169,20 @@ fun GraphCanvas(
 @Preview(showBackground = true, widthDp = 380, heightDp = 700)
 @Composable
 fun GraphCanvasPreview() {
-    val ids = List(8) { UUID.randomUUID() }
+    val meId = UUID.randomUUID()
+    val ids  = List(7) { UUID.randomUUID() }
     val nodes = listOf(
+        GraphNode(meId,   "You",     RelCategory.OTHER,  null),
         GraphNode(ids[0], "Alice",   RelCategory.FRIEND, 0.9f),
-        GraphNode(ids[1], "Bob",     RelCategory.FRIEND, 0.7f),
-        GraphNode(ids[2], "Carol",   RelCategory.FRIEND, 0.5f),
-        GraphNode(ids[3], "Dave",    RelCategory.WORK,   0.4f),
-        GraphNode(ids[4], "Eve",     RelCategory.WORK,   0.6f),
-        GraphNode(ids[5], "Frank",   RelCategory.FAMILY, 0.95f),
-        GraphNode(ids[6], "Grace",   RelCategory.FAMILY, 0.8f),
-        GraphNode(ids[7], "Heather", RelCategory.OTHER,  0.2f),
+        GraphNode(ids[1], "Frank",   RelCategory.FAMILY, 0.85f),
+        GraphNode(ids[2], "Bob",     RelCategory.FRIEND, 0.5f),
+        GraphNode(ids[3], "Dave",    RelCategory.WORK,   0.45f),
+        GraphNode(ids[4], "Heather", RelCategory.OTHER,  0.15f),
+        GraphNode(ids[5], "Carol",   RelCategory.FRIEND, 0.72f),
+        GraphNode(ids[6], "Eve",     RelCategory.WORK,   0.1f),
     )
-    val edges = listOf(
-        GraphEdge(ids[0], ids[1], RelCategory.FRIEND, 0.8f),
-        GraphEdge(ids[0], ids[2], RelCategory.FRIEND, 0.5f),
-        GraphEdge(ids[1], ids[2], RelCategory.FRIEND, 0.6f),
-        GraphEdge(ids[3], ids[4], RelCategory.WORK,   0.4f),
-        GraphEdge(ids[5], ids[6], RelCategory.FAMILY, 0.9f),
-        GraphEdge(ids[0], ids[7], RelCategory.OTHER,  0.2f),
-    )
-    val positions = mapOf(
-        ids[0] to Offset(190f, 200f), ids[1] to Offset(120f, 300f),
-        ids[2] to Offset(260f, 320f), ids[3] to Offset(80f,  500f),
-        ids[4] to Offset(160f, 520f), ids[5] to Offset(310f, 180f),
-        ids[6] to Offset(330f, 280f), ids[7] to Offset(230f, 460f),
-    )
+    val positions = GraphLayoutEngine.layout(nodes = nodes, meId = meId, width = 380f, height = 700f)
     WulfPakTheme {
-        GraphCanvas(nodes = nodes, edges = edges, positions = positions, meId = ids[0], onNodeTap = {})
+        GraphCanvas(nodes = nodes, positions = positions, meId = meId, onNodeTap = {})
     }
 }
