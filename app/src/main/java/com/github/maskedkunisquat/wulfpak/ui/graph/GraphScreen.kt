@@ -16,6 +16,12 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,6 +30,9 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -152,10 +161,22 @@ fun GraphCanvas(
         }
     }
 
+    val infiniteTransition = rememberInfiniteTransition(label = "nodeFloat")
+    val floatProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue  = (2.0 * PI).toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation  = tween(durationMillis = 6000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "floatProgress",
+    )
+
     val density = LocalDensity.current
-    val baseRadius  = with(density) { 8.dp.toPx() }
-    val ringStroke  = with(density) { 1.dp.toPx() }
-    val borderPx    = with(density) { 2.5.dp.toPx() }
+    val baseRadius     = with(density) { 8.dp.toPx() }
+    val ringStroke     = with(density) { 1.dp.toPx() }
+    val borderPx       = with(density) { 2.5.dp.toPx() }
+    val floatAmplitude = baseRadius * 0.6f
 
     val familyColor   = MaterialTheme.colorScheme.tertiary
     val friendColor   = MaterialTheme.colorScheme.primary
@@ -260,9 +281,14 @@ fun GraphCanvas(
                 }
 
                 // 2. Node circles — photo with colored border, or category fill with initials
-                for (node in nodes) {
-                    if (node.id != meId && node.category !in activeCategories) continue
-                    val pos = positions[node.id] ?: continue
+                nodes.forEachIndexed { idx, node ->
+                    if (node.id != meId && node.category !in activeCategories) return@forEachIndexed
+                    val pos = positions[node.id] ?: return@forEachIndexed
+                    val phase = idx * 1.1f
+                    val drawPos = pos + Offset(
+                        sin(floatProgress + phase) * floatAmplitude,
+                        cos(floatProgress * 0.73f + phase) * floatAmplitude,
+                    )
                     val isMe = node.id == meId
                     val r = nodeRadius(node)
                     val nodeColor = if (isMe) meColor else when (node.category) {
@@ -273,21 +299,21 @@ fun GraphCanvas(
                     }
                     val bitmap = bitmaps[node.id]
                     if (bitmap != null) {
-                        drawCircle(color = nodeColor, radius = r + borderPx, center = pos)
+                        drawCircle(color = nodeColor, radius = r + borderPx, center = drawPos)
                         drawContext.canvas.nativeCanvas.save()
                         drawContext.canvas.nativeCanvas.clipPath(
                             android.graphics.Path().apply {
-                                addCircle(pos.x, pos.y, r, android.graphics.Path.Direction.CW)
+                                addCircle(drawPos.x, drawPos.y, r, android.graphics.Path.Direction.CW)
                             }
                         )
                         drawContext.canvas.nativeCanvas.drawBitmap(
                             bitmap, null,
-                            android.graphics.RectF(pos.x - r, pos.y - r, pos.x + r, pos.y + r),
+                            android.graphics.RectF(drawPos.x - r, drawPos.y - r, drawPos.x + r, drawPos.y + r),
                             photoPaint,
                         )
                         drawContext.canvas.nativeCanvas.restore()
                     } else {
-                        drawCircle(color = nodeColor, radius = r, center = pos)
+                        drawCircle(color = nodeColor, radius = r, center = drawPos)
                         val onColor = if (isMe) onMeColor else when (node.category) {
                             RelCategory.FAMILY -> onFamilyColor
                             RelCategory.FRIEND -> onFriendColor
@@ -299,8 +325,8 @@ fun GraphCanvas(
                         val fm = initialsPaint.fontMetrics
                         drawContext.canvas.nativeCanvas.drawText(
                             node.initials,
-                            pos.x,
-                            pos.y - (fm.ascent + fm.descent) / 2f,
+                            drawPos.x,
+                            drawPos.y - (fm.ascent + fm.descent) / 2f,
                             initialsPaint,
                         )
                     }
@@ -308,21 +334,26 @@ fun GraphCanvas(
 
                 // 3. Labels — zoom-based: inner always, middle at 1.2×, outer at 1.8×
                 //    Tap on any node also pins its label regardless of zoom level
-                for (node in nodes) {
+                nodes.forEachIndexed { idx, node ->
                     val isMe = node.id == meId
-                    if (!isMe && node.category !in activeCategories) continue
-                    val pos = positions[node.id] ?: continue
+                    if (!isMe && node.category !in activeCategories) return@forEachIndexed
+                    val pos = positions[node.id] ?: return@forEachIndexed
                     val ring = if (isMe) -1 else positionRing(pos)
                     val showLabel = isMe
                         || ring == 0
                         || (ring == 1 && scale >= 1.2f)
                         || (ring == 2 && scale >= 1.8f)
                         || node.id == labelNodeId
-                    if (!showLabel) continue
+                    if (!showLabel) return@forEachIndexed
+                    val phase = idx * 1.1f
+                    val drawPos = pos + Offset(
+                        sin(floatProgress + phase) * floatAmplitude,
+                        cos(floatProgress * 0.73f + phase) * floatAmplitude,
+                    )
                     drawContext.canvas.nativeCanvas.drawText(
                         if (isMe) "You" else node.name,
-                        pos.x,
-                        pos.y + nodeRadius(node) + labelPaint.textSize,
+                        drawPos.x,
+                        drawPos.y + nodeRadius(node) + labelPaint.textSize,
                         labelPaint,
                     )
                 }
