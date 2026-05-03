@@ -14,8 +14,10 @@ object GraphLayoutEngine {
     const val MIDDLE_FRAC   = 0.42f
     const val OUTER_FRAC    = 0.62f
 
-    private const val INNER_THRESHOLD  = 0.15f
-    private const val MIDDLE_THRESHOLD = 0.005f
+    private const val INNER_MULTIPLIER  = 0.50f
+    private const val MIDDLE_MULTIPLIER = 0.08f
+    private const val INNER_FLOOR       = 0.015f
+    private const val MIDDLE_FLOOR      = 0.001f
 
     fun layout(
         nodes: List<GraphNode>,
@@ -33,12 +35,17 @@ object GraphLayoutEngine {
         if (meId != null) out[meId] = Offset(cx, cy)
 
         val others = nodes.filter { it.id != meId }
-        val inner  = others.filter { (it.closenessScore ?: 0f) >= INNER_THRESHOLD }
+
+        val maxScore = others.mapNotNull { it.closenessScore }.maxOrNull() ?: 1f
+        val innerThreshold  = (maxScore * INNER_MULTIPLIER).coerceAtLeast(INNER_FLOOR)
+        val middleThreshold = (maxScore * MIDDLE_MULTIPLIER).coerceAtLeast(MIDDLE_FLOOR)
+
+        val inner  = others.filter { (it.closenessScore ?: 0f) >= innerThreshold }
         val middle = others.filter {
             val s = it.closenessScore ?: 0f
-            s >= MIDDLE_THRESHOLD && s < INNER_THRESHOLD
+            s >= middleThreshold && s < innerThreshold
         }
-        val outer  = others.filter { (it.closenessScore ?: 0f) < MIDDLE_THRESHOLD }
+        val outer  = others.filter { (it.closenessScore ?: 0f) < middleThreshold }
 
         placeOnRing(inner,  cx, cy, rBase * INNER_FRAC,  out)
         placeOnRing(middle, cx, cy, rBase * MIDDLE_FRAC, out)
