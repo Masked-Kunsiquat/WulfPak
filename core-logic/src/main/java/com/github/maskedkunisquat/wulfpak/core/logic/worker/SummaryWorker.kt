@@ -43,8 +43,14 @@ class SummaryWorker(
                 }
             }
             if (llmError != null) {
-                Log.w(TAG, "LLM error summarizing $personId: ${llmError!!.cause}")
-                Result.retry()
+                val cause = llmError!!.cause
+                if (cause is IllegalArgumentException) {
+                    Log.w(TAG, "Permanent LLM error summarizing $personId, dropping: $cause")
+                    Result.failure()
+                } else {
+                    Log.w(TAG, "Transient LLM error summarizing $personId, retrying: $cause")
+                    Result.retry()
+                }
             } else {
                 val summary = text.toString().trim()
                 if (summary.isNotEmpty()) {

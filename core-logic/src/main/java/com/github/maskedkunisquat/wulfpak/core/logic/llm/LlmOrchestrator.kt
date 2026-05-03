@@ -76,7 +76,7 @@ class LlmOrchestrator(
                 appendLine()
                 val job = listOfNotNull(p.jobTitle, p.company).joinToString(" at ")
                 if (job.isNotBlank()) appendLine("- Works as $job")
-                p.cachedSummary?.takeIf { it.isNotBlank() }?.let { appendLine("Summary: $it") }
+                p.cachedSummary?.takeIf { it.isNotBlank() }?.let { appendLine("Summary: ${sanitizeCachedSummary(it)}") }
             }
         }
 
@@ -181,6 +181,12 @@ class LlmOrchestrator(
 
     fun extractSessionMemory(conversationText: String): Flow<LlmResult> =
         provider.process(conversationText, Prompts.SESSION_MEMORY_SYSTEM)
+
+    private fun sanitizeCachedSummary(raw: String): String =
+        raw.replace(Regex("[\\p{Cntrl}]"), " ")
+           .replace(Regex("\\s+"), " ")
+           .trim()
+           .take(500)
 
     private fun sanitizeMemory(raw: String): String =
         raw.replace(Regex("[\\p{Cntrl}]"), " ")
