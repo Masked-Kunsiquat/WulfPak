@@ -6,7 +6,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -33,6 +37,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +47,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -207,26 +213,35 @@ fun SettingsScreen(
                     )
                 },
             )
-            ListItem(
-                headlineContent   = { Text("Debug Capture") },
-                supportingContent = {
-                    Text(if (captureEnabled) "$eventCount events captured" else "Off")
-                },
-                leadingContent    = { Icon(Icons.Default.BugReport, contentDescription = null) },
-                trailingContent   = {
-                    Switch(
-                        checked = captureEnabled,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                context.appDataStore.edit { it[AppPrefsKeys.DEBUG_CAPTURE_ENABLED] = enabled }
-                            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ListItem(
+                    headlineContent   = { Text("Debug Capture") },
+                    supportingContent = {
+                        Text(if (captureEnabled) "$eventCount events captured" else "Off")
+                    },
+                    leadingContent    = { Icon(Icons.Default.BugReport, contentDescription = null) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(enabled = captureEnabled && eventCount > 0) {
+                            onNavigateDebugSummary()
                         },
-                    )
-                },
-                modifier = Modifier.clickable(enabled = captureEnabled && eventCount > 0) {
-                    onNavigateDebugSummary()
-                },
-            )
+                )
+                VerticalDivider(modifier = Modifier.fillMaxHeight().padding(vertical = 12.dp))
+                Switch(
+                    checked = captureEnabled,
+                    onCheckedChange = { enabled ->
+                        scope.launch {
+                            context.appDataStore.edit { it[AppPrefsKeys.DEBUG_CAPTURE_ENABLED] = enabled }
+                        }
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
             ListItem(
                 headlineContent   = { Text("Profile") },
                 supportingContent = { Text("Switch between your data and demo mode") },
