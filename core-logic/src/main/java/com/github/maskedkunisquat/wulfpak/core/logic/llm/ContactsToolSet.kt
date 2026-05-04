@@ -3,7 +3,10 @@ package com.github.maskedkunisquat.wulfpak.core.logic.llm
 import android.util.Log
 import com.github.maskedkunisquat.wulfpak.core.logic.BuildConfig
 import com.github.maskedkunisquat.wulfpak.core.data.calculateAge
+import com.github.maskedkunisquat.wulfpak.core.data.normalizePhone
 import com.github.maskedkunisquat.wulfpak.core.data.dao.ActivityDao
+import com.github.maskedkunisquat.wulfpak.core.data.dao.ContactDetailDao
+import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetailType
 import com.github.maskedkunisquat.wulfpak.core.data.dao.GiftDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.InteractionDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.LifeEventDao
@@ -46,6 +49,7 @@ internal class ContactsToolSet(
     private val searchRepository: SearchRepository,
     private val personRelationshipDao: PersonRelationshipDao,
     private val familyEngine: FamilyInferenceEngine,
+    private val contactDetailDao: ContactDetailDao,
 ) : ToolSet {
 
     private companion object {
@@ -620,12 +624,19 @@ internal class ContactsToolSet(
 
     private suspend fun findPerson(name: String): Person? {
         val parts = name.trim().split(" ", limit = 2)
-        return personDao.getAllOnce().firstOrNull { p ->
+        val byName = personDao.getAllOnce().firstOrNull { p ->
             p.firstName.equals(name, ignoreCase = true) ||
             p.nickname?.equals(name, ignoreCase = true) == true ||
             (parts.size == 2 &&
              p.firstName.equals(parts[0], ignoreCase = true) &&
              p.lastName?.equals(parts[1], ignoreCase = true) == true)
         }
+        if (byName != null) return byName
+        val normalized = normalizePhone(name)
+        if (normalized.length != 10) return null
+        val detail = contactDetailDao.getAllOnce()
+            .firstOrNull { it.type == ContactDetailType.PHONE && normalizePhone(it.value) == normalized }
+            ?: return null
+        return personDao.getById(detail.personId)
     }
 }

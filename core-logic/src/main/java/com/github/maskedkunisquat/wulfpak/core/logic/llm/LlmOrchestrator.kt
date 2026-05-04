@@ -2,6 +2,7 @@ package com.github.maskedkunisquat.wulfpak.core.logic.llm
 
 import com.github.maskedkunisquat.wulfpak.core.data.dao.ActivityDao
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
+import com.github.maskedkunisquat.wulfpak.core.data.dao.ContactDetailDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.GiftDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.InteractionDao
 import com.github.maskedkunisquat.wulfpak.core.data.dao.LifeEventDao
@@ -36,11 +37,12 @@ class LlmOrchestrator(
     private val personRelationshipDao: PersonRelationshipDao,
     private val familyInferenceEngine: FamilyInferenceEngine,
     private val sessionMemoryDao: SessionMemoryDao,
+    private val contactDetailDao: ContactDetailDao,
     private val debugLogger: DebugLogger? = null,
 ) {
     private val contactsToolSet = ContactsToolSet(
         personDao, interactionDao, noteDao, activityDao, lifeEventDao, giftDao, taskDao,
-        searchRepository, personRelationshipDao, familyInferenceEngine,
+        searchRepository, personRelationshipDao, familyInferenceEngine, contactDetailDao,
     )
     fun summarize(personId: UUID): Flow<LlmResult> = flow {
         val person = personDao.getById(personId) ?: run {

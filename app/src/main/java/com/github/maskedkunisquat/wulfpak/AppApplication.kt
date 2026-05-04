@@ -102,6 +102,7 @@ class AppApplication : Application(), Configuration.Provider {
             personRelationshipDao   = db.personRelationshipDao(),
             familyInferenceEngine   = familyInferenceEngine,
             sessionMemoryDao        = db.sessionMemoryDao(),
+            contactDetailDao        = db.contactDetailDao(),
             debugLogger             = debugEventLogger,
         )
     }
