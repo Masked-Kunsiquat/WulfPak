@@ -154,6 +154,26 @@ class DebugEventLogger(context: Context) : DebugLogger {
                 }
             }
 
+            byType["CALL_LOG_IMPORT"]?.let { list ->
+                val payloads  = list.mapNotNull { it.optJSONObject("payload") }
+                val found     = payloads.sumOf { it.optInt("stubs_found") }
+                val added     = payloads.sumOf { it.optInt("stubs_added") }
+                val durations = payloads.map { it.optLong("duration_ms") }
+                appendLine("\n── Call Log Import (${list.size} runs) ─────────────────────────────")
+                appendLine("  Stubs found $found  added $added  deduped ${found - added}")
+                appendLine("  avg ${fmtMs(durations.average().toLong())}  max ${fmtMs(durations.max())}")
+            }
+
+            byType["PENDING_CALL_ACTION"]?.let { list ->
+                val payloads  = list.mapNotNull { it.optJSONObject("payload") }
+                val confirms  = payloads.count { it.optString("action") == "CONFIRM" }
+                val skips     = payloads.count { it.optString("action") == "SKIP" }
+                val byType2   = payloads.groupingBy { it.optString("call_type") }.eachCount()
+                appendLine("\n── Pending Call Actions (${list.size}) ──────────────────────────────")
+                appendLine("  confirm $confirms  skip $skips")
+                appendLine("  by type: $byType2")
+            }
+
             byType["BIOMETRIC"]?.let { list ->
                 val results = list.mapNotNull { it.optJSONObject("payload") }
                     .groupingBy { it.optString("result") }.eachCount()
@@ -281,6 +301,21 @@ class DebugEventLogger(context: Context) : DebugLogger {
             is DebugEvent.Biometric -> {
                 put("type", "BIOMETRIC")
                 put("payload", JSONObject().apply { put("result", e.result) })
+            }
+            is DebugEvent.CallLogImport -> {
+                put("type", "CALL_LOG_IMPORT")
+                put("payload", JSONObject().apply {
+                    put("stubs_found", e.stubsFound)
+                    put("stubs_added", e.stubsAdded)
+                    put("duration_ms", e.durationMs)
+                })
+            }
+            is DebugEvent.PendingCallAction -> {
+                put("type", "PENDING_CALL_ACTION")
+                put("payload", JSONObject().apply {
+                    put("action", e.action)
+                    put("call_type", e.callType)
+                })
             }
         }
     }.toString()

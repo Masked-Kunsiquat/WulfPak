@@ -15,6 +15,10 @@
     <!-- Contact reminders (Phase 8) — required on Android 13+ to post notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Call log import — READ_CALL_LOG is a restricted Play Store permission (requires default phone/dialer handler).
+         Safe for sideloaded builds; gate via productFlavor or remove before any Play Store release. -->
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+
     <application
         android:name=".AppApplication"
         android:allowBackup="true"

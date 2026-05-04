@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.maskedkunisquat.wulfpak.AppApplication
 import com.github.maskedkunisquat.wulfpak.core.logic.llm.LlmResult
@@ -16,7 +17,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class SearchViewModel(app: Application) : AndroidViewModel(app) {
+class SearchViewModel(app: Application, savedStateHandle: SavedStateHandle) : AndroidViewModel(app) {
 
     private val db              = getApplication<AppApplication>().db
     private val llmOrchestrator = getApplication<AppApplication>().llmOrchestrator
@@ -74,7 +75,7 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
 
     // ── Chat ──────────────────────────────────────────────────────────────
 
-    var query    by mutableStateOf("")
+    var query    by mutableStateOf(savedStateHandle.get<String>("seed") ?: "")
     var messages by mutableStateOf<List<ChatMessage>>(emptyList()); private set
     private var streamingJob: Job? = null
     private var memorySaved = false

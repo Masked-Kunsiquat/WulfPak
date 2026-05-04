@@ -17,11 +17,14 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -70,11 +73,13 @@ fun PeopleListScreen(
     onAddPerson: () -> Unit,
     onOpenPerson: (UUID) -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenPendingCalls: () -> Unit,
     viewModel: PeopleListViewModel = viewModel(),
 ) {
-    val people       by viewModel.people.collectAsStateWithLifecycle()
-    val searchQuery  by viewModel.searchQuery.collectAsStateWithLifecycle()
-    val selectedIds  by viewModel.selectedIds.collectAsStateWithLifecycle()
+    val people           by viewModel.people.collectAsStateWithLifecycle()
+    val searchQuery      by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val selectedIds      by viewModel.selectedIds.collectAsStateWithLifecycle()
+    val pendingCallCount by viewModel.pendingCallCount.collectAsStateWithLifecycle()
     val inMultiSelect = selectedIds.isNotEmpty()
 
     var showRelationDialog by remember { mutableStateOf(false) }
@@ -110,6 +115,13 @@ fun PeopleListScreen(
                 TopAppBar(
                     title = { Text("WulfPak") },
                     actions = {
+                        if (pendingCallCount > 0) {
+                            BadgedBox(badge = { Badge { Text("$pendingCallCount") } }) {
+                                IconButton(onClick = onOpenPendingCalls) {
+                                    Icon(Icons.Default.Phone, contentDescription = "Pending calls")
+                                }
+                            }
+                        }
                         IconButton(onClick = onOpenSettings) {
                             Icon(Icons.Default.Settings, contentDescription = "Settings")
                         }

@@ -7,6 +7,7 @@ import com.github.maskedkunisquat.wulfpak.AppApplication
 import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
 import com.github.maskedkunisquat.wulfpak.appDataStore
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
+import org.json.JSONArray
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -39,6 +40,13 @@ class PeopleListViewModel(app: Application) : AndroidViewModel(app) {
         if (byLast) filtered.sortedWith(compareBy({ it.lastName ?: it.firstName }, { it.firstName }))
         else filtered.sortedBy { it.firstName }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val pendingCallCount = getApplication<AppApplication>().appDataStore.data
+        .map { prefs ->
+            val raw = prefs[AppPrefsKeys.PENDING_CALL_STUBS] ?: ""
+            if (raw.isBlank()) 0 else try { JSONArray(raw).length() } catch (_: Exception) { 0 }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     private val _selectedIds = MutableStateFlow(emptySet<UUID>())
     val selectedIds = _selectedIds.asStateFlow()

@@ -1,5 +1,6 @@
 package com.github.maskedkunisquat.wulfpak.navigation
 
+import android.net.Uri
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.DynamicFeed
@@ -72,6 +73,7 @@ import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsViewModel
 import com.github.maskedkunisquat.wulfpak.ui.debug.DebugSummaryScreen
 import com.github.maskedkunisquat.wulfpak.ui.graph.GraphScreen
 import com.github.maskedkunisquat.wulfpak.ui.me.MeScreen
+import com.github.maskedkunisquat.wulfpak.ui.pendingcalls.PendingCallsScreen
 import com.github.maskedkunisquat.wulfpak.ui.tasks.TasksScreen
 import java.util.UUID
 
@@ -88,7 +90,7 @@ object Routes {
     const val ACTIVITY_FEED         = "activity_feed"
     const val ACTIVITY_DETAIL       = "activity_detail/{activityId}"
     const val INTERACTION_DETAIL    = "interaction_detail/{interactionId}"
-    const val SEARCH                = "search"
+    const val SEARCH                = "search?seed={seed}"
     const val TASKS                 = "tasks"
     const val GRAPH                 = "graph"
     const val ME                    = "me"
@@ -100,6 +102,7 @@ object Routes {
     const val SETTINGS_AI           = "settings_ai"
     const val SETTINGS_CONTACTS     = "settings_contacts"
     const val DEBUG_SUMMARY         = "debug_summary"
+    const val PENDING_CALLS         = "pending_calls"
 
     fun personDetail(personId: String) = "person_detail/$personId"
     fun addEditPerson(personId: String? = null) =
@@ -129,16 +132,17 @@ object Routes {
 
     fun activityDetail(activityId: String)       = "activity_detail/$activityId"
     fun interactionDetail(interactionId: String) = "interaction_detail/$interactionId"
+    fun searchWithSeed(seed: String)             = "search?seed=${Uri.encode(seed)}"
 }
 
-private data class TopLevelDest(val route: String, val icon: ImageVector, val label: String)
+private data class TopLevelDest(val route: String, val navTarget: String, val icon: ImageVector, val label: String)
 
 private val TOP_LEVEL_DESTS = listOf(
-    TopLevelDest(Routes.PEOPLE_LIST,   Icons.Default.People,      "People"),
-    TopLevelDest(Routes.ACTIVITY_FEED, Icons.Default.DynamicFeed, "Feed"),
-    TopLevelDest(Routes.SEARCH,        Icons.Default.Chat,         "Chat"),
-    TopLevelDest(Routes.ME,            Icons.Default.Person,       "Me"),
-    TopLevelDest(Routes.GRAPH,         Icons.Default.Hub,          "Graph"),
+    TopLevelDest(Routes.PEOPLE_LIST,   Routes.PEOPLE_LIST,   Icons.Default.People,      "People"),
+    TopLevelDest(Routes.ACTIVITY_FEED, Routes.ACTIVITY_FEED, Icons.Default.DynamicFeed, "Feed"),
+    TopLevelDest(Routes.SEARCH,        "search",             Icons.Default.Chat,         "Chat"),
+    TopLevelDest(Routes.ME,            Routes.ME,            Icons.Default.Person,       "Me"),
+    TopLevelDest(Routes.GRAPH,         Routes.GRAPH,         Icons.Default.Hub,          "Graph"),
 )
 
 @Composable
@@ -185,7 +189,7 @@ fun AppNavHost(
                             NavigationBarItem(
                                 selected = currentRoute == dest.route,
                                 onClick = {
-                                    navController.navigate(dest.route) {
+                                    navController.navigate(dest.navTarget) {
                                         popUpTo(navController.graph.findStartDestination().id) {
                                             saveState = true
                                         }
@@ -212,9 +216,10 @@ fun AppNavHost(
 
             composable(Routes.PEOPLE_LIST) {
                 PeopleListScreen(
-                    onAddPerson    = { navController.navigate(Routes.addEditPerson()) },
-                    onOpenPerson   = { id -> navController.navigate(Routes.personDetail(id.toString())) },
-                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                    onAddPerson        = { navController.navigate(Routes.addEditPerson()) },
+                    onOpenPerson       = { id -> navController.navigate(Routes.personDetail(id.toString())) },
+                    onOpenSettings     = { navController.navigate(Routes.SETTINGS) },
+                    onOpenPendingCalls = { navController.navigate(Routes.PENDING_CALLS) },
                 )
             }
 
@@ -377,7 +382,10 @@ fun AppNavHost(
                 )
             }
 
-            composable(Routes.SEARCH) {
+            composable(
+                route = Routes.SEARCH,
+                arguments = listOf(navArgument("seed") { nullable = true; defaultValue = null }),
+            ) {
                 SearchScreen(
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 )
@@ -435,6 +443,13 @@ fun AppNavHost(
                                      else AppApplication.Profile.DEMO
                         AppApplication.switchProfile(context, target)
                     },
+                )
+            }
+
+            composable(Routes.PENDING_CALLS) {
+                PendingCallsScreen(
+                    onNavigateBack     = { navController.popBackStack() },
+                    onNavigateToSearch = { seed -> navController.navigate(Routes.searchWithSeed(seed)) },
                 )
             }
 

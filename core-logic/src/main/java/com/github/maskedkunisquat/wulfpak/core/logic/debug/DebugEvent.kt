@@ -72,4 +72,19 @@ sealed class DebugEvent {
         override val sessionId: String? = null,
         val result: String,
     ) : DebugEvent()
+
+    data class CallLogImport(
+        override val ts: Long = System.currentTimeMillis(),
+        override val sessionId: String? = null,
+        val stubsFound: Int,
+        val stubsAdded: Int,
+        val durationMs: Long,
+    ) : DebugEvent()
+
+    data class PendingCallAction(
+        override val ts: Long = System.currentTimeMillis(),
+        override val sessionId: String? = null,
+        val action: String,   // "CONFIRM" | "SKIP"
+        val callType: String, // "INCOMING" | "OUTGOING" | "MISSED"
+    ) : DebugEvent()
 }
