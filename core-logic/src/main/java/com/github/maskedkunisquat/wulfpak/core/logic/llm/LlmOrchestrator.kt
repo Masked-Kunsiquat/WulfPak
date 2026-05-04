@@ -63,7 +63,7 @@ class LlmOrchestrator(
     fun query(naturalLanguage: String): Flow<LlmResult> = flow {
         val startMs = System.currentTimeMillis()
         val sessionId = UUID.randomUUID().toString()
-        val toolsUsed = mutableListOf<String>()
+        val toolsUsed = java.util.concurrent.CopyOnWriteArrayList<String>()
         val dateFmt = SimpleDateFormat("MMM d", Locale.ENGLISH)
         val persons = personDao.getAllOnce()
         val me = personDao.getMe()

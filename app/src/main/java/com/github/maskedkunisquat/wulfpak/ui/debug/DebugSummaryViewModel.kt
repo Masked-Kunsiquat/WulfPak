@@ -10,7 +10,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.maskedkunisquat.wulfpak.AppApplication
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 data class LlmQueryStats(
@@ -67,6 +69,7 @@ data class DebugSummary(
 class DebugSummaryViewModel(app: Application) : AndroidViewModel(app) {
 
     private val logger = getApplication<AppApplication>().debugEventLogger
+    private var refreshJob: Job? = null
 
     var isLoading by mutableStateOf(true)
         private set
@@ -77,23 +80,25 @@ class DebugSummaryViewModel(app: Application) : AndroidViewModel(app) {
     init { refresh() }
 
     fun refresh() {
+        refreshJob?.cancel()
         isLoading = true
-        viewModelScope.launch(Dispatchers.IO) {
+        refreshJob = viewModelScope.launch(Dispatchers.IO) {
             summary = buildSummary(logger.readAllJsonObjects())
             isLoading = false
         }
     }
 
     fun clear() {
-        logger.clear()
+        refreshJob?.cancel()
         summary = DebugSummary(null, null, 0, null, null, null, null, emptyList(), emptyList(), emptyMap(), emptyList())
+        viewModelScope.launch(Dispatchers.IO) { logger.clear() }
     }
 
     fun exportToUri(context: Context, uri: Uri) {
-        viewModelScope.launch { logger.exportToUri(context, uri) }
+        viewModelScope.launch(Dispatchers.IO) { logger.exportToUri(context, uri) }
     }
 
-    fun generateTextSummary(): String = logger.generateTextSummary()
+    suspend fun generateTextSummary(): String = withContext(Dispatchers.IO) { logger.generateTextSummary() }
 
     private fun buildSummary(events: List<JSONObject>): DebugSummary {
         if (events.isEmpty()) return DebugSummary(null, null, 0, null, null, null, null, emptyList(), emptyList(), emptyMap(), emptyList())
@@ -103,8 +108,8 @@ class DebugSummaryViewModel(app: Application) : AndroidViewModel(app) {
 
         val queryStats = byType["LLM_QUERY"]?.let { list ->
             val payloads = list.mapNotNull { it.optJSONObject("payload") }
-            val durations = payloads.map { it.getLong("duration_ms") }
-            val toolCounts = payloads.map { it.getInt("tool_call_count") }
+            val durations = payloads.map { it.optLong("duration_ms") }
+            val toolCounts = payloads.map { it.optInt("tool_call_count") }
             val allTools = payloads.flatMap { p ->
                 val arr = p.optJSONArray("tools_used") ?: return@flatMap emptyList()
                 (0 until arr.length()).map { arr.getString(it) }
@@ -123,7 +128,7 @@ class DebugSummaryViewModel(app: Application) : AndroidViewModel(app) {
 
         val summarizeStats = byType["LLM_SUMMARIZE"]?.let { list ->
             val payloads = list.mapNotNull { it.optJSONObject("payload") }
-            val durations = payloads.map { it.getLong("duration_ms") }
+            val durations = payloads.map { it.optLong("duration_ms") }
             LlmSummarizeStats(
                 count = list.size,
                 avgDurationMs = if (durations.isEmpty()) 0 else durations.average().toLong(),
@@ -134,11 +139,11 @@ class DebugSummaryViewModel(app: Application) : AndroidViewModel(app) {
         val embeddingStats = byType["EMBEDDING_RUN"]?.let { list ->
             val payloads = list.mapNotNull { it.optJSONObject("payload") }
             val totals = payloads.map {
-                it.getInt("notes_embedded") +
-                it.getInt("interactions_embedded") +
-                it.getInt("activities_embedded")
+                it.optInt("notes_embedded") +
+                it.optInt("interactions_embedded") +
+                it.optInt("activities_embedded")
             }
-            val durations = payloads.map { it.getLong("duration_ms") }
+            val durations = payloads.map { it.optLong("duration_ms") }
             EmbeddingStats(
                 count = list.size,
                 avgItems = if (totals.isEmpty()) 0f else totals.average().toFloat(),
@@ -149,8 +154,8 @@ class DebugSummaryViewModel(app: Application) : AndroidViewModel(app) {
 
         val searchStats = byType["SEARCH_QUERY"]?.let { list ->
             val payloads = list.mapNotNull { it.optJSONObject("payload") }
-            val durations = payloads.map { it.getLong("duration_ms") }
-            val results = payloads.map { it.getInt("results") }
+            val durations = payloads.map { it.optLong("duration_ms") }
+            val results = payloads.map { it.optInt("results") }
             SearchStats(
                 count = list.size,
                 avgDurationMs = if (durations.isEmpty()) 0 else durations.average().toLong(),
@@ -221,9 +226,4 @@ class DebugSummaryViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    private fun fmtMs(ms: Long): String = when {
-        ms < 1_000  -> "${ms}ms"
-        ms < 60_000 -> "${"%.1f".format(ms / 1000.0)}s"
-        else        -> "${"%.1f".format(ms / 60_000.0)}m"
-    }
 }
