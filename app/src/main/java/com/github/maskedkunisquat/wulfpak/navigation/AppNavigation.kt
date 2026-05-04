@@ -72,6 +72,7 @@ import com.github.maskedkunisquat.wulfpak.ui.settings.SettingsViewModel
 import com.github.maskedkunisquat.wulfpak.ui.debug.DebugSummaryScreen
 import com.github.maskedkunisquat.wulfpak.ui.graph.GraphScreen
 import com.github.maskedkunisquat.wulfpak.ui.me.MeScreen
+import com.github.maskedkunisquat.wulfpak.ui.pendingcalls.PendingCallsScreen
 import com.github.maskedkunisquat.wulfpak.ui.tasks.TasksScreen
 import java.util.UUID
 
@@ -100,6 +101,7 @@ object Routes {
     const val SETTINGS_AI           = "settings_ai"
     const val SETTINGS_CONTACTS     = "settings_contacts"
     const val DEBUG_SUMMARY         = "debug_summary"
+    const val PENDING_CALLS         = "pending_calls"
 
     fun personDetail(personId: String) = "person_detail/$personId"
     fun addEditPerson(personId: String? = null) =
@@ -212,9 +214,10 @@ fun AppNavHost(
 
             composable(Routes.PEOPLE_LIST) {
                 PeopleListScreen(
-                    onAddPerson    = { navController.navigate(Routes.addEditPerson()) },
-                    onOpenPerson   = { id -> navController.navigate(Routes.personDetail(id.toString())) },
-                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                    onAddPerson        = { navController.navigate(Routes.addEditPerson()) },
+                    onOpenPerson       = { id -> navController.navigate(Routes.personDetail(id.toString())) },
+                    onOpenSettings     = { navController.navigate(Routes.SETTINGS) },
+                    onOpenPendingCalls = { navController.navigate(Routes.PENDING_CALLS) },
                 )
             }
 
@@ -436,6 +439,10 @@ fun AppNavHost(
                         AppApplication.switchProfile(context, target)
                     },
                 )
+            }
+
+            composable(Routes.PENDING_CALLS) {
+                PendingCallsScreen(onNavigateBack = { navController.popBackStack() })
             }
 
             composable(Routes.DEBUG_SUMMARY) {

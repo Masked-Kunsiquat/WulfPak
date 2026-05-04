@@ -61,14 +61,14 @@ data class PendingCallStub(
 
 ## Phase 5 — Review UI
 
-- [ ] **`PendingCallsViewModel`** — `AndroidViewModel`; exposes `pendingStubs: StateFlow<List<PendingCallStub>>` deserialized from `PENDING_CALL_STUBS`; `skip(stub)` removes from DataStore; `confirm(stub)` requires **three** DAO calls in order:
+- [x] **`PendingCallsViewModel`** — `AndroidViewModel`; exposes `pendingStubs: StateFlow<List<PendingCallStub>>` deserialized from `PENDING_CALL_STUBS`; `skip(stub)` removes from DataStore; `confirm(stub)` requires **three** DAO calls in order:
   1. `interactionDao.insert(Interaction(timestamp = stub.timestamp, type = InteractionType.CALL, durationSeconds = stub.durationSeconds))`
   2. `interactionDao.insertParticipant(InteractionParticipant(interaction.id, UUID.fromString(stub.personId)))` — without this the interaction has no owner and won't appear on the person's screen
   3. `personDao.onInteractionAdded(UUID.fromString(stub.personId), stub.timestamp)` — updates `lastContactedAt` and increments `interactionCount`
   Then remove stub from DataStore
-- [ ] **`PendingCallsScreen`** — `LazyColumn` of cards per stub: contact name, call type chip (Incoming / Outgoing / Missed), duration (formatted mm:ss or "—"), date; **Confirm** and **Skip** actions per card
-- [ ] Badge or count chip on the home/contacts screen when `PENDING_CALL_STUBS` is non-empty; tapping navigates to `PendingCallsScreen` — requires a new `StateFlow<Int>` in `PeopleListViewModel` observing `PENDING_CALL_STUBS` from DataStore
-- [ ] Add `Routes.PENDING_CALLS = "pending_calls"` and `composable(Routes.PENDING_CALLS)` to `AppNavigation`
+- [x] **`PendingCallsScreen`** — `LazyColumn` of cards per stub: contact name, call type chip (Incoming / Outgoing / Missed), duration (formatted mm:ss or "—"), date; **Confirm** and **Skip** actions per card
+- [x] Badge or count chip on the home/contacts screen when `PENDING_CALL_STUBS` is non-empty; tapping navigates to `PendingCallsScreen` — requires a new `StateFlow<Int>` in `PeopleListViewModel` observing `PENDING_CALL_STUBS` from DataStore
+- [x] Add `Routes.PENDING_CALLS = "pending_calls"` and `composable(Routes.PENDING_CALLS)` to `AppNavigation`
 
 ---
 
