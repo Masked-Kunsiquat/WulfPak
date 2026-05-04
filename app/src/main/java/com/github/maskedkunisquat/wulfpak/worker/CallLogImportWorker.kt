@@ -18,6 +18,8 @@ import com.github.maskedkunisquat.wulfpak.appDataStore
 import com.github.maskedkunisquat.wulfpak.core.data.AppDatabase
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetailType
 import com.github.maskedkunisquat.wulfpak.core.data.normalizePhone
+import com.github.maskedkunisquat.wulfpak.AppApplication
+import com.github.maskedkunisquat.wulfpak.core.logic.debug.DebugEvent
 import com.github.maskedkunisquat.wulfpak.model.PendingCallStub
 import com.github.maskedkunisquat.wulfpak.model.toPendingCallStubs
 import com.github.maskedkunisquat.wulfpak.model.toJsonString
@@ -31,6 +33,7 @@ class CallLogImportWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        val startMs = System.currentTimeMillis()
         val dataStore = applicationContext.appDataStore
         val prefs = dataStore.data.first()
         if (prefs[AppPrefsKeys.CALL_LOG_IMPORT_ENABLED] != true) return Result.success()
@@ -96,6 +99,7 @@ class CallLogImportWorker(
             nowMs
         }
 
+        var stubsAdded = 0
         dataStore.edit { prefs ->
             if (newStubs.isNotEmpty()) {
                 val existing     = (prefs[AppPrefsKeys.PENDING_CALL_STUBS] ?: "").toPendingCallStubs()
@@ -103,10 +107,19 @@ class CallLogImportWorker(
                 val deduped      = newStubs.filter { "${it.personId}:${it.timestamp}" !in existingKeys }
                 if (deduped.isNotEmpty()) {
                     prefs[AppPrefsKeys.PENDING_CALL_STUBS] = (existing + deduped).toJsonString()
+                    stubsAdded = deduped.size
                 }
             }
             prefs[AppPrefsKeys.CALL_LOG_LAST_POLLED] = newLastPolled
         }
+
+        (applicationContext as? AppApplication)?.debugEventLogger?.log(
+            DebugEvent.CallLogImport(
+                stubsFound  = newStubs.size,
+                stubsAdded  = stubsAdded,
+                durationMs  = System.currentTimeMillis() - startMs,
+            )
+        )
 
         return Result.success()
     }

@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.github.maskedkunisquat.wulfpak.AppApplication
 import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
 import com.github.maskedkunisquat.wulfpak.appDataStore
+import com.github.maskedkunisquat.wulfpak.core.logic.debug.DebugEvent
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionParticipant
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionType
@@ -44,6 +45,7 @@ class PendingCallsViewModel(app: Application) : AndroidViewModel(app) {
                     .filter { it.personId != stub.personId || it.timestamp != stub.timestamp }
                     .toJsonString()
             }
+            appApp.debugEventLogger.log(DebugEvent.PendingCallAction(action = "SKIP", callType = stub.callType))
         }
     }
 
@@ -71,6 +73,7 @@ class PendingCallsViewModel(app: Application) : AndroidViewModel(app) {
                     .filter { it.personId != stub.personId || it.timestamp != stub.timestamp }
                     .toJsonString()
             }
+            appApp.debugEventLogger.log(DebugEvent.PendingCallAction(action = "CONFIRM", callType = stub.callType))
             withContext(Dispatchers.Main) {
                 confirmedStubs = confirmedStubs + stub
             }
