@@ -20,10 +20,18 @@ def warn(msg):
     warnings.append(f"  WARN : {msg}")
 
 # ── Build ID sets ─────────────────────────────────────────────────────────────
-person_ids      = {p["id"] for p in data["persons"]}
-person_by_id    = {p["id"]: p for p in data["persons"]}
-interaction_ids = {i["id"] for i in data["interactions"]}
-activity_ids    = {a["id"] for a in data["activities"]}
+person_ids   = set()
+person_by_id = {}
+for _p in data.get("persons", []):
+    _pid = _p.get("id")
+    if _pid is None:
+        err(f"persons: record missing 'id' field: {_p}")
+    else:
+        person_ids.add(_pid)
+        person_by_id[_pid] = _p
+
+interaction_ids = {i["id"] for i in data.get("interactions", []) if "id" in i}
+activity_ids    = {a["id"] for a in data.get("activities", [])    if "id" in a}
 
 # ── 1. Duplicate UUIDs within each table ─────────────────────────────────────
 for table_key in ("persons", "contactDetails", "interactions", "notes", "lifeEvents", "gifts", "activities"):
@@ -88,9 +96,10 @@ for r in data.get("personRelationships", []):
 
 # ── 9. Orphaned interactions (no participant) ─────────────────────────────────
 i_with_participant = {ip["interactionId"] for ip in data.get("interactionParticipants", [])}
-for i in data["interactions"]:
-    if i["id"] not in i_with_participant:
-        warn(f"interaction id={i['id']} has no participants")
+for i in data.get("interactions", []):
+    iid = i.get("id")
+    if iid is not None and iid not in i_with_participant:
+        warn(f"interaction id={iid} has no participants")
 
 # ── 10. isMe count ────────────────────────────────────────────────────────────
 me_persons = [p for p in data["persons"] if p.get("isMe")]
@@ -102,7 +111,7 @@ print(f"\n{'='*55}")
 print(f"  File : {path}")
 print(f"{'='*55}")
 print(f"  DB version        : {data.get('version')}")
-print(f"  Persons           : {len(data['persons'])} ({len(me_persons)} isMe)")
+print(f"  Persons           : {len(data.get('persons', []))} ({len(me_persons)} isMe)")
 non_me = [p for p in data["persons"] if not p.get("isMe")]
 print(f"  Contacts          : {len(non_me)}")
 print(f"  Contact details   : {len(data.get('contactDetails', []))}")
@@ -117,7 +126,7 @@ print(f"  Relationships     : {len(data.get('personRelationships', []))}")
 
 # Relation label breakdown
 from collections import Counter
-rel_counts = Counter(p["relationLabel"] for p in non_me)
+rel_counts = Counter(p.get("relationLabel", "<missing>") for p in non_me)
 print("\n  Relation label breakdown:")
 for label, count in sorted(rel_counts.items(), key=lambda x: -x[1]):
     print(f"    {label:<20} {count}")
