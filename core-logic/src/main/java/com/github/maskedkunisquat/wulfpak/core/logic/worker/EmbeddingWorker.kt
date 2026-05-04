@@ -10,6 +10,8 @@ import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import com.github.maskedkunisquat.wulfpak.core.data.AppDatabase
+import com.github.maskedkunisquat.wulfpak.core.logic.debug.DebugEvent
+import com.github.maskedkunisquat.wulfpak.core.logic.debug.DebugLogger
 import com.github.maskedkunisquat.wulfpak.core.logic.embedding.EmbeddingProvider
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -26,15 +28,23 @@ class EmbeddingWorker(
     params: WorkerParameters,
     private val db: AppDatabase,
     private val embeddingProvider: EmbeddingProvider,
+    private val debugLogger: DebugLogger? = null,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        val startMs = System.currentTimeMillis()
         if (!embeddingProvider.isInitialized) {
             Log.w(TAG, "EmbeddingProvider not initialized — retrying later")
+            debugLogger?.log(DebugEvent.EmbeddingRun(
+                notesEmbedded = 0, interactionsEmbedded = 0, activitiesEmbedded = 0,
+                failed = false, durationMs = System.currentTimeMillis() - startMs, result = "skip",
+            ))
             return Result.retry()
         }
 
-        var embedded = 0
+        var notesEmbedded = 0
+        var interactionsEmbedded = 0
+        var activitiesEmbedded = 0
         var anyFailed = false
 
         db.noteDao().getUnembedded().forEach { note ->
@@ -42,7 +52,7 @@ class EmbeddingWorker(
                 val vec = embeddingProvider.generateEmbedding(note.body)
                 if (vec.any { it != 0f }) {
                     db.noteDao().updateEmbedding(note.id, vec.toBlob())
-                    embedded++
+                    notesEmbedded++
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to embed note ${note.id}", e)
@@ -56,7 +66,7 @@ class EmbeddingWorker(
                 val vec = embeddingProvider.generateEmbedding(text)
                 if (vec.any { it != 0f }) {
                     db.interactionDao().updateEmbedding(interaction.id, vec.toBlob())
-                    embedded++
+                    interactionsEmbedded++
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to embed interaction ${interaction.id}", e)
@@ -73,7 +83,7 @@ class EmbeddingWorker(
                 val vec = embeddingProvider.generateEmbedding(text)
                 if (vec.any { it != 0f }) {
                     db.activityDao().updateEmbedding(activity.id, vec.toBlob())
-                    embedded++
+                    activitiesEmbedded++
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to embed activity ${activity.id}", e)
@@ -81,13 +91,23 @@ class EmbeddingWorker(
             }
         }
 
-        Log.i(TAG, "Embedded $embedded items")
+        val total = notesEmbedded + interactionsEmbedded + activitiesEmbedded
+        Log.i(TAG, "Embedded $total items")
+        debugLogger?.log(DebugEvent.EmbeddingRun(
+            notesEmbedded = notesEmbedded,
+            interactionsEmbedded = interactionsEmbedded,
+            activitiesEmbedded = activitiesEmbedded,
+            failed = anyFailed,
+            durationMs = System.currentTimeMillis() - startMs,
+            result = if (anyFailed) "retry" else "success",
+        ))
         return if (anyFailed) Result.retry() else Result.success()
     }
 
     class Factory(
         private val db: AppDatabase,
         private val embeddingProvider: EmbeddingProvider,
+        private val debugLogger: DebugLogger? = null,
     ) : WorkerFactory() {
         override fun createWorker(
             appContext: Context,
@@ -95,7 +115,7 @@ class EmbeddingWorker(
             workerParameters: WorkerParameters,
         ): ListenableWorker? = when (workerClassName) {
             EmbeddingWorker::class.java.name ->
-                EmbeddingWorker(appContext, workerParameters, db, embeddingProvider)
+                EmbeddingWorker(appContext, workerParameters, db, embeddingProvider, debugLogger)
             else -> null
         }
     }

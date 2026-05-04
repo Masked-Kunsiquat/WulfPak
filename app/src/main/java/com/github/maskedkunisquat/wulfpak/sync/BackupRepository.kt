@@ -5,6 +5,8 @@ import android.net.Uri
 import androidx.room.withTransaction
 import java.io.InputStream
 import com.github.maskedkunisquat.wulfpak.core.data.AppDatabase
+import com.github.maskedkunisquat.wulfpak.core.logic.debug.DebugEvent
+import com.github.maskedkunisquat.wulfpak.core.logic.debug.DebugLogger
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Activity
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ActivityParticipant
 import com.github.maskedkunisquat.wulfpak.core.data.entity.ContactDetail
@@ -23,15 +25,40 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
 
-class BackupRepository(private val db: AppDatabase) {
+class BackupRepository(
+    private val db: AppDatabase,
+    private val debugLogger: DebugLogger? = null,
+) {
 
     data class ImportResult(val personCount: Int)
 
-    suspend fun export(context: Context, uri: Uri) = withContext(Dispatchers.IO) {
+    suspend fun export(context: Context, uri: Uri) {
+        val startMs = System.currentTimeMillis()
+        var personCount = 0
+        var errorMsg: String? = null
+        try {
+            exportInternal(context, uri).also { personCount = it }
+        } catch (e: Exception) {
+            errorMsg = e.message
+            throw e
+        } finally {
+            runCatching {
+                debugLogger?.log(DebugEvent.Backup(
+                    op = "export", recordCount = personCount,
+                    durationMs = System.currentTimeMillis() - startMs,
+                    success = errorMsg == null,
+                    error = errorMsg,
+                ))
+            }
+        }
+    }
+
+    private suspend fun exportInternal(context: Context, uri: Uri): Int = withContext(Dispatchers.IO) {
+        val persons = db.personDao().getAllOnce()
         val root = JSONObject().apply {
             put("version", 8)
             put("exportedAt", System.currentTimeMillis())
-            put("persons",                 db.personDao().getAllOnce().serializePersons())
+            put("persons",                 persons.serializePersons())
             put("personRelationships",     db.personRelationshipDao().getAllOnce().serializeRelationships())
             put("contactDetails",          db.contactDetailDao().getAllOnce().serializeContactDetails())
             put("interactions",            db.interactionDao().getAllOnce().serializeInteractions())
@@ -46,13 +73,33 @@ class BackupRepository(private val db: AppDatabase) {
         context.contentResolver.openOutputStream(uri)?.use { out ->
             out.writer().use { it.write(root.toString(2)) }
         } ?: error("Cannot open output stream for backup")
+        persons.size
     }
 
     suspend fun import(context: Context, uri: Uri): ImportResult {
-        val stream = withContext(Dispatchers.IO) {
-            context.contentResolver.openInputStream(uri) ?: error("Cannot open backup file")
+        val startMs = System.currentTimeMillis()
+        var result: ImportResult? = null
+        try {
+            val stream = withContext(Dispatchers.IO) {
+                context.contentResolver.openInputStream(uri) ?: error("Cannot open backup file")
+            }
+            result = stream.use { importFromStream(it) }
+            runCatching {
+                debugLogger?.log(DebugEvent.Backup(
+                    op = "import", recordCount = result.personCount,
+                    durationMs = System.currentTimeMillis() - startMs, success = true,
+                ))
+            }
+            return result
+        } catch (e: Exception) {
+            runCatching {
+                debugLogger?.log(DebugEvent.Backup(
+                    op = "import", recordCount = result?.personCount ?: 0,
+                    durationMs = System.currentTimeMillis() - startMs, success = false, error = e.message,
+                ))
+            }
+            throw e
         }
-        return stream.use { importFromStream(it) }
     }
 
     suspend fun importFromStream(stream: InputStream): ImportResult = withContext(Dispatchers.IO) {
