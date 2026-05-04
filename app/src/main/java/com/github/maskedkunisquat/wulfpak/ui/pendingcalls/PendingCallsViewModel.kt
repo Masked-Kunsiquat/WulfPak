@@ -1,6 +1,9 @@
 package com.github.maskedkunisquat.wulfpak.ui.pendingcalls
 
 import android.app.Application
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,6 +13,7 @@ import com.github.maskedkunisquat.wulfpak.appDataStore
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionParticipant
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionType
+import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.model.PendingCallStub
 import com.github.maskedkunisquat.wulfpak.model.toJsonString
 import com.github.maskedkunisquat.wulfpak.model.toPendingCallStubs
@@ -27,6 +31,8 @@ class PendingCallsViewModel(app: Application) : AndroidViewModel(app) {
     val pendingStubs = appApp.appDataStore.data
         .map { (it[AppPrefsKeys.PENDING_CALL_STUBS] ?: "").toPendingCallStubs() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    var confirmedStubs by mutableStateOf<List<PendingCallStub>>(emptyList()); private set
 
     fun skip(stub: PendingCallStub) {
         viewModelScope.launch {
@@ -61,6 +67,27 @@ class PendingCallsViewModel(app: Application) : AndroidViewModel(app) {
                     .filter { it.personId != stub.personId || it.timestamp != stub.timestamp }
                     .toJsonString()
             }
+            confirmedStubs = confirmedStubs + stub
         }
+    }
+
+    fun saveNote(stub: PendingCallStub, text: String) {
+        val trimmed = text.trim()
+        if (trimmed.isNotEmpty()) {
+            viewModelScope.launch(Dispatchers.IO) {
+                appApp.db.noteDao().insert(
+                    Note(
+                        personId  = UUID.fromString(stub.personId),
+                        timestamp = stub.timestamp,
+                        body      = trimmed,
+                    )
+                )
+            }
+        }
+        dismissConfirmed(stub)
+    }
+
+    fun dismissConfirmed(stub: PendingCallStub) {
+        confirmedStubs = confirmedStubs.filter { it.personId != stub.personId || it.timestamp != stub.timestamp }
     }
 }

@@ -74,8 +74,8 @@ data class PendingCallStub(
 
 ## Phase 6 — Post-confirm LLM handoff
 
-- [ ] After `confirm(stub)`, expand the card in-place to show an inline note text field with a "Save note" button — writes directly via `noteDao` using the same `stub.timestamp`
-- [ ] "Ask assistant" chip on the expanded card navigates to the chat screen pre-seeded with: `"I just confirmed a [callType] with [personFirstName] from [date]. Want to add a note?"` — **requires route surgery**: `Routes.SEARCH` is currently parameterless; must become `search?seed={seed}` with a `navArgument`, and `SearchViewModel` must read the seed from `SavedStateHandle` on first composition
+- [x] After `confirm(stub)`, expand the card in-place to show an inline note text field with a "Save note" button — writes directly via `noteDao` using the same `stub.timestamp`
+- [x] "Ask assistant" chip on the expanded card navigates to the chat screen pre-seeded with: `"I just confirmed a [callType] with [personFirstName] from [date]. Want to add a note?"` — **requires route surgery**: `Routes.SEARCH` is currently parameterless; must become `search?seed={seed}` with a `navArgument`, and `SearchViewModel` must read the seed from `SavedStateHandle` on first composition
 
 ---
 
