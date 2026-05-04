@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.github.maskedkunisquat.wulfpak.AppApplication
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -50,6 +51,7 @@ data class BackupEntry(
     val recordCount: Int,
     val durationMs: Long,
     val success: Boolean,
+    val error: String? = null,
 )
 
 data class DebugSummary(
@@ -83,13 +85,16 @@ class DebugSummaryViewModel(app: Application) : AndroidViewModel(app) {
         refreshJob?.cancel()
         isLoading = true
         refreshJob = viewModelScope.launch(Dispatchers.IO) {
-            summary = buildSummary(logger.readAllJsonObjects())
+            val result = buildSummary(logger.readAllJsonObjects())
+            ensureActive()
+            summary = result
             isLoading = false
         }
     }
 
     fun clear() {
         refreshJob?.cancel()
+        isLoading = false
         summary = DebugSummary(null, null, 0, null, null, null, null, emptyList(), emptyList(), emptyMap(), emptyList())
         viewModelScope.launch(Dispatchers.IO) { logger.clear() }
     }
@@ -172,6 +177,7 @@ class DebugSummaryViewModel(app: Application) : AndroidViewModel(app) {
                 recordCount = p.optInt("record_count"),
                 durationMs = p.optLong("duration_ms"),
                 success = p.optBoolean("success", true),
+                error = p.optString("error").takeIf { it.isNotEmpty() },
             )
         } ?: emptyList()
 

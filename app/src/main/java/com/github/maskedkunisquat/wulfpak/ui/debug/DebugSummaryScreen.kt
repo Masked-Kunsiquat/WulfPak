@@ -249,21 +249,31 @@ fun DebugSummaryScreen(
                 item {
                     SectionCard(title = "Backup (${s.backups.size})") {
                         s.backups.forEach { b ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Text(
-                                    "${sdf.format(Date(b.ts))}  ${b.op}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontFamily = FontFamily.Monospace,
-                                )
-                                Text(
-                                    "${b.recordCount} records  ${fmtMs(b.durationMs)}  ${if (b.success) "ok" else "FAIL"}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (b.success) MaterialTheme.colorScheme.onSurface
-                                            else MaterialTheme.colorScheme.error,
-                                )
+                            Column(modifier = Modifier.padding(vertical = 2.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    Text(
+                                        "${sdf.format(Date(b.ts))}  ${b.op}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontFamily = FontFamily.Monospace,
+                                    )
+                                    Text(
+                                        "${b.recordCount} records  ${fmtMs(b.durationMs)}  ${if (b.success) "ok" else "FAIL"}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (b.success) MaterialTheme.colorScheme.onSurface
+                                                else MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                                if (!b.success && b.error != null) {
+                                    Text(
+                                        b.error,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                        fontFamily = FontFamily.Monospace,
+                                    )
+                                }
                             }
                         }
                     }

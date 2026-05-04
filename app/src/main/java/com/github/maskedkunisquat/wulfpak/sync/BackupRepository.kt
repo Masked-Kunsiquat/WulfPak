@@ -42,12 +42,14 @@ class BackupRepository(
             errorMsg = e.message
             throw e
         } finally {
-            debugLogger?.log(DebugEvent.Backup(
-                op = "export", recordCount = personCount,
-                durationMs = System.currentTimeMillis() - startMs,
-                success = errorMsg == null,
-                error = errorMsg,
-            ))
+            runCatching {
+                debugLogger?.log(DebugEvent.Backup(
+                    op = "export", recordCount = personCount,
+                    durationMs = System.currentTimeMillis() - startMs,
+                    success = errorMsg == null,
+                    error = errorMsg,
+                ))
+            }
         }
     }
 
@@ -82,16 +84,20 @@ class BackupRepository(
                 context.contentResolver.openInputStream(uri) ?: error("Cannot open backup file")
             }
             result = stream.use { importFromStream(it) }
-            debugLogger?.log(DebugEvent.Backup(
-                op = "import", recordCount = result.personCount,
-                durationMs = System.currentTimeMillis() - startMs, success = true,
-            ))
+            runCatching {
+                debugLogger?.log(DebugEvent.Backup(
+                    op = "import", recordCount = result.personCount,
+                    durationMs = System.currentTimeMillis() - startMs, success = true,
+                ))
+            }
             return result
         } catch (e: Exception) {
-            debugLogger?.log(DebugEvent.Backup(
-                op = "import", recordCount = result?.personCount ?: 0,
-                durationMs = System.currentTimeMillis() - startMs, success = false, error = e.message,
-            ))
+            runCatching {
+                debugLogger?.log(DebugEvent.Backup(
+                    op = "import", recordCount = result?.personCount ?: 0,
+                    durationMs = System.currentTimeMillis() - startMs, success = false, error = e.message,
+                ))
+            }
             throw e
         }
     }
