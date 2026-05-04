@@ -43,8 +43,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.maskedkunisquat.wulfpak.AppApplication
 import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
 import com.github.maskedkunisquat.wulfpak.appDataStore
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -72,6 +74,12 @@ fun SettingsScreen(
     var eventCount by remember { mutableIntStateOf(0) }
     LaunchedEffect(captureEnabled) {
         eventCount = withContext(Dispatchers.IO) { app?.debugEventLogger?.totalCount() ?: 0 }
+    }
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            delay(3_000)
+            eventCount = withContext(Dispatchers.IO) { app?.debugEventLogger?.totalCount() ?: 0 }
+        }
     }
 
     if (showProfileDialog) {

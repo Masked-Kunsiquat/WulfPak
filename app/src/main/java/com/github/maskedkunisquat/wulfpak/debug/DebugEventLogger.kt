@@ -4,7 +4,11 @@ import android.content.Context
 import android.net.Uri
 import com.github.maskedkunisquat.wulfpak.core.logic.debug.DebugEvent
 import com.github.maskedkunisquat.wulfpak.core.logic.debug.DebugLogger
+import com.github.maskedkunisquat.wulfpak.ui.debug.fmtMs
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -15,6 +19,7 @@ class DebugEventLogger(context: Context) : DebugLogger {
 
     private val logFile = File(context.filesDir, "debug_events.ndjson")
     private val bakFile = File(context.filesDir, "debug_events.ndjson.bak")
+    private val ioScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     @Volatile private var captureEnabled = false
 
@@ -23,9 +28,18 @@ class DebugEventLogger(context: Context) : DebugLogger {
     override fun log(event: DebugEvent) {
         if (!captureEnabled) return
         val line = event.toJsonLine()
-        synchronized(this) {
-            if (logFile.length() > MAX_FILE_BYTES) logFile.renameTo(bakFile)
-            logFile.appendText(line + "\n")
+        ioScope.launch {
+            synchronized(this@DebugEventLogger) {
+                if (logFile.length() > MAX_FILE_BYTES) rotate()
+                logFile.appendText(line + "\n")
+            }
+        }
+    }
+
+    private fun rotate() {
+        bakFile.delete()
+        if (!logFile.renameTo(bakFile)) {
+            runCatching { logFile.writeText("") }
         }
     }
 
@@ -62,8 +76,8 @@ class DebugEventLogger(context: Context) : DebugLogger {
 
             byType["LLM_QUERY"]?.let { list ->
                 val payloads = list.mapNotNull { it.optJSONObject("payload") }
-                val durations = payloads.map { it.getLong("duration_ms") }
-                val toolCounts = payloads.map { it.getInt("tool_call_count") }
+                val durations = payloads.map { it.optLong("duration_ms") }
+                val toolCounts = payloads.map { it.optInt("tool_call_count") }
                 val allTools = payloads.flatMap { p ->
                     val arr = p.optJSONArray("tools_used") ?: return@flatMap emptyList()
                     (0 until arr.length()).map { arr.getString(it) }
@@ -86,7 +100,7 @@ class DebugEventLogger(context: Context) : DebugLogger {
             byType["LLM_SUMMARIZE"]?.let { list ->
                 val payloads = list.mapNotNull { it.optJSONObject("payload") }
                 val ok = payloads.count { it.optBoolean("success", true) }
-                val durations = payloads.map { it.getLong("duration_ms") }
+                val durations = payloads.map { it.optLong("duration_ms") }
                 appendLine("\n── LLM Summarize (${list.size}) ──────────────────────────────────")
                 appendLine("  avg ${fmtMs(durations.average().toLong())}  success $ok/${list.size}")
             }
@@ -94,11 +108,11 @@ class DebugEventLogger(context: Context) : DebugLogger {
             byType["EMBEDDING_RUN"]?.let { list ->
                 val payloads = list.mapNotNull { it.optJSONObject("payload") }
                 val totals = payloads.map {
-                    it.getInt("notes_embedded") +
-                    it.getInt("interactions_embedded") +
-                    it.getInt("activities_embedded")
+                    it.optInt("notes_embedded") +
+                    it.optInt("interactions_embedded") +
+                    it.optInt("activities_embedded")
                 }
-                val durations = payloads.map { it.getLong("duration_ms") }
+                val durations = payloads.map { it.optLong("duration_ms") }
                 val results = payloads.groupingBy { it.optString("result") }.eachCount()
                 appendLine("\n── Embedding Runs (${list.size}) ──────────────────────────────────")
                 appendLine("  avg ${"%.1f".format(totals.average())} items  " +
@@ -108,8 +122,8 @@ class DebugEventLogger(context: Context) : DebugLogger {
 
             byType["SEARCH_QUERY"]?.let { list ->
                 val payloads = list.mapNotNull { it.optJSONObject("payload") }
-                val durations = payloads.map { it.getLong("duration_ms") }
-                val results = payloads.map { it.getInt("results") }
+                val durations = payloads.map { it.optLong("duration_ms") }
+                val results = payloads.map { it.optInt("results") }
                 val zeros = payloads.count { it.optBoolean("zero_vector") }
                 appendLine("\n── Search Queries (${list.size}) ──────────────────────────────────")
                 appendLine("  avg ${fmtMs(durations.average().toLong())}  " +
@@ -174,7 +188,7 @@ class DebugEventLogger(context: Context) : DebugLogger {
 
     fun clear() = synchronized(this) { logFile.delete(); bakFile.delete() }
 
-    fun readAllJsonObjects(): List<JSONObject> {
+    fun readAllJsonObjects(): List<JSONObject> = synchronized(this) {
         val result = mutableListOf<JSONObject>()
         listOf(bakFile, logFile).forEach { file ->
             if (!file.exists()) return@forEach
@@ -182,7 +196,7 @@ class DebugEventLogger(context: Context) : DebugLogger {
                 if (line.isNotBlank()) runCatching { result.add(JSONObject(line)) }
             }
         }
-        return result
+        result
     }
 
     private fun lineCount(file: File): Int {
@@ -193,12 +207,6 @@ class DebugEventLogger(context: Context) : DebugLogger {
     private fun fmtTs(ms: Long): String {
         val sdf = java.text.SimpleDateFormat("MMM d HH:mm", java.util.Locale.US)
         return sdf.format(java.util.Date(ms))
-    }
-
-    private fun fmtMs(ms: Long): String = when {
-        ms < 1_000  -> "${ms}ms"
-        ms < 60_000 -> "${"%.1f".format(ms / 1000.0)}s"
-        else        -> "${"%.1f".format(ms / 60_000.0)}m"
     }
 
     private fun DebugEvent.toJsonLine(): String = JSONObject().apply {

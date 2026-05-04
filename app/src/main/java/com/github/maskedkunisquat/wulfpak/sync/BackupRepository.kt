@@ -35,14 +35,18 @@ class BackupRepository(
     suspend fun export(context: Context, uri: Uri) {
         val startMs = System.currentTimeMillis()
         var personCount = 0
-        var success = false
+        var errorMsg: String? = null
         try {
-            withContext(Dispatchers.IO) { exportInternal(context, uri).also { personCount = it } }
-            success = true
+            exportInternal(context, uri).also { personCount = it }
+        } catch (e: Exception) {
+            errorMsg = e.message
+            throw e
         } finally {
             debugLogger?.log(DebugEvent.Backup(
                 op = "export", recordCount = personCount,
-                durationMs = System.currentTimeMillis() - startMs, success = success,
+                durationMs = System.currentTimeMillis() - startMs,
+                success = errorMsg == null,
+                error = errorMsg,
             ))
         }
     }

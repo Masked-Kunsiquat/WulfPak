@@ -36,7 +36,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -55,6 +57,7 @@ fun DebugSummaryScreen(
     vm: DebugSummaryViewModel = viewModel(),
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var menuExpanded by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
@@ -88,12 +91,14 @@ fun DebugSummaryScreen(
                                 text = { Text("Share as text") },
                                 onClick = {
                                     menuExpanded = false
-                                    val text = vm.generateTextSummary()
-                                    val intent = Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(Intent.EXTRA_TEXT, text)
+                                    scope.launch {
+                                        val text = vm.generateTextSummary()
+                                        val intent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(Intent.EXTRA_TEXT, text)
+                                        }
+                                        context.startActivity(Intent.createChooser(intent, "Share debug summary"))
                                     }
-                                    context.startActivity(Intent.createChooser(intent, "Share debug summary"))
                                 },
                             )
                             DropdownMenuItem(
@@ -346,8 +351,3 @@ private fun ToolRow(tool: String, count: Int, pct: Int) {
     }
 }
 
-private fun fmtMs(ms: Long): String = when {
-    ms < 1_000  -> "${ms}ms"
-    ms < 60_000 -> "${"%.1f".format(ms / 1000.0)}s"
-    else        -> "${"%.1f".format(ms / 60_000.0)}m"
-}
