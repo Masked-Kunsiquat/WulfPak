@@ -44,7 +44,7 @@ class PeopleListViewModel(app: Application) : AndroidViewModel(app) {
     val pendingCallCount = getApplication<AppApplication>().appDataStore.data
         .map { prefs ->
             val raw = prefs[AppPrefsKeys.PENDING_CALL_STUBS] ?: ""
-            if (raw.isBlank()) 0 else JSONArray(raw).length()
+            if (raw.isBlank()) 0 else try { JSONArray(raw).length() } catch (_: Exception) { 0 }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 

@@ -114,7 +114,7 @@ print(f"  Relationships     : {len(data.get('personRelationships', []))}")
 # Relation label breakdown
 from collections import Counter
 rel_counts = Counter(p["relationLabel"] for p in non_me)
-print(f"\n  Relation label breakdown:")
+print("\n  Relation label breakdown:")
 for label, count in sorted(rel_counts.items(), key=lambda x: -x[1]):
     print(f"    {label:<20} {count}")
 

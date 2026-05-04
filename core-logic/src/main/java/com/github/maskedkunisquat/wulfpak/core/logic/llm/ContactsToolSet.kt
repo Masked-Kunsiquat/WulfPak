@@ -605,10 +605,11 @@ internal class ContactsToolSet(
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private fun resolveTimestamp(daysAgo: String): Long =
-        daysAgo.trim().toIntOrNull()
-            ?.let { System.currentTimeMillis() - it * 86_400_000L }
-            ?: System.currentTimeMillis()
+    private fun resolveTimestamp(daysAgo: String): Long {
+        val days = daysAgo.trim().toIntOrNull() ?: return System.currentTimeMillis()
+        if (days < 0) return System.currentTimeMillis()
+        return System.currentTimeMillis() - days * 86_400_000L
+    }
 
     private fun normalizeInteractionType(raw: String): String {
         val s = raw.lowercase()

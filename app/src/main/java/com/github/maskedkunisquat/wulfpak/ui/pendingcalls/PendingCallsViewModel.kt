@@ -17,11 +17,13 @@ import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.model.PendingCallStub
 import com.github.maskedkunisquat.wulfpak.model.toJsonString
 import com.github.maskedkunisquat.wulfpak.model.toPendingCallStubs
+import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 class PendingCallsViewModel(app: Application) : AndroidViewModel(app) {
@@ -48,26 +50,30 @@ class PendingCallsViewModel(app: Application) : AndroidViewModel(app) {
     fun confirm(stub: PendingCallStub) {
         viewModelScope.launch(Dispatchers.IO) {
             val db = appApp.db
-            val interaction = Interaction(
-                timestamp       = stub.timestamp,
-                type            = InteractionType.CALL,
-                durationSeconds = stub.durationSeconds,
-            )
-            db.interactionDao().insert(interaction)
-            db.interactionDao().insertParticipant(
-                InteractionParticipant(
-                    interactionId = interaction.id,
-                    personId      = UUID.fromString(stub.personId),
+            db.withTransaction {
+                val interaction = Interaction(
+                    timestamp       = stub.timestamp,
+                    type            = InteractionType.CALL,
+                    durationSeconds = stub.durationSeconds,
                 )
-            )
-            db.personDao().onInteractionAdded(UUID.fromString(stub.personId), stub.timestamp)
+                db.interactionDao().insert(interaction)
+                db.interactionDao().insertParticipant(
+                    InteractionParticipant(
+                        interactionId = interaction.id,
+                        personId      = UUID.fromString(stub.personId),
+                    )
+                )
+                db.personDao().onInteractionAdded(UUID.fromString(stub.personId), stub.timestamp)
+            }
             appApp.appDataStore.edit { prefs ->
                 val current = (prefs[AppPrefsKeys.PENDING_CALL_STUBS] ?: "").toPendingCallStubs()
                 prefs[AppPrefsKeys.PENDING_CALL_STUBS] = current
                     .filter { it.personId != stub.personId || it.timestamp != stub.timestamp }
                     .toJsonString()
             }
-            confirmedStubs = confirmedStubs + stub
+            withContext(Dispatchers.Main) {
+                confirmedStubs = confirmedStubs + stub
+            }
         }
     }
 

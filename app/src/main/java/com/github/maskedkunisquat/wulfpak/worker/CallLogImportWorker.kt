@@ -37,10 +37,13 @@ class CallLogImportWorker(
         if (ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.READ_CALL_LOG)
             != PackageManager.PERMISSION_GRANTED) return Result.success()
         val lastPolled = prefs[AppPrefsKeys.CALL_LOG_LAST_POLLED] ?: 0L
+        val nowMs = System.currentTimeMillis()
 
         val phoneMap = db.contactDetailDao().getAllOnce()
             .filter { it.type == ContactDetailType.PHONE }
-            .associate { normalizePhone(it.value) to it.personId }
+            .groupBy { normalizePhone(it.value) }
+            .filter { (_, details) -> details.map { it.personId }.distinct().size == 1 }
+            .mapValues { (_, details) -> details.first().personId }
 
         val people = db.personDao().getAllOnce()
             .filter { !it.isMe }
@@ -87,16 +90,22 @@ class CallLogImportWorker(
             }
         }
 
+        val newLastPolled = if (newStubs.isNotEmpty()) {
+            maxOf(lastPolled, minOf(newStubs.maxOf { it.timestamp }, nowMs))
+        } else {
+            nowMs
+        }
+
         dataStore.edit { prefs ->
             if (newStubs.isNotEmpty()) {
-                val existing    = (prefs[AppPrefsKeys.PENDING_CALL_STUBS] ?: "").toPendingCallStubs()
+                val existing     = (prefs[AppPrefsKeys.PENDING_CALL_STUBS] ?: "").toPendingCallStubs()
                 val existingKeys = existing.map { "${it.personId}:${it.timestamp}" }.toSet()
-                val deduped     = newStubs.filter { "${it.personId}:${it.timestamp}" !in existingKeys }
+                val deduped      = newStubs.filter { "${it.personId}:${it.timestamp}" !in existingKeys }
                 if (deduped.isNotEmpty()) {
                     prefs[AppPrefsKeys.PENDING_CALL_STUBS] = (existing + deduped).toJsonString()
                 }
             }
-            prefs[AppPrefsKeys.CALL_LOG_LAST_POLLED] = System.currentTimeMillis()
+            prefs[AppPrefsKeys.CALL_LOG_LAST_POLLED] = newLastPolled
         }
 
         return Result.success()

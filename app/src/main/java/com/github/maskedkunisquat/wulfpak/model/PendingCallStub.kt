@@ -27,15 +27,23 @@ fun List<PendingCallStub>.toJsonString(): String {
 
 fun String.toPendingCallStubs(): List<PendingCallStub> {
     if (isBlank()) return emptyList()
-    val arr = JSONArray(this)
-    return (0 until arr.length()).map { i ->
-        val obj = arr.getJSONObject(i)
-        PendingCallStub(
-            personId = obj.getString("personId"),
-            personFirstName = obj.getString("personFirstName"),
-            callType = obj.getString("callType"),
-            durationSeconds = if (obj.isNull("durationSeconds")) null else obj.getInt("durationSeconds"),
-            timestamp = obj.getLong("timestamp"),
-        )
-    }
+    return try {
+        val arr = JSONArray(this)
+        (0 until arr.length()).mapNotNull { i ->
+            try {
+                val obj       = arr.getJSONObject(i)
+                val personId  = obj.optString("personId", "")
+                val callType  = obj.optString("callType", "")
+                val timestamp = obj.optLong("timestamp", -1L)
+                if (personId.isEmpty() || callType.isEmpty() || timestamp < 0L) return@mapNotNull null
+                PendingCallStub(
+                    personId        = personId,
+                    personFirstName = obj.optString("personFirstName", ""),
+                    callType        = callType,
+                    durationSeconds = if (obj.isNull("durationSeconds")) null else obj.optInt("durationSeconds"),
+                    timestamp       = timestamp,
+                )
+            } catch (_: Exception) { null }
+        }
+    } catch (_: Exception) { emptyList() }
 }
