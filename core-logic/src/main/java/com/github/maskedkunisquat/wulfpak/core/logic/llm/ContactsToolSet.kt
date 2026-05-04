@@ -507,6 +507,16 @@ internal class ContactsToolSet(
         }
     }
 
+    @Tool(description = "Get the current date and time. Call this before logging anything dated, or when the user mentions 'today', 'yesterday', a weekday, or a specific date.")
+    fun getCurrentDateTime(): String {
+        if (BuildConfig.DEBUG) Log.d(TAG, "getCurrentDateTime called")
+        eventSink?.invoke(LlmResult.ToolCall("getCurrentDateTime", emptyMap()))
+        val now = System.currentTimeMillis()
+        val dateFmt = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.ENGLISH)
+        val timeFmt = SimpleDateFormat("h:mm a", Locale.ENGLISH)
+        return "Today is ${dateFmt.format(Date(now))}, ${timeFmt.format(Date(now))}."
+    }
+
     // ── Write tools ───────────────────────────────────────────────────────────
 
     @Tool(description = "Log an interaction (call, text, email, video call, in-person meeting, or social media) with a contact.")
@@ -514,13 +524,14 @@ internal class ContactsToolSet(
         @ToolParam(description = "First name or nickname of the contact.") name: String,
         @ToolParam(description = "Interaction type: call, text, email, video_call, in_person, or social_media.") type: String,
         @ToolParam(description = "Optional short note about the interaction. Leave blank if none.") note: String = "",
+        @ToolParam(description = "How many days ago this happened. Leave blank if today.") daysAgo: String = "",
     ): String = runBlocking {
-        if (BuildConfig.DEBUG) Log.d(TAG, "logInteraction — name=$name type=$type")
+        if (BuildConfig.DEBUG) Log.d(TAG, "logInteraction — name=$name type=$type daysAgo=$daysAgo")
         val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\". Ask the user to clarify."
         val normalizedType = normalizeInteractionType(type)
         val writeId = UUID.randomUUID().toString()
         val description = "Log ${normalizedType.replace('_', ' ')} with ${person.firstName}"
-        val ts = System.currentTimeMillis()
+        val ts = resolveTimestamp(daysAgo)
         stagedWrites[writeId] = {
             val interaction = Interaction(timestamp = ts, type = normalizedType, note = note.ifBlank { null })
             interactionDao.insert(interaction)
@@ -536,12 +547,13 @@ internal class ContactsToolSet(
     fun addNote(
         @ToolParam(description = "First name or nickname of the contact.") name: String,
         @ToolParam(description = "The note text.") body: String,
+        @ToolParam(description = "How many days ago this note was relevant. Leave blank if today.") daysAgo: String = "",
     ): String = runBlocking {
-        if (BuildConfig.DEBUG) Log.d(TAG, "addNote — name=$name")
+        if (BuildConfig.DEBUG) Log.d(TAG, "addNote — name=$name daysAgo=$daysAgo")
         val person = findPerson(name) ?: return@runBlocking "No contact found named \"$name\". Ask the user to clarify."
         val writeId = UUID.randomUUID().toString()
         val description = "Add note to ${person.firstName}"
-        val ts = System.currentTimeMillis()
+        val ts = resolveTimestamp(daysAgo)
         stagedWrites[writeId] = {
             noteDao.insert(Note(personId = person.id, timestamp = ts, body = body))
         }
@@ -588,6 +600,11 @@ internal class ContactsToolSet(
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private fun resolveTimestamp(daysAgo: String): Long =
+        daysAgo.trim().toIntOrNull()
+            ?.let { System.currentTimeMillis() - it * 86_400_000L }
+            ?: System.currentTimeMillis()
 
     private fun normalizeInteractionType(raw: String): String {
         val s = raw.lowercase()
