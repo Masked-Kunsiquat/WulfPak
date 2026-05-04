@@ -21,6 +21,7 @@ import com.github.maskedkunisquat.wulfpak.core.logic.worker.SummaryWorker
 import com.github.maskedkunisquat.wulfpak.debug.DebugEventLogger
 import com.github.maskedkunisquat.wulfpak.download.DownloadManagerModelDownloader
 import com.github.maskedkunisquat.wulfpak.sync.BackupRepository
+import com.github.maskedkunisquat.wulfpak.worker.CallLogImportWorker
 import com.github.maskedkunisquat.wulfpak.worker.ContactReminderWorker
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -113,6 +114,7 @@ class AppApplication : Application(), Configuration.Provider {
                 factory.addFactory(EmbeddingWorker.Factory(db, embeddingProvider, debugEventLogger))
                 factory.addFactory(SummaryWorker.Factory(db, llmOrchestrator))
                 factory.addFactory(ContactReminderWorker.Factory(db, llmOrchestrator))
+                factory.addFactory(CallLogImportWorker.Factory(db))
             })
             .build()
 
@@ -131,6 +133,7 @@ class AppApplication : Application(), Configuration.Provider {
         }
         val wm = WorkManager.getInstance(this)
         ContactReminderWorker.schedule(wm)
+        CallLogImportWorker.schedule(wm)
         EmbeddingWorker.enqueue(wm)    // backfill any rows written before model was ready
         appScope.launch(Dispatchers.IO) { backfillActivityClosenessScores() }
     }

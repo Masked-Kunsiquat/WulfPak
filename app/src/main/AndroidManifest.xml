@@ -15,6 +15,9 @@
     <!-- Contact reminders (Phase 8) — required on Android 13+ to post notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Call log import -->
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+
     <application
         android:name=".AppApplication"
         android:allowBackup="true"

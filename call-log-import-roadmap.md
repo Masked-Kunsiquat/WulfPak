@@ -34,8 +34,8 @@ data class PendingCallStub(
 
 ## Phase 3 — `CallLogImportWorker`
 
-- [ ] **`CallLogImportWorker`** — new file in `app/.../worker/`; follows `ContactReminderWorker` pattern: `CoroutineWorker`, custom `Factory` injected with `AppDatabase` only — `DataStore<Preferences>` is NOT injected; access it inside `doWork()` via `applicationContext.appDataStore` (it's a Context extension, no plumbing needed)
-- [ ] In `doWork()`:
+- [x] **`CallLogImportWorker`** — new file in `app/.../worker/`; follows `ContactReminderWorker` pattern: `CoroutineWorker`, custom `Factory` injected with `AppDatabase` only — `DataStore<Preferences>` is NOT injected; access it inside `doWork()` via `applicationContext.appDataStore` (it's a Context extension, no plumbing needed)
+- [x] In `doWork()`:
   - Read `CALL_LOG_LAST_POLLED` from DataStore (default `0L`)
   - Query `CallLog.Calls` for entries where `CallLog.Calls.DATE > lastPolled`, ordered by date ascending
   - For each entry: normalize the number with `PhoneUtils.normalizePhone`, query `contactDetails` where `type == "PHONE"` and normalized value matches; silently drop if no match
@@ -44,18 +44,18 @@ data class PendingCallStub(
   - Build `PendingCallStub` for each matched entry; deduplicate against existing stubs by `personId + timestamp` before appending
   - Append to `PENDING_CALL_STUBS` inside a single `dataStore.edit { }` block — the entire read-modify-write must be atomic to avoid races with UI confirm/skip calls
   - Update `CALL_LOG_LAST_POLLED` to `System.currentTimeMillis()` only after stubs are successfully written
-- [ ] Register `CallLogImportWorker.Factory` in `AppApplication` alongside the existing worker factories
-- [ ] Schedule via `WorkManager.enqueueUniquePeriodicWork("call_log_import", KEEP, every 3h)` in `AppApplication.onCreate()`
+- [x] Register `CallLogImportWorker.Factory` in `AppApplication` alongside the existing worker factories
+- [x] Schedule via `WorkManager.enqueueUniquePeriodicWork("call_log_import", KEEP, every 3h)` in `AppApplication.onCreate()`
 
 ---
 
 ## Phase 4 — `READ_CALL_LOG` permission
 
-- [ ] **`AndroidManifest.xml`** — add `<uses-permission android:name="android.permission.READ_CALL_LOG" />`
-- [ ] **`AppPrefsKeys`** — add `CALL_LOG_IMPORT_ENABLED` (`booleanPreferencesKey("call_log_import_enabled")`)
-- [ ] **Settings screen** — add "Auto-import calls" toggle row (below existing toggles); on first enable, trigger the `READ_CALL_LOG` runtime permission prompt via `rememberLauncherForActivityResult`; if denied, flip the toggle back and show a snackbar explaining why
-- [ ] **Toggle off** — when the user disables the toggle, call `WorkManager.cancelUniqueWork("call_log_import")` so the periodic job is actually removed (the `doWork()` guard alone leaves the job burning in WorkManager indefinitely); **toggle on** (after prior disable) must re-enqueue via the companion `schedule()` method
-- [ ] **`CallLogImportWorker.doWork()`** — guard at top: check `CALL_LOG_IMPORT_ENABLED` and `ContextCompat.checkSelfPermission(READ_CALL_LOG)`; return `Result.success()` silently if either is false/denied
+- [x] **`AndroidManifest.xml`** — add `<uses-permission android:name="android.permission.READ_CALL_LOG" />`
+- [x] **`AppPrefsKeys`** — add `CALL_LOG_IMPORT_ENABLED` (`booleanPreferencesKey("call_log_import_enabled")`)
+- [x] **Settings screen** — add "Auto-import calls" toggle row (below existing toggles); on first enable, trigger the `READ_CALL_LOG` runtime permission prompt via `rememberLauncherForActivityResult`; if denied, flip the toggle back and show a snackbar explaining why
+- [x] **Toggle off** — when the user disables the toggle, call `WorkManager.cancelUniqueWork("call_log_import")` so the periodic job is actually removed (the `doWork()` guard alone leaves the job burning in WorkManager indefinitely); **toggle on** (after prior disable) must re-enqueue via the companion `schedule()` method
+- [x] **`CallLogImportWorker.doWork()`** — guard at top: check `CALL_LOG_IMPORT_ENABLED` and `ContextCompat.checkSelfPermission(READ_CALL_LOG)`; return `Result.success()` silently if either is false/denied
 
 ---
 
