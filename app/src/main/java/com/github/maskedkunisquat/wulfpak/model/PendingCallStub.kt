@@ -36,6 +36,7 @@ fun String.toPendingCallStubs(): List<PendingCallStub> {
                 val callType  = obj.optString("callType", "")
                 val timestamp = obj.optLong("timestamp", -1L)
                 if (personId.isEmpty() || callType.isEmpty() || timestamp < 0L) return@mapNotNull null
+                try { java.util.UUID.fromString(personId) } catch (_: IllegalArgumentException) { return@mapNotNull null }
                 PendingCallStub(
                     personId        = personId,
                     personFirstName = obj.optString("personFirstName", ""),

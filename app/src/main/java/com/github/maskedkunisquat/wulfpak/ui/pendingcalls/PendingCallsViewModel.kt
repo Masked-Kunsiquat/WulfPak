@@ -82,8 +82,12 @@ class PendingCallsViewModel(app: Application) : AndroidViewModel(app) {
 
     fun saveNote(stub: PendingCallStub, text: String) {
         val trimmed = text.trim()
-        if (trimmed.isNotEmpty()) {
-            viewModelScope.launch(Dispatchers.IO) {
+        if (trimmed.isEmpty()) {
+            dismissConfirmed(stub)
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
                 appApp.db.noteDao().insert(
                     Note(
                         personId  = UUID.fromString(stub.personId),
@@ -91,9 +95,11 @@ class PendingCallsViewModel(app: Application) : AndroidViewModel(app) {
                         body      = trimmed,
                     )
                 )
+                withContext(Dispatchers.Main) { dismissConfirmed(stub) }
+            } catch (_: Exception) {
+                // insert failed — confirmation stays visible so the user can retry
             }
         }
-        dismissConfirmed(stub)
     }
 
     fun dismissConfirmed(stub: PendingCallStub) {

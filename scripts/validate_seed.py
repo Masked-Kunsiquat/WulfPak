@@ -12,8 +12,12 @@ with open(path, encoding="utf-8") as f:
 errors = []
 warnings = []
 
-def err(msg):  errors.append(f"  ERROR: {msg}")
-def warn(msg): warnings.append(f"  WARN : {msg}")
+def err(msg):
+    errors.append(f"  ERROR: {msg}")
+
+
+def warn(msg):
+    warnings.append(f"  WARN : {msg}")
 
 # ── Build ID sets ─────────────────────────────────────────────────────────────
 person_ids      = {p["id"] for p in data["persons"]}

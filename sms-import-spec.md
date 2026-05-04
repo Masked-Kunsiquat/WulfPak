@@ -1,152 +1,153 @@
 # SMS Text Import — Spec Sheet
 
-Import SMS conversations into WulfPak interactions via Android's Share target mechanism, with ML Kit GenAI Summarization for note generation. Scoped 2026-05-04.
+Import SMS conversations into WulfPak interactions via a copy/paste flow, with sender-attribution UI and ML Kit GenAI Summarization for note generation. Scoped 2026-05-04.
+
+**Share target is not viable.** Google Messages does not surface share options when selecting a thread. Samsung Messages is being discontinued. The entry mechanism is the Android clipboard: the user multi-selects message bubbles in Google Messages, copies, and pastes into WulfPak.
 
 ---
 
-## Feature overview
+## Clipboard format (confirmed)
 
-The user selects a text thread in their native SMS app (Google Messages, Samsung Messages, etc.), taps **Share**, and chooses WulfPak from the share sheet. WulfPak receives the raw conversation text, identifies the contact, runs ML Kit Summarize to produce a note body, then drops the result into the existing pending-call confirm queue for review before writing to the DB.
+Multi-selecting and copying in Google Messages produces plain newline-separated text with no timestamps, sender names, or delimiters:
 
-**No new background permissions required.** This is entirely user-initiated — the user consciously leaves their SMS app and picks WulfPak from the share sheet.
+```
+hey!
+hey, how's your day going?
+pretty good, just relaxing
+what about you?
+```
+
+**Known limitation — newlines:** A message that itself contains newlines will appear as multiple lines — indistinguishable from separate messages. Accepted as a v1 constraint; most texts don't contain internal newlines in practice.
+
+**Known limitation — selection order:** Google Messages pastes messages in the order the user tapped them, not chronological order. If the user selects bubbles out of order, the paste will be out of order. The app cannot detect or correct this — there are no timestamps in the clipboard payload. Mitigated by a persistent inline banner on `SmsImportScreen`: "Messages appear in the order you selected them — select top-to-bottom for chronological order."
 
 ---
 
 ## Proposed pipeline
 
-```
-User selects thread → Share sheet → WulfPak ShareReceiver Activity
+```text
+User copies messages in Google Messages
     ↓
-Parse Intent extras (EXTRA_TEXT / EXTRA_STREAM)
+Opens WulfPak → Interactions tab FAB → "Paste conversation" → SmsImportScreen
     ↓
-Attempt contact match (phone number in thread header, or first line of text)
+Pastes raw text; app splits on newlines → line list
     ↓
-ML Kit Summarize (InputType.CONVERSATION, "Name: message" format)
+User assigns each line to a sender (toggle: Me ↔ Contact)
     ↓
-PendingCallStub-equivalent for SMS (type = "SMS", note pre-filled with summary)
+User sets conversation date (defaults to today; optional back-date via date picker)
     ↓
-Existing PendingCallsScreen confirm flow
+Labeled lines formatted as "Name: message" → ML Kit Summarize (or Gemma fallback)
     ↓
-Interaction + Note written to DB on confirm
+Summary pre-fills note draft; user edits
+    ↓
+Confirm → Interaction(type = TEXT) + participant + onInteractionAdded + Note written to DB
 ```
 
 ---
 
 ## Phases
 
-### Phase 1 — Share target registration
+### Phase 1 — SMS Import entry point + paste screen
 
-- [ ] Add `<activity android:name=".ui.share.ShareReceiverActivity">` to `AndroidManifest.xml`
-- [ ] Intent filter: `action=ACTION_SEND`, `mimeType=text/plain`, `category=DEFAULT + BROWSABLE`
-- [ ] `ShareReceiverActivity` receives `Intent.EXTRA_TEXT`, passes it to a ViewModel, then navigates into the existing Compose NavHost (or is itself a transparent trampoline that starts `MainActivity` with extras)
-- [ ] Decide: trampoline activity vs. direct Compose integration (see Open Q #1)
+- [ ] Add `Routes.SMS_IMPORT = "sms_import/{personId}"` to `AppNavigation`; contact is required at entry — no contact-agnostic entry path
+- [ ] Entry point: two-step FAB on the **Interactions tab** of `PersonDetailScreen` — tap FAB → bottom sheet / menu with "Manual log" and "Paste conversation"; tapping "Paste conversation" navigates to `SmsImportScreen`
+- [ ] `SmsImportScreen` composable: persistent info banner at the top — "Messages appear in the order you selected them — select top-to-bottom for chronological order"; single `OutlinedTextField` (multiline, full-width) labelled "Paste messages here"; **Import** button parses content on tap
+- [ ] Split pasted text on `\n`; filter blank lines; produce `List<String>` — each string is one candidate message
+- [ ] Navigate to attribution screen with the line list + `personId`
 
-### Phase 2 — Contact resolution
+### Phase 2 — Sender attribution UI
 
-- [ ] Parse phone number from the share payload — likely in the thread title/subject line or first sender token (format varies by app; see Open Q #2)
-- [ ] Call existing `PhoneUtils.normalizePhone` + `ContactsToolSet.findPerson()` phone-fallback path
-- [ ] If no match: show contact-picker UI rather than silently dropping (unlike call log, where drops are silent — the user initiated this share intentionally)
-- [ ] If match: proceed to summarization
+- [ ] `SmsAttributionScreen`: `LazyColumn` of message rows, each showing the text and a sender toggle chip
+- [ ] Toggle chip: two states — **Me** / **{Contact firstName}**; tapping flips the attribution for that row
+- [ ] Default attribution: Contact first (they typically send first in conversations you'd bother to log)
+- [ ] "Flip all below" action on each row to batch-flip the remainder from that point
+- [ ] Date picker row at the top: defaults to today; user can back-date
+- [ ] **Next** button proceeds to summarization + confirm
 
 ### Phase 3 — ML Kit GenAI Summarization
 
 - [ ] Add dependency: `com.google.mlkit:genai-summarization:1.0.0-beta1`
-- [ ] On feature entry: call `Summarization.getClient(SummarizationOptions(InputType.CONVERSATION))`
-- [ ] Call `checkFeatureStatus()` before any summarization attempt:
+- [ ] Format attributed lines as `"Name: message\n"` for `InputType.CONVERSATION`
+- [ ] Call `checkFeatureStatus()` before summarizing:
   - `AVAILABLE` → proceed
-  - `DOWNLOADABLE` → trigger download, show progress, retry after
+  - `DOWNLOADABLE` → trigger download, show progress indicator, retry after
   - `DOWNLOADING` → wait, show progress
-  - `UNAVAILABLE` → fall through to Gemma path (see Open Q #3)
-- [ ] Format input: prefix each line with `"Name: message"` where Name is sender (parsed from thread) — required for `CONVERSATION` input type
-- [ ] Cap input at ~4000 tokens / ~3000 words before passing to summarizer (see Open Q #4)
-- [ ] Collect summary (1–3 bullet prose); use as pre-filled note body in the confirm UI
+  - `UNAVAILABLE` → show one-time banner ("Summarization unavailable on this device — using on-device assistant instead"), then fall through to Gemma path
+- [ ] Cap input at ~3000 words before passing (tail strategy — keep most recent lines); show a warning snackbar if the paste was truncated
+- [ ] Collect summary (1–3 bullet prose); pre-fill note draft field
 
-### Phase 4 — Fallback: Gemma structured extraction
+### Phase 4 — Fallback: Gemma extraction
 
-- [ ] For devices where ML Kit Summarize is `UNAVAILABLE` (unlocked bootloader, unsupported chipset):
-  - Pass raw thread text to `LlmOrchestrator` with a targeted prompt
-  - Prompt: extract the key topic, decisions, and follow-ups as a short note
-  - Cap input to avoid overwhelming the context window (see Open Q #4)
-- [ ] Gemma is already on-device — no new download required for fallback path
+- [ ] For `UNAVAILABLE` devices: pass attributed text to `LlmOrchestrator` with a prompt to extract key topic, decisions, and follow-ups as a short note
+- [ ] Same input cap applies; no new download required
 
-### Phase 5 — Confirm queue integration
+### Phase 5 — Confirm + DB write
 
-- [ ] Define `PendingSmsStub` data class (or extend `PendingCallStub` with `type = "SMS"` and a nullable `noteDraft: String` field — see Open Q #5):
-  ```kotlin
-  data class PendingSmsStub(
-      val personId: String,
-      val personFirstName: String,
-      val timestamp: Long,       // time of share action (not thread timestamp)
-      val noteDraft: String,     // ML Kit summary or Gemma extraction
-      val rawText: String,       // truncated original, for user review
-  )
-  ```
-- [ ] Add `PENDING_SMS_STUBS` to `AppPrefsKeys` (same JSON-array DataStore pattern)
-- [ ] Reuse or extend `PendingCallsScreen` / `PendingCallsViewModel` with SMS cards (see Open Q #5)
-- [ ] Confirm path: insert `Interaction(type = InteractionType.TEXT)` + participant + `onInteractionAdded` + `Note(body = editedDraft)`
-- [ ] Skip path: remove stub from DataStore
+- [ ] Show note draft in an editable `OutlinedTextField`; user can revise before confirming
+- [ ] **Confirm**: insert `Interaction(type = InteractionType.TEXT, timestamp = selectedDate)` + `InteractionParticipant` + `personDao.onInteractionAdded` + `Note(body = editedDraft)` — same three-call ordered pattern as call log confirm, wrapped in `db.withTransaction {}`
+- [ ] **Discard**: navigates back, nothing written
+- [ ] `InteractionType.TEXT` already exists in `Interaction.kt` — no Room migration needed
 
 ---
 
-## Open questions
+## Deferred: Native SMS Provider Import
 
-### Q1 — Activity architecture: trampoline vs. Compose integration
-The share intent lands on an `Activity`. WulfPak's UI is a single-Activity Compose app. Options:
-- **Trampoline**: `ShareReceiverActivity` is a no-UI activity that re-fires `MainActivity` with extras and finishes. Simple but adds a navigation hop.
-- **Direct**: `ShareReceiverActivity` hosts its own Compose content (a bottom sheet or dialog). Cleaner UX but means a second `setContent {}`.
-- **NavController deep-link**: register a deep-link on the pending-SMS route so `MainActivity` handles the intent directly.
+Supersedes the clipboard flow if implemented. Requires `READ_SMS` — a normal dangerous permission blocked only by Play Store policy (must be default SMS handler). Since WulfPak is sideloaded, the OS grants it on user tap, same as `READ_CALL_LOG`.
 
-Which pattern fits best with the existing single-Activity nav setup?
+### Why it's better than clipboard
 
-### Q2 — Share payload format across SMS apps
-What does `Intent.EXTRA_TEXT` actually contain when sharing from:
-- **Google Messages**: does it include sender name/number in the string, or just message bodies?
-- **Samsung Messages**: same question
-- **Carrier/OEM apps**: unknown
+| | Clipboard (v1) | SMS provider |
+|---|---|---|
+| Timestamps | None — need date picker | Real ms timestamps per message |
+| Attribution | Manual toggle per row | `type` column: 1=received 2=sent — automatic |
+| Order | User's tap order (fragile) | Chronological by `date` column |
+| Newline ambiguity | Unresolvable | Non-issue (`body` is a single field) |
+| Entry UX | Copy in Messages → paste | Stay in WulfPak, pick a thread |
 
-The contact-match strategy depends entirely on this. Need to test on a real device before committing to a parsing approach. May need to special-case per-app format or ask the user to confirm the match manually.
+### Gating
 
-### Q3 — ML Kit unavailability fallback UX
-`UNAVAILABLE` can't be fixed (locked to device/bootloader state). Options:
-- Silent fallback to Gemma (user never knows)
-- Show a one-time banner: "Summarization not available on this device — using on-device assistant instead"
-- Skip summarization entirely and show a blank note field with just the raw text
+Clipboard flow works in both flavors — it uses no restricted permissions. The native SMS provider flow requires `READ_SMS`, which violates Play Store policy (must be default SMS handler). Gate it behind a `full` build flavor (the sideload edition) so the clipboard path compiles cleanly in a future `play` flavor without `#ifdef` noise.
 
-What's the right UX for a degraded experience?
+| Flavor | Clipboard import | Native SMS import |
+|---|---|---|
+| `full` (sideload) | ✓ | ✓ |
+| `play` (if ever published) | ✓ | — |
 
-### Q4 — Long thread truncation strategy
-ML Kit's `CONVERSATION` input has a ~4000-token limit. Long threads (weeks of messages) will exceed it. Options:
-- Truncate to most-recent N messages (tail strategy — most relevant for recency)
-- Truncate to first N messages (head strategy — preserves context)
-- Summarize in chunks and concatenate (complex, probably overkill)
-- Let the user trim before sharing (shifts burden to user)
+MVP ships clipboard only. Native flow lands later in `full` without touching the clipboard implementation.
 
-Tail strategy (most recent messages) is the intuitive default, but need to decide the cutoff (number of lines, character count, or token estimate).
+### Phase 6 — Thread picker
 
-### Q5 — Reuse `PendingCallStub` or define `PendingSmsStub`
-Two approaches:
-- **Extend**: add `type: String` and `noteDraft: String?` to the existing `PendingCallStub`. Reuses all DataStore + VM + UI logic. May feel like a leaking abstraction.
-- **Separate**: new `PendingSmsStub` + `PENDING_SMS_STUBS` key + separate VM methods. Cleaner model boundaries, more code.
+- [ ] `SmsThreadPickerScreen`: queries `content://sms/conversations` + joins to `content://sms/` to resolve the most recent sender address per thread; shows a list of threads sorted by recency
+- [ ] Match each thread's address against WulfPak contacts via `PhoneUtils.normalizePhone` — surface matched contacts at the top; unmatched threads listed below with raw number
+- [ ] Tapping a thread navigates to the message window screen (Phase 7) with `threadId` + matched `personId` (nullable)
 
-The confirm UI differs enough (SMS shows note draft, no duration/call-type chip) that a separate card composable is needed either way. The question is whether to share the underlying queue infrastructure.
+### Phase 7 — Message window selection
 
-### Q6 — Beta API risk tolerance
-ML Kit GenAI Summarization is `1.0.0-beta1` with no SLA and possible breaking changes. This is the same posture as any other beta Android library, but the model download (Gemini Nano via AICore) adds a network dependency at first use.
+- [ ] `SmsMessageWindowScreen`: shows all messages in the thread as a read-only `LazyColumn`, newest at bottom
+- [ ] Two selection modes (decide at implementation time — either works):
+  - **Date range** — "From" / "To" date pickers; messages outside the range are dimmed
+  - **Tap-to-anchor** — tap a message to set start; shift-tap (or long-press) to set end; selected range highlighted
+- [ ] Show message count and estimated token load for the selected window; warn if over the ~3000-word cap (same tail truncation logic as clipboard flow)
+- [ ] **Import** button passes the selected `List<SmsMessage>` forward — each already has `body`, `date`, and `type` (sent/received), so attribution and timestamps are resolved automatically
+- [ ] No attribution screen needed; no date picker needed; pipeline resumes at summarization (Phase 3 / Phase 4)
 
-Is this acceptable for a personal/hobby app, or should we wait for stable?
+### Entry point change (when native flow ships)
 
-### Q7 — Interaction timestamp semantics
-For call log import, `timestamp` is the actual call time (from `CallLog.Calls.DATE`). For SMS import, what timestamp should the `Interaction` carry?
-- Time of the share action (now) — simple but loses recency info
-- Timestamp of the most recent message in the thread — accurate but requires parsing
-- Timestamp of the oldest message in the thread — represents when the conversation started
+Replace the "Paste conversation" FAB option with "Import from SMS" — or offer both if clipboard fallback is still desired for edge cases (e.g. iMessage threads forwarded via another app).
 
-This affects `lastContactedAt` accuracy and interaction sort order.
+---
 
-### Q8 — `InteractionType` extension
-`InteractionType.CALL` already exists. Does `InteractionType.TEXT` exist, or does it need to be added (Room migration required)?
+## Decisions (resolved 2026-05-04)
 
-Check `core-data` entities before starting Phase 5.
+| # | Question | Decision |
+|---|----------|----------|
+| Q1 | Entry point on PersonDetailScreen | Two-step FAB on the Interactions tab — tap FAB → two options: "Manual log" / "Paste conversation" |
+| Q2 | Conversation date | Default today + optional date picker the user can back-date |
+| Q3 | Default sender | Contact first |
+| Q4 | ML Kit UNAVAILABLE UX | One-time banner ("Summarization unavailable — using on-device assistant instead"), then silent Gemma fallback |
+| Q5 | Long paste truncation | Tail strategy (keep most recent lines) + show a warning snackbar/banner when the cap is exceeded |
+| Q6 | `InteractionType.TEXT` | Already defined in `Interaction.kt` — no Room migration needed |
+| Q7 | Beta API risk | Accept `1.0.0-beta1`, pin version, monitor release notes |
 
 ---
 
@@ -161,14 +162,17 @@ Check `core-data` entities before starting Phase 5.
 
 ## Manual test checklist
 
-- [ ] WulfPak appears in the share sheet when sharing from Google Messages
-- [ ] WulfPak appears in the share sheet when sharing from Samsung Messages (if applicable)
-- [ ] Contact match succeeds for a known contact's thread
-- [ ] Contact match failure shows picker UI rather than silently dropping
-- [ ] ML Kit summary appears pre-filled in the note field on the confirm card
-- [ ] User can edit the pre-filled note before confirming
-- [ ] Confirm writes `Interaction(type = TEXT)` + participant + note to DB
-- [ ] Confirmed interaction appears on the person's detail screen
-- [ ] Skip removes the stub without writing anything
+- [ ] "Paste conversation" entry is reachable via the Interactions tab FAB
+- [ ] Selection-order banner is visible on `SmsImportScreen`
+- [ ] Pasting a copied Google Messages selection splits correctly into lines
+- [ ] Blank lines are filtered out
+- [ ] Sender toggle flips correctly per-row; "Flip all below" works
+- [ ] Date picker back-dating produces correct `Interaction.timestamp`
+- [ ] ML Kit summary appears pre-filled in the note field
+- [ ] User can edit the note before confirming
+- [ ] Confirm writes `Interaction(type = TEXT)` + participant + note; interaction appears on person screen
+- [ ] `lastContactedAt` updates to the selected date (not today if back-dated)
+- [ ] Discard writes nothing
 - [ ] Fallback to Gemma works on a device where ML Kit is `UNAVAILABLE`
-- [ ] Long threads are truncated without crashing
+- [ ] A paste with internal newlines in a message degrades gracefully (extra lines, not a crash)
+- [ ] Pasting a very long thread truncates to the cap without crashing
