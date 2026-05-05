@@ -65,6 +65,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,6 +78,7 @@ fun SettingsScreen(
     onNavigateAi: () -> Unit,
     onNavigateContacts: () -> Unit,
     onNavigateDebugSummary: () -> Unit,
+    onNavigateCallLogSettings: () -> Unit,
     onSwitchProfile: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -90,6 +94,10 @@ fun SettingsScreen(
     val callLogEnabled by context.appDataStore.data
         .map { it[AppPrefsKeys.CALL_LOG_IMPORT_ENABLED] ?: false }
         .collectAsStateWithLifecycle(false)
+
+    val callLogImportSince by context.appDataStore.data
+        .map { it[AppPrefsKeys.CALL_LOG_IMPORT_SINCE] ?: 0L }
+        .collectAsStateWithLifecycle(0L)
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -184,35 +192,50 @@ fun SettingsScreen(
                 trailingContent   = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
                 modifier          = Modifier.clickable(onClick = onNavigateContacts),
             )
-            ListItem(
-                headlineContent   = { Text("Auto-import calls") },
-                supportingContent = { Text(if (callLogEnabled) "On" else "Off") },
-                leadingContent    = { Icon(Icons.Default.Phone, contentDescription = null) },
-                trailingContent   = {
-                    Switch(
-                        checked = callLogEnabled,
-                        onCheckedChange = { enabled ->
-                            if (enabled) {
-                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG)
-                                    == PackageManager.PERMISSION_GRANTED
-                                ) {
-                                    scope.launch {
-                                        context.appDataStore.edit { it[AppPrefsKeys.CALL_LOG_IMPORT_ENABLED] = true }
-                                    }
-                                    CallLogImportWorker.schedule(WorkManager.getInstance(context))
-                                } else {
-                                    callLogPermissionLauncher.launch(Manifest.permission.READ_CALL_LOG)
-                                }
-                            } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val sinceText = if (callLogImportSince > 0L) {
+                    "From ${SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(callLogImportSince))}"
+                } else {
+                    "All history"
+                }
+                ListItem(
+                    headlineContent   = { Text("Auto-import calls") },
+                    supportingContent = { Text(sinceText) },
+                    leadingContent    = { Icon(Icons.Default.Phone, contentDescription = null) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onNavigateCallLogSettings() },
+                )
+                VerticalDivider(modifier = Modifier.fillMaxHeight().padding(vertical = 12.dp))
+                Switch(
+                    checked = callLogEnabled,
+                    onCheckedChange = { enabled ->
+                        if (enabled) {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG)
+                                == PackageManager.PERMISSION_GRANTED
+                            ) {
                                 scope.launch {
-                                    context.appDataStore.edit { it[AppPrefsKeys.CALL_LOG_IMPORT_ENABLED] = false }
+                                    context.appDataStore.edit { it[AppPrefsKeys.CALL_LOG_IMPORT_ENABLED] = true }
                                 }
-                                WorkManager.getInstance(context).cancelUniqueWork(CallLogImportWorker.WORK_NAME)
+                                CallLogImportWorker.schedule(WorkManager.getInstance(context))
+                            } else {
+                                callLogPermissionLauncher.launch(Manifest.permission.READ_CALL_LOG)
                             }
-                        },
-                    )
-                },
-            )
+                        } else {
+                            scope.launch {
+                                context.appDataStore.edit { it[AppPrefsKeys.CALL_LOG_IMPORT_ENABLED] = false }
+                            }
+                            WorkManager.getInstance(context).cancelUniqueWork(CallLogImportWorker.WORK_NAME)
+                        }
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
