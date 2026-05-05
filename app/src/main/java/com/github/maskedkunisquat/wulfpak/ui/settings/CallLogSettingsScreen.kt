@@ -29,7 +29,9 @@ import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
 import com.github.maskedkunisquat.wulfpak.appDataStore
 import com.github.maskedkunisquat.wulfpak.model.toPendingCallStubs
 import com.github.maskedkunisquat.wulfpak.model.toJsonString
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,13 +49,17 @@ fun CallLogSettingsScreen(onNavigateBack: () -> Unit) {
     LaunchedEffect(datePickerState.selectedDateMillis, initialized) {
         if (!initialized) return@LaunchedEffect
         val newSince = datePickerState.selectedDateMillis ?: 0L
-        context.appDataStore.edit { prefs ->
-            prefs[AppPrefsKeys.CALL_LOG_IMPORT_SINCE] = newSince
-            if (newSince > 0L) {
-                val filtered = (prefs[AppPrefsKeys.PENDING_CALL_STUBS] ?: "")
-                    .toPendingCallStubs()
-                    .filter { it.timestamp >= newSince }
-                prefs[AppPrefsKeys.PENDING_CALL_STUBS] = filtered.toJsonString()
+        // NonCancellable ensures the write completes even if the composable's
+        // scope is cancelled while the user is navigating back.
+        withContext(NonCancellable) {
+            context.appDataStore.edit { prefs ->
+                prefs[AppPrefsKeys.CALL_LOG_IMPORT_SINCE] = newSince
+                if (newSince > 0L) {
+                    val filtered = (prefs[AppPrefsKeys.PENDING_CALL_STUBS] ?: "")
+                        .toPendingCallStubs()
+                        .filter { it.timestamp >= newSince }
+                    prefs[AppPrefsKeys.PENDING_CALL_STUBS] = filtered.toJsonString()
+                }
             }
         }
     }
