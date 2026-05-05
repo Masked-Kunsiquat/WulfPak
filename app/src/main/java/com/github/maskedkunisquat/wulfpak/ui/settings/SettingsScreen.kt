@@ -65,9 +65,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -199,7 +197,7 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val sinceText = if (callLogImportSince > 0L) {
-                    "From ${SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(callLogImportSince))}"
+                    "From ${callLogImportSince.toDisplayDate()}"
                 } else {
                     "All history"
                 }

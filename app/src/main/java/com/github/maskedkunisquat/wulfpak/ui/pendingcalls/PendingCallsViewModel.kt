@@ -97,11 +97,17 @@ class PendingCallsViewModel(app: Application) : AndroidViewModel(app) {
                         appApp.db.interactionDao().update(interaction.copy(note = trimmed))
                     }
                 }
+                appApp.debugEventLogger.log(DebugEvent.PendingCallAction(action = "SAVE_NOTE", callType = stub.callType))
                 withContext(Dispatchers.Main) { dismissConfirmed(stub) }
             } catch (_: Exception) {
                 // update failed — confirmation stays visible so the user can retry
             }
         }
+    }
+
+    fun dismissWithoutNote(stub: PendingCallStub) {
+        appApp.debugEventLogger.log(DebugEvent.PendingCallAction(action = "DISMISS", callType = stub.callType))
+        dismissConfirmed(stub)
     }
 
     fun dismissConfirmed(stub: PendingCallStub) {

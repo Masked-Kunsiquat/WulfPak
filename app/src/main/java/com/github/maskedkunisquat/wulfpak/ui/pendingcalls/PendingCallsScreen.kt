@@ -83,7 +83,7 @@ fun PendingCallsScreen(
                     ConfirmedCallCard(
                         stub               = stub,
                         onSaveNote         = { text -> viewModel.saveNote(stub, text) },
-                        onDismiss          = { viewModel.dismissConfirmed(stub) },
+                        onDismiss          = { viewModel.dismissWithoutNote(stub) },
                         onNavigateToSearch = onNavigateToSearch,
                     )
                 }
