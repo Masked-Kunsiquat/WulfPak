@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.edit
 import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
 import com.github.maskedkunisquat.wulfpak.appDataStore
+import com.github.maskedkunisquat.wulfpak.model.toPendingCallStubs
+import com.github.maskedkunisquat.wulfpak.model.toJsonString
 import kotlinx.coroutines.flow.first
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,10 +48,12 @@ fun CallLogSettingsScreen(onNavigateBack: () -> Unit) {
         if (!initialized) return@LaunchedEffect
         val newSince = datePickerState.selectedDateMillis ?: 0L
         context.appDataStore.edit { prefs ->
-            val prevLastPolled = prefs[AppPrefsKeys.CALL_LOG_LAST_POLLED] ?: 0L
             prefs[AppPrefsKeys.CALL_LOG_IMPORT_SINCE] = newSince
-            if (newSince in 1L until prevLastPolled) {
-                prefs[AppPrefsKeys.CALL_LOG_LAST_POLLED] = newSince
+            if (newSince > 0L) {
+                val filtered = (prefs[AppPrefsKeys.PENDING_CALL_STUBS] ?: "")
+                    .toPendingCallStubs()
+                    .filter { it.timestamp >= newSince }
+                prefs[AppPrefsKeys.PENDING_CALL_STUBS] = filtered.toJsonString()
             }
         }
     }
