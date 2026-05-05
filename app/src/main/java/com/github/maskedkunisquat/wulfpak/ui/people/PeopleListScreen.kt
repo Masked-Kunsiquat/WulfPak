@@ -2,7 +2,10 @@ package com.github.maskedkunisquat.wulfpak.ui.people
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,16 +15,22 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -43,19 +52,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
+import com.github.maskedkunisquat.wulfpak.appDataStore
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Person
 import com.github.maskedkunisquat.wulfpak.core.data.entity.RelationLabel
 import com.github.maskedkunisquat.wulfpak.ui.common.PersonAvatar
 import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayLabel
 import com.github.maskedkunisquat.wulfpak.ui.common.toRelativeDisplay
 import java.util.UUID
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 // High intended closeness but unexpectedly low behavioral score.
 // threshold = (rating-1)/4f - 0.15f  →  rating 4 → 0.60, rating 5 → 0.85.
@@ -81,6 +98,12 @@ fun PeopleListScreen(
     val selectedIds      by viewModel.selectedIds.collectAsStateWithLifecycle()
     val pendingCallCount by viewModel.pendingCallCount.collectAsStateWithLifecycle()
     val inMultiSelect = selectedIds.isNotEmpty()
+
+    val context    = LocalContext.current
+    val scope      = rememberCoroutineScope()
+    val isGridView by context.appDataStore.data
+        .map { it[AppPrefsKeys.PEOPLE_VIEW_GRID] ?: false }
+        .collectAsStateWithLifecycle(false)
 
     var showRelationDialog by remember { mutableStateOf(false) }
 
@@ -122,6 +145,16 @@ fun PeopleListScreen(
                                 }
                             }
                         }
+                        IconButton(onClick = {
+                            scope.launch {
+                                context.appDataStore.edit { it[AppPrefsKeys.PEOPLE_VIEW_GRID] = !isGridView }
+                            }
+                        }) {
+                            Icon(
+                                imageVector = if (isGridView) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
+                                contentDescription = if (isGridView) "Switch to list view" else "Switch to grid view",
+                            )
+                        }
                         IconButton(onClick = onOpenSettings) {
                             Icon(Icons.Default.Settings, contentDescription = "Settings")
                         }
@@ -137,81 +170,163 @@ fun PeopleListScreen(
             }
         }
     ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding)) {
-            if (!inMultiSelect) {
-                item {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = viewModel::setSearchQuery,
-                        placeholder = { Text("Search people…") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        singleLine = true,
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                        trailingIcon = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Clear")
+        val favorites = if (searchQuery.isBlank()) people.filter { it.isFavorite } else emptyList()
+        val rest      = if (searchQuery.isBlank()) people.filter { !it.isFavorite } else people
+
+        if (isGridView) {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 96.dp),
+                modifier = Modifier.padding(padding),
+                contentPadding = PaddingValues(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                if (!inMultiSelect) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = viewModel::setSearchQuery,
+                            placeholder = { Text("Search people…") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            singleLine = true,
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Clear")
+                                    }
                                 }
+                            },
+                        )
+                    }
+                }
+                if (people.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = if (searchQuery.isBlank()) "No people yet — tap + to add someone"
+                                       else "No results for \"$searchQuery\"",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                } else {
+                    if (favorites.isNotEmpty()) {
+                        item(span = { GridItemSpan(maxLineSpan) }) { SectionLabel("Favorites") }
+                        gridItems(favorites, key = { it.id }) { person ->
+                            PersonGridCell(
+                                person            = person,
+                                inMultiSelect     = inMultiSelect,
+                                isSelected        = person.id in selectedIds,
+                                onOpen            = onOpenPerson,
+                                onLongPress       = { viewModel.enterMultiSelect(person) },
+                                onToggleSelection = viewModel::toggleSelection,
+                            )
+                        }
+                        if (rest.isNotEmpty()) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                             }
-                        },
-                    )
+                        }
+                    }
+                    if (rest.isNotEmpty()) {
+                        if (favorites.isNotEmpty()) {
+                            item(span = { GridItemSpan(maxLineSpan) }) { SectionLabel("All") }
+                        }
+                        gridItems(rest, key = { it.id }) { person ->
+                            PersonGridCell(
+                                person            = person,
+                                inMultiSelect     = inMultiSelect,
+                                isSelected        = person.id in selectedIds,
+                                onOpen            = onOpenPerson,
+                                onLongPress       = { viewModel.enterMultiSelect(person) },
+                                onToggleSelection = viewModel::toggleSelection,
+                            )
+                        }
+                    }
                 }
+                item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(88.dp)) }
             }
-
-            if (people.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = if (searchQuery.isBlank()) "No people yet — tap + to add someone"
-                                   else "No results for \"$searchQuery\"",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        } else {
+            LazyColumn(modifier = Modifier.padding(padding)) {
+                if (!inMultiSelect) {
+                    item {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = viewModel::setSearchQuery,
+                            placeholder = { Text("Search people…") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            singleLine = true,
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Clear")
+                                    }
+                                }
+                            },
                         )
                     }
                 }
-            } else {
-                val favorites = if (searchQuery.isBlank()) people.filter { it.isFavorite } else emptyList()
-                val rest = if (searchQuery.isBlank()) people.filter { !it.isFavorite } else people
-
-                if (favorites.isNotEmpty()) {
-                    item { SectionLabel("Favorites") }
-                    items(favorites, key = { it.id }) { person ->
-                        PersonRow(
-                            person = person,
-                            inMultiSelect = inMultiSelect,
-                            isSelected = person.id in selectedIds,
-                            onOpen = onOpenPerson,
-                            onToggleFavorite = viewModel::toggleFavorite,
-                            onLongPress = { viewModel.enterMultiSelect(person) },
-                            onToggleSelection = viewModel::toggleSelection,
-                        )
+                if (people.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = if (searchQuery.isBlank()) "No people yet — tap + to add someone"
+                                       else "No results for \"$searchQuery\"",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
-                    if (rest.isNotEmpty()) item {
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                } else {
+                    if (favorites.isNotEmpty()) {
+                        item { SectionLabel("Favorites") }
+                        items(favorites, key = { it.id }) { person ->
+                            PersonRow(
+                                person            = person,
+                                inMultiSelect     = inMultiSelect,
+                                isSelected        = person.id in selectedIds,
+                                onOpen            = onOpenPerson,
+                                onToggleFavorite  = viewModel::toggleFavorite,
+                                onLongPress       = { viewModel.enterMultiSelect(person) },
+                                onToggleSelection = viewModel::toggleSelection,
+                            )
+                        }
+                        if (rest.isNotEmpty()) item {
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        }
+                    }
+                    if (rest.isNotEmpty()) {
+                        if (favorites.isNotEmpty()) item { SectionLabel("All") }
+                        items(rest, key = { it.id }) { person ->
+                            PersonRow(
+                                person            = person,
+                                inMultiSelect     = inMultiSelect,
+                                isSelected        = person.id in selectedIds,
+                                onOpen            = onOpenPerson,
+                                onToggleFavorite  = viewModel::toggleFavorite,
+                                onLongPress       = { viewModel.enterMultiSelect(person) },
+                                onToggleSelection = viewModel::toggleSelection,
+                            )
+                        }
                     }
                 }
-                if (rest.isNotEmpty()) {
-                    if (favorites.isNotEmpty()) item { SectionLabel("All") }
-                    items(rest, key = { it.id }) { person ->
-                        PersonRow(
-                            person = person,
-                            inMultiSelect = inMultiSelect,
-                            isSelected = person.id in selectedIds,
-                            onOpen = onOpenPerson,
-                            onToggleFavorite = viewModel::toggleFavorite,
-                            onLongPress = { viewModel.enterMultiSelect(person) },
-                            onToggleSelection = viewModel::toggleSelection,
-                        )
-                    }
-                }
+                item { Spacer(Modifier.height(88.dp)) }
             }
-            item { Spacer(Modifier.height(88.dp)) }
         }
     }
 }
@@ -282,6 +397,47 @@ private fun PersonRow(
             }
         },
     )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PersonGridCell(
+    person: Person,
+    inMultiSelect: Boolean,
+    isSelected: Boolean,
+    onOpen: (UUID) -> Unit,
+    onLongPress: () -> Unit,
+    onToggleSelection: (Person) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .combinedClickable(
+                onClick = { if (inMultiSelect) onToggleSelection(person) else onOpen(person.id) },
+                onLongClick = onLongPress,
+            )
+            .padding(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        PersonAvatar(person, size = 64.dp)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = person.firstName,
+            style = MaterialTheme.typography.labelMedium,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (!inMultiSelect && person.isDrifting) {
+            Text(
+                text = "⚠ Drifting",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+            )
+        }
+        if (inMultiSelect) {
+            Checkbox(checked = isSelected, onCheckedChange = null)
+        }
+    }
 }
 
 @Composable
