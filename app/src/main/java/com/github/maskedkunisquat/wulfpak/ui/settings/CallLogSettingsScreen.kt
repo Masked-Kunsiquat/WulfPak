@@ -46,10 +46,10 @@ fun CallLogSettingsScreen(viewModel: SettingsViewModel, onNavigateBack: () -> Un
     var initialized by remember { mutableStateOf(false) }
 
     LaunchedEffect(importSince) {
-        if (!initialized) {
-            if (importSince > 0L) datePickerState.selectedDateMillis = importSince
-            initialized = true
-        }
+        if (initialized) return@LaunchedEffect
+        val since = importSince ?: return@LaunchedEffect   // wait for real DataStore value
+        if (since > 0L) datePickerState.selectedDateMillis = since
+        initialized = true
     }
 
     LaunchedEffect(datePickerState.selectedDateMillis, initialized) {

@@ -27,6 +27,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -118,9 +119,9 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         .map { it[AppPrefsKeys.SORT_BY_LAST_NAME] ?: false }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-    val callLogImportSince = appApp.appDataStore.data
-        .map { it[AppPrefsKeys.CALL_LOG_IMPORT_SINCE] ?: 0L }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
+    val callLogImportSince: StateFlow<Long?> = appApp.appDataStore.data
+        .map { it[AppPrefsKeys.CALL_LOG_IMPORT_SINCE] ?: 0L as Long? }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     var pendingEmbedCount  by mutableStateOf<Int?>(null); private set
     var isEmbedding        by mutableStateOf(false);      private set
