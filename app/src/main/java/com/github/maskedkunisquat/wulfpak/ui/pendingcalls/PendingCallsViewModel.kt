@@ -90,13 +90,9 @@ class PendingCallsViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val interactionId = confirmedInteractionIds[stub.personId to stub.timestamp]
-                if (interactionId != null) {
-                    val interaction = appApp.db.interactionDao().getById(interactionId)
-                    if (interaction != null) {
-                        appApp.db.interactionDao().update(interaction.copy(note = trimmed))
-                    }
-                }
+                val interactionId = confirmedInteractionIds[stub.personId to stub.timestamp] ?: return@launch
+                val interaction   = appApp.db.interactionDao().getById(interactionId)         ?: return@launch
+                appApp.db.interactionDao().update(interaction.copy(note = trimmed))
                 appApp.debugEventLogger.log(DebugEvent.PendingCallAction(action = "SAVE_NOTE", callType = stub.callType))
                 withContext(Dispatchers.Main) { dismissConfirmed(stub) }
             } catch (_: Exception) {

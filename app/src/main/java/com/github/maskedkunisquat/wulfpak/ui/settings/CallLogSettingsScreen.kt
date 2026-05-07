@@ -12,6 +12,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
@@ -22,46 +23,38 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.datastore.preferences.core.edit
-import com.github.maskedkunisquat.wulfpak.AppPrefsKeys
-import com.github.maskedkunisquat.wulfpak.appDataStore
-import com.github.maskedkunisquat.wulfpak.model.toPendingCallStubs
-import com.github.maskedkunisquat.wulfpak.model.toJsonString
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CallLogSettingsScreen(onNavigateBack: () -> Unit) {
-    val context = LocalContext.current
-    val datePickerState = rememberDatePickerState()
+fun CallLogSettingsScreen(viewModel: SettingsViewModel, onNavigateBack: () -> Unit) {
+    val importSince by viewModel.callLogImportSince.collectAsStateWithLifecycle()
+    val noFutureDates = remember {
+        object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                val nowCal  = Calendar.getInstance()
+                val dateCal = Calendar.getInstance().apply { timeInMillis = utcTimeMillis }
+                return dateCal.get(Calendar.YEAR) < nowCal.get(Calendar.YEAR) ||
+                    (dateCal.get(Calendar.YEAR) == nowCal.get(Calendar.YEAR) &&
+                     dateCal.get(Calendar.DAY_OF_YEAR) <= nowCal.get(Calendar.DAY_OF_YEAR))
+            }
+        }
+    }
+    val datePickerState = rememberDatePickerState(selectableDates = noFutureDates)
     var initialized by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        val since = context.appDataStore.data.first()[AppPrefsKeys.CALL_LOG_IMPORT_SINCE] ?: 0L
-        if (since > 0L) datePickerState.selectedDateMillis = since
-        initialized = true
+    LaunchedEffect(importSince) {
+        if (!initialized) {
+            if (importSince > 0L) datePickerState.selectedDateMillis = importSince
+            initialized = true
+        }
     }
 
     LaunchedEffect(datePickerState.selectedDateMillis, initialized) {
         if (!initialized) return@LaunchedEffect
-        val newSince = datePickerState.selectedDateMillis ?: 0L
-        // NonCancellable ensures the write completes even if the composable's
-        // scope is cancelled while the user is navigating back.
-        withContext(NonCancellable) {
-            context.appDataStore.edit { prefs ->
-                prefs[AppPrefsKeys.CALL_LOG_IMPORT_SINCE] = newSince
-                if (newSince > 0L) {
-                    val filtered = (prefs[AppPrefsKeys.PENDING_CALL_STUBS] ?: "")
-                        .toPendingCallStubs()
-                        .filter { it.timestamp >= newSince }
-                    prefs[AppPrefsKeys.PENDING_CALL_STUBS] = filtered.toJsonString()
-                }
-            }
-        }
+        viewModel.setCallLogImportSince(datePickerState.selectedDateMillis ?: 0L)
     }
 
     Scaffold(

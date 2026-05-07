@@ -522,7 +522,14 @@ fun AppNavHost(
             }
 
             composable(Routes.SETTINGS_CALL_LOG) {
-                CallLogSettingsScreen(onNavigateBack = { navController.popBackStack() })
+                val settingsEntry = remember(navController) {
+                    navController.getBackStackEntry(Routes.SETTINGS)
+                }
+                val vm: SettingsViewModel = viewModel(settingsEntry)
+                CallLogSettingsScreen(
+                    viewModel      = vm,
+                    onNavigateBack = { navController.popBackStack() },
+                )
             }
         }
     }

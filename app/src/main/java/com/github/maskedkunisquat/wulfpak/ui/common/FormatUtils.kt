@@ -14,12 +14,24 @@ fun Long.toDisplayDate(): String =
     SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(this))
 
 fun Long.toRelativeDisplay(): String {
-    fun Long.midnight(): Long = Calendar.getInstance().apply {
-        timeInMillis = this@midnight
-        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0);      set(Calendar.MILLISECOND, 0)
-    }.timeInMillis
-    val days = ((System.currentTimeMillis().midnight() - this.midnight()) / 86_400_000L).toInt()
+    val nowCal  = Calendar.getInstance()
+    val thenCal = Calendar.getInstance().apply { timeInMillis = this@toRelativeDisplay }
+
+    // Use calendar fields instead of ms division to handle DST spring-forward (23h day).
+    val days: Int = if (nowCal.get(Calendar.YEAR) == thenCal.get(Calendar.YEAR)) {
+        nowCal.get(Calendar.DAY_OF_YEAR) - thenCal.get(Calendar.DAY_OF_YEAR)
+    } else {
+        val cursor = thenCal.clone() as Calendar
+        cursor[Calendar.HOUR_OF_DAY] = 0; cursor[Calendar.MINUTE] = 0
+        cursor[Calendar.SECOND] = 0;      cursor[Calendar.MILLISECOND] = 0
+        val end = nowCal.clone() as Calendar
+        end[Calendar.HOUR_OF_DAY] = 0; end[Calendar.MINUTE] = 0
+        end[Calendar.SECOND] = 0;      end[Calendar.MILLISECOND] = 0
+        var count = 0
+        while (cursor.before(end) && count < 400) { cursor.add(Calendar.DAY_OF_MONTH, 1); count++ }
+        count
+    }
+
     return when {
         days == 0  -> "today"
         days == 1  -> "yesterday"
