@@ -21,4 +21,5 @@ object AppPrefsKeys {
     val CALL_LOG_IMPORT_SINCE   = longPreferencesKey("call_log_import_since")
     val CALL_LOG_LAST_POLLED    = longPreferencesKey("call_log_last_polled")
     val PENDING_CALL_STUBS      = stringPreferencesKey("pending_call_stubs")
+    val BATTERY_OPT_DISMISSED   = booleanPreferencesKey("battery_opt_dismissed")
 }
