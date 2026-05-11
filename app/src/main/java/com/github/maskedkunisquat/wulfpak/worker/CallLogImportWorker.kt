@@ -39,7 +39,9 @@ class CallLogImportWorker(
         if (prefs[AppPrefsKeys.CALL_LOG_IMPORT_ENABLED] != true) return Result.success()
         if (ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.READ_CALL_LOG)
             != PackageManager.PERMISSION_GRANTED) return Result.success()
-        val lastPolled = prefs[AppPrefsKeys.CALL_LOG_LAST_POLLED] ?: 0L
+        val lastPolled   = prefs[AppPrefsKeys.CALL_LOG_LAST_POLLED]  ?: 0L
+        val importSince  = prefs[AppPrefsKeys.CALL_LOG_IMPORT_SINCE] ?: 0L
+        val queryFrom    = maxOf(lastPolled, importSince)
         val nowMs = System.currentTimeMillis()
 
         val phoneMap = db.contactDetailDao().getAllOnce()
@@ -58,7 +60,7 @@ class CallLogImportWorker(
             CallLog.Calls.CONTENT_URI,
             arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.TYPE, CallLog.Calls.DATE, CallLog.Calls.DURATION),
             "${CallLog.Calls.DATE} > ?",
-            arrayOf(lastPolled.toString()),
+            arrayOf(queryFrom.toString()),
             "${CallLog.Calls.DATE} ASC",
         )
 

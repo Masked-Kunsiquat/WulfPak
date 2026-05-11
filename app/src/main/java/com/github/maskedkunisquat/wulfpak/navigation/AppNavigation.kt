@@ -64,6 +64,7 @@ import com.github.maskedkunisquat.wulfpak.ui.person.PersonDetailViewModel
 import com.github.maskedkunisquat.wulfpak.ui.search.SearchScreen
 import com.github.maskedkunisquat.wulfpak.ui.search.SearchViewModel
 import com.github.maskedkunisquat.wulfpak.ui.settings.AiSettingsScreen
+import com.github.maskedkunisquat.wulfpak.ui.settings.CallLogSettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.ContactPickScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.ContactsSettingsScreen
 import com.github.maskedkunisquat.wulfpak.ui.settings.DisplaySettingsScreen
@@ -103,6 +104,7 @@ object Routes {
     const val SETTINGS_CONTACTS     = "settings_contacts"
     const val DEBUG_SUMMARY         = "debug_summary"
     const val PENDING_CALLS         = "pending_calls"
+    const val SETTINGS_CALL_LOG     = "settings_call_log"
 
     fun personDetail(personId: String) = "person_detail/$personId"
     fun addEditPerson(personId: String? = null) =
@@ -431,13 +433,14 @@ fun AppNavHost(
             composable(Routes.SETTINGS) {
                 val context = LocalContext.current
                 SettingsScreen(
-                    onNavigateBack         = { navController.popBackStack() },
-                    onNavigateSecurity     = { navController.navigate(Routes.SETTINGS_SECURITY) },
-                    onNavigateDisplay      = { navController.navigate(Routes.SETTINGS_DISPLAY) },
-                    onNavigateAi           = { navController.navigate(Routes.SETTINGS_AI) },
-                    onNavigateContacts     = { navController.navigate(Routes.SETTINGS_CONTACTS) },
-                    onNavigateDebugSummary = { navController.navigate(Routes.DEBUG_SUMMARY) },
-                    onSwitchProfile        = {
+                    onNavigateBack            = { navController.popBackStack() },
+                    onNavigateSecurity        = { navController.navigate(Routes.SETTINGS_SECURITY) },
+                    onNavigateDisplay         = { navController.navigate(Routes.SETTINGS_DISPLAY) },
+                    onNavigateAi              = { navController.navigate(Routes.SETTINGS_AI) },
+                    onNavigateContacts        = { navController.navigate(Routes.SETTINGS_CONTACTS) },
+                    onNavigateDebugSummary    = { navController.navigate(Routes.DEBUG_SUMMARY) },
+                    onNavigateCallLogSettings = { navController.navigate(Routes.SETTINGS_CALL_LOG) },
+                    onSwitchProfile           = {
                         val localApp = context.applicationContext as AppApplication
                         val target = if (localApp.isDemoProfile) AppApplication.Profile.REAL
                                      else AppApplication.Profile.DEMO
@@ -516,6 +519,17 @@ fun AppNavHost(
 
             composable(Routes.MERGE_CONTACTS) {
                 MergeContactsScreen(onNavigateBack = { navController.popBackStack() })
+            }
+
+            composable(Routes.SETTINGS_CALL_LOG) {
+                val settingsEntry = remember(navController) {
+                    navController.getBackStackEntry(Routes.SETTINGS)
+                }
+                val vm: SettingsViewModel = viewModel(settingsEntry)
+                CallLogSettingsScreen(
+                    viewModel      = vm,
+                    onNavigateBack = { navController.popBackStack() },
+                )
             }
         }
     }

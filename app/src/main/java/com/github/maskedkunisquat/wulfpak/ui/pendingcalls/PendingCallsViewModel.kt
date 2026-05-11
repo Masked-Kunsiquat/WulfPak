@@ -14,8 +14,8 @@ import com.github.maskedkunisquat.wulfpak.core.logic.debug.DebugEvent
 import com.github.maskedkunisquat.wulfpak.core.data.entity.Interaction
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionParticipant
 import com.github.maskedkunisquat.wulfpak.core.data.entity.InteractionType
-import com.github.maskedkunisquat.wulfpak.core.data.entity.Note
 import com.github.maskedkunisquat.wulfpak.model.PendingCallStub
+import java.util.concurrent.ConcurrentHashMap
 import com.github.maskedkunisquat.wulfpak.model.toJsonString
 import com.github.maskedkunisquat.wulfpak.model.toPendingCallStubs
 import androidx.room.withTransaction
@@ -36,6 +36,7 @@ class PendingCallsViewModel(app: Application) : AndroidViewModel(app) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     var confirmedStubs by mutableStateOf<List<PendingCallStub>>(emptyList()); private set
+    private val confirmedInteractionIds = ConcurrentHashMap<Pair<String, Long>, UUID>()
 
     fun skip(stub: PendingCallStub) {
         viewModelScope.launch {
@@ -66,6 +67,7 @@ class PendingCallsViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 )
                 db.personDao().onInteractionAdded(UUID.fromString(stub.personId), stub.timestamp)
+                confirmedInteractionIds[stub.personId to stub.timestamp] = interaction.id
             }
             appApp.appDataStore.edit { prefs ->
                 val current = (prefs[AppPrefsKeys.PENDING_CALL_STUBS] ?: "").toPendingCallStubs()
@@ -88,21 +90,24 @@ class PendingCallsViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                appApp.db.noteDao().insert(
-                    Note(
-                        personId  = UUID.fromString(stub.personId),
-                        timestamp = stub.timestamp,
-                        body      = trimmed,
-                    )
-                )
+                val interactionId = confirmedInteractionIds[stub.personId to stub.timestamp] ?: return@launch
+                val interaction   = appApp.db.interactionDao().getById(interactionId)         ?: return@launch
+                appApp.db.interactionDao().update(interaction.copy(note = trimmed))
+                appApp.debugEventLogger.log(DebugEvent.PendingCallAction(action = "SAVE_NOTE", callType = stub.callType))
                 withContext(Dispatchers.Main) { dismissConfirmed(stub) }
             } catch (_: Exception) {
-                // insert failed — confirmation stays visible so the user can retry
+                // update failed — confirmation stays visible so the user can retry
             }
         }
     }
 
+    fun dismissWithoutNote(stub: PendingCallStub) {
+        appApp.debugEventLogger.log(DebugEvent.PendingCallAction(action = "DISMISS", callType = stub.callType))
+        dismissConfirmed(stub)
+    }
+
     fun dismissConfirmed(stub: PendingCallStub) {
         confirmedStubs = confirmedStubs.filter { it.personId != stub.personId || it.timestamp != stub.timestamp }
+        confirmedInteractionIds.remove(stub.personId to stub.timestamp)
     }
 }

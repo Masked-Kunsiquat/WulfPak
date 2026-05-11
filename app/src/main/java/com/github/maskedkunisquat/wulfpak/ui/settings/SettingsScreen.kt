@@ -1,7 +1,11 @@
 package com.github.maskedkunisquat.wulfpak.ui.settings
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -16,6 +20,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.People
@@ -24,10 +30,14 @@ import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -47,6 +57,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -65,6 +78,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.github.maskedkunisquat.wulfpak.ui.common.toDisplayDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,6 +89,7 @@ fun SettingsScreen(
     onNavigateAi: () -> Unit,
     onNavigateContacts: () -> Unit,
     onNavigateDebugSummary: () -> Unit,
+    onNavigateCallLogSettings: () -> Unit,
     onSwitchProfile: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -90,6 +105,23 @@ fun SettingsScreen(
     val callLogEnabled by context.appDataStore.data
         .map { it[AppPrefsKeys.CALL_LOG_IMPORT_ENABLED] ?: false }
         .collectAsStateWithLifecycle(false)
+
+    val callLogImportSince by context.appDataStore.data
+        .map { it[AppPrefsKeys.CALL_LOG_IMPORT_SINCE] ?: 0L }
+        .collectAsStateWithLifecycle(0L)
+
+    val batteryOptDismissed by context.appDataStore.data
+        .map { it[AppPrefsKeys.BATTERY_OPT_DISMISSED] ?: false }
+        .collectAsStateWithLifecycle(false)
+
+    val pm = remember { context.getSystemService(PowerManager::class.java)!! }
+    var isExemptedFromBatteryOpt by remember { mutableStateOf(true) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            isExemptedFromBatteryOpt = pm.isIgnoringBatteryOptimizations(context.packageName)
+        }
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -156,6 +188,57 @@ fun SettingsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
+            if (!isExemptedFromBatteryOpt && !batteryOptDismissed) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 12.dp),
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Background restricted",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                            )
+                            Text(
+                                "Reminders and call sync may not run. Tap Fix to exempt WulfPak from battery optimization.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                            )
+                        }
+                        TextButton(
+                            onClick = {
+                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                    data = Uri.parse("package:${context.packageName}")
+                                }
+                                context.startActivity(intent)
+                            },
+                        ) { Text("Fix") }
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    context.appDataStore.edit { it[AppPrefsKeys.BATTERY_OPT_DISMISSED] = true }
+                                }
+                            },
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Dismiss")
+                        }
+                    }
+                }
+            }
             ListItem(
                 headlineContent   = { Text("Security") },
                 supportingContent = { Text("Biometric lock") },
@@ -184,35 +267,50 @@ fun SettingsScreen(
                 trailingContent   = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
                 modifier          = Modifier.clickable(onClick = onNavigateContacts),
             )
-            ListItem(
-                headlineContent   = { Text("Auto-import calls") },
-                supportingContent = { Text(if (callLogEnabled) "On" else "Off") },
-                leadingContent    = { Icon(Icons.Default.Phone, contentDescription = null) },
-                trailingContent   = {
-                    Switch(
-                        checked = callLogEnabled,
-                        onCheckedChange = { enabled ->
-                            if (enabled) {
-                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG)
-                                    == PackageManager.PERMISSION_GRANTED
-                                ) {
-                                    scope.launch {
-                                        context.appDataStore.edit { it[AppPrefsKeys.CALL_LOG_IMPORT_ENABLED] = true }
-                                    }
-                                    CallLogImportWorker.schedule(WorkManager.getInstance(context))
-                                } else {
-                                    callLogPermissionLauncher.launch(Manifest.permission.READ_CALL_LOG)
-                                }
-                            } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val sinceText = if (callLogImportSince > 0L) {
+                    "From ${callLogImportSince.toDisplayDate()}"
+                } else {
+                    "All history"
+                }
+                ListItem(
+                    headlineContent   = { Text("Auto-import calls") },
+                    supportingContent = { Text(sinceText) },
+                    leadingContent    = { Icon(Icons.Default.Phone, contentDescription = null) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onNavigateCallLogSettings() },
+                )
+                VerticalDivider(modifier = Modifier.fillMaxHeight().padding(vertical = 12.dp))
+                Switch(
+                    checked = callLogEnabled,
+                    onCheckedChange = { enabled ->
+                        if (enabled) {
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG)
+                                == PackageManager.PERMISSION_GRANTED
+                            ) {
                                 scope.launch {
-                                    context.appDataStore.edit { it[AppPrefsKeys.CALL_LOG_IMPORT_ENABLED] = false }
+                                    context.appDataStore.edit { it[AppPrefsKeys.CALL_LOG_IMPORT_ENABLED] = true }
                                 }
-                                WorkManager.getInstance(context).cancelUniqueWork(CallLogImportWorker.WORK_NAME)
+                                CallLogImportWorker.schedule(WorkManager.getInstance(context))
+                            } else {
+                                callLogPermissionLauncher.launch(Manifest.permission.READ_CALL_LOG)
                             }
-                        },
-                    )
-                },
-            )
+                        } else {
+                            scope.launch {
+                                context.appDataStore.edit { it[AppPrefsKeys.CALL_LOG_IMPORT_ENABLED] = false }
+                            }
+                            WorkManager.getInstance(context).cancelUniqueWork(CallLogImportWorker.WORK_NAME)
+                        }
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

@@ -19,6 +19,12 @@
          Safe for sideloaded builds; gate via productFlavor or remove before any Play Store release. -->
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
 
+    <!-- Reschedule workers after reboot -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Battery optimization exemption prompt — restricted on Play Store, fine for sideloaded builds -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <application
         android:name=".AppApplication"
         android:allowBackup="true"
@@ -43,6 +49,16 @@
         <!-- LiteRT-LM NPU on Qualcomm devices — required="false" so non-Qualcomm devices install -->
         <uses-native-library android:name="libcdsprpc.so" android:required="false" />
         <uses-native-library android:name="libOpenCL.so" android:required="false" />
+
+        <!-- Reschedule periodic workers after device reboot or Samsung fast-boot -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="com.sec.android.intent.action.QUICK_BOOT_POWERON" />
+            </intent-filter>
+        </receiver>
 
         <!-- Remove default WorkManager startup initializer so AppApplication can
              supply a custom WorkerFactory via Configuration.Provider -->
